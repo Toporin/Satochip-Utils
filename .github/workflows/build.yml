@@ -117,10 +117,17 @@ jobs:
         path: satochip_utils.AppImage
 
     - name: Upload artifact (macOS)
-      if: success() && (matrix.os == 'macos-latest' || matrix.os == 'macos-12')
+      if: success() && matrix.os == 'macos-latest'
       uses: actions/upload-artifact@v4
       with:
         name: macos-satochip_utils
+        path: dist/Satochip_Utils.dmg
+
+    - name: Upload artifact (macOS x86_64)
+      if: success() && matrix.os == 'macos-12'
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos-x86_64-satochip_utils
         path: dist/Satochip_Utils.dmg
 
     - name: Upload AppDir for debugging (Linux)

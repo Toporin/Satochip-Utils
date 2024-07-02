@@ -63,6 +63,7 @@ jobs:
         python -c "import customtkinter; print('CustomTkinter version:', customtkinter.__version__)"
         python -c "import pyaes; print('PyAES is installed')"
         python -c "import pycparser; print('pycparser version:', pycparser.__version__)"
+        python -c "import pysatochip; print('pysatochip version:', pysatochip.__version__)"
 
     - name: Build executable (Windows)
       if: matrix.os == 'windows-latest'

@@ -10,9 +10,7 @@ def run_pyinstaller():
             "pyinstaller",
             "--onefile",
             "--name", "satochip_utils",
-            "--add-data", "pysatochip/pysatochip/cert/*:pysatochip/pysatochip/cert",
             "--add-data", "pictures_db/*:pictures_db",
-            "--add-data", "pysatochip/pysatochip/CardConnector.py:pysatochip",
             "satochip_utils.py"
         ]
 

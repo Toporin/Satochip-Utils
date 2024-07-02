@@ -16,9 +16,7 @@ def run_pyinstaller():
             pyinstaller_path,
             "--onefile",
             "--name", "satochip_utils.exe",
-            "--add-data", "pysatochip\\pysatochip\\cert\\*;pysatochip/pysatochip/cert",
             "--add-data", "pictures_db\\*;pictures_db",
-            "--add-data", "pysatochip\\pysatochip\\CardConnector.py;pysatochip",
             "satochip_utils.py"
         ]
 

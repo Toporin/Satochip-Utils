@@ -16,7 +16,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-20.04, macos-latest, windows-latest]
+        os: [ubuntu-20.04, macos-latest, macos-12, windows-latest]
       fail-fast: false
     steps:
     - name: Checkout code
@@ -34,7 +34,7 @@ jobs:
         sudo apt-get install -y libpcsclite-dev swig python3-tk fuse libfuse2 appstream fonts-liberation imagemagick
 
     - name: Install system dependencies (macOS)
-      if: matrix.os == 'macos-latest'
+      if: matrix.os == 'macos-latest' || matrix.os == 'macos-12'
       run: |
         brew install swig
         brew install create-dmg
@@ -95,7 +95,7 @@ jobs:
       run: ldd AppDir/usr/bin/satochip_utils || echo "ldd command failed"
 
     - name: Build executable (macOS)
-      if: matrix.os == 'macos-latest'
+      if: matrix.os == 'macos-latest' || matrix.os == 'macos-12'
       run: python build_scripts/build_macos.py
 
     - name: Upload artifact (Windows)
@@ -113,7 +113,7 @@ jobs:
         path: satochip_utils.AppImage
 
     - name: Upload artifact (macOS)
-      if: success() && matrix.os == 'macos-latest'
+      if: success() && (matrix.os == 'macos-latest' || matrix.os == 'macos-12')
       uses: actions/upload-artifact@v4
       with:
         name: macos-satochip_utils

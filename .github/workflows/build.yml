@@ -95,8 +95,12 @@ jobs:
       run: ldd AppDir/usr/bin/satochip_utils || echo "ldd command failed"
 
     - name: Build executable (macOS)
-      if: matrix.os == 'macos-latest' || matrix.os == 'macos-12'
+      if: matrix.os == 'macos-latest'
       run: python build_scripts/build_macos.py
+
+    - name: Build executable (macOS x86_64)
+      if: matrix.os == 'macos-12'
+      run: python build_scripts/build_macos_x86_64.py
 
     - name: Upload artifact (Windows)
       if: success() && matrix.os == 'windows-latest'

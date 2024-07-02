@@ -11,7 +11,6 @@ def run_pyinstaller():
             "--onefile",
             "--name", "satochip_utils",
             "--add-data", "pictures_db/*:pictures_db",
-            "--add-data", "pysatochip/cert/*:pysatochip/cert",
             "--hidden-import", "PIL._tkinter_finder",
             "satochip_utils.py"
         ]

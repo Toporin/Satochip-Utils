@@ -37,6 +37,13 @@ def run_pyinstaller():
             f.write(
                 "[Desktop Entry]\nType=Application\nName=Satochip Utils\nExec=satochip_utils\nIcon=satochip_utils\nCategories=Utility;")
 
+        # create AppRun file
+        with open("AppDir/satochip_utils.desktop", "w") as f:
+            f.write("# !/bin/bash\n")
+            f.write("set -e\n")
+            f.write("APPDIR=\"$(dirname \"$(readlink -e \"$0\")\")\"\n")
+            f.write("exec \"${APPDIR}/usr/lib/satochip_utils\" \"$@\"\n")
+
         # List contents of AppDir
         logger.info("Contents of AppDir:")
         for root, dirs, files in os.walk("AppDir"):

@@ -50,7 +50,12 @@ def run_pyinstaller():
         for root, dirs, files in os.walk("AppDir"):
             for file in files:
                 logger.info(os.path.join(root, file))
+                # check permissions
+                st = os.stat(file)
+                oct_perm = oct(st.st_mode)
+                logger.info(oct_perm)
 
+                
         # AppImage command
         appimage_command = [
             "./appimagetool-x86_64.AppImage",

@@ -9,7 +9,7 @@ def run_pyinstaller():
         command = [
             "pyinstaller",
             "--onefile",
-            "--target-arch", "x86_64",
+            "--target-arch", "arm64",
             "--name", "satochip_utils",
             "--add-data", "pictures_db/*:pictures_db",
             "--add-data", "pysatochip/cert/*:pysatochip/cert",

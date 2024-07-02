@@ -39,7 +39,7 @@ def run_pyinstaller():
 
         # create AppRun file
         with open("AppDir/AppRun", "w") as f:
-            f.write("# !/bin/bash\n")
+            f.write("#!/bin/bash\n")
             f.write("set -e\n")
             f.write("APPDIR=\"$(dirname \"$(readlink -e \"$0\")\")\"\n")
             f.write("exec \"${APPDIR}/usr/bin/satochip_utils\" \"$@\"\n")

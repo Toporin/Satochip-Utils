@@ -42,7 +42,8 @@ def run_pyinstaller():
             f.write("# !/bin/bash\n")
             f.write("set -e\n")
             f.write("APPDIR=\"$(dirname \"$(readlink -e \"$0\")\")\"\n")
-            f.write("exec \"${APPDIR}/usr/lib/satochip_utils\" \"$@\"\n")
+            f.write("exec \"${APPDIR}/usr/bin/satochip_utils\" \"$@\"\n")
+        os.chmod("AppDir/AppRun", 0o755)
 
         # List contents of AppDir
         logger.info("Contents of AppDir:")

@@ -45,6 +45,23 @@ def run_pyinstaller():
             f.write("exec \"${APPDIR}/usr/bin/satochip_utils\" \"$@\"\n")
         #os.chmod("AppDir/AppRun", 0o755)
 
+        #debug
+        result = subprocess.run(["ls", "-l"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                text=True)
+        logger.info("Debug ls -l:")
+        logger.debug(f"STDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}")
+
+        result = subprocess.run(["chmod", "+x", "AppDir/AppRun"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                text=True)
+        logger.info("Debug chmod +x:")
+        logger.debug(f"STDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}")
+
+        result = subprocess.run(["ls", "-l"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                text=True)
+        logger.info("Debug ls -l:")
+        logger.debug(f"STDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}")
+
+
         # List contents of AppDir
         logger.info("Contents of AppDir:")
         for root, dirs, files in os.walk("AppDir"):

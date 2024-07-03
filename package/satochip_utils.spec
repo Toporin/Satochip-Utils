@@ -3,7 +3,7 @@
 import os
 import sys
 import platform
-#from package.build_win_verinfo import fill_version_info
+from package.build_win_verinfo import fill_version_info
 
 from version import VERSION
 

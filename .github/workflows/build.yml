@@ -86,7 +86,8 @@ jobs:
         python-version: '3.9'
     - name: Install dependencies
       run: |
-        brew install tcl-tk
+        brew reinstall tcl-tk
+        brew link tcl-tk --force
         brew install python-tk
     - name: Build bin package
       run: |

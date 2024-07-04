@@ -86,6 +86,7 @@ jobs:
         python-version: '3.9'
     - name: Build bin package
       run: |
+        chmod +x ./package/Build-Mac.sh
         ./package/Build-Mac.sh
     - name: 'Archive MacOS bin (unsigned!)'
       uses: actions/upload-artifact@v4

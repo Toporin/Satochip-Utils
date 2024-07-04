@@ -2,7 +2,7 @@ import logging
 import sys
 import os
 import time
-import _tkinter
+import tkinter
 import customtkinter
 from customtkinter import CTkImage
 import webbrowser

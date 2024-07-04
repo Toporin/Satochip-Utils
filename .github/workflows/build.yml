@@ -85,7 +85,7 @@ jobs:
       with:
         python-version: '3.12'
     - name: test import tkinter
-      run: python -m tkinter -c "tkinter._test()" #python3 -c 'import tkinter'
+      run: python3 -c 'import tkinter' #python -m tkinter -c "tkinter._test()" #
     - name: Install dependencies
       run: |
         brew reinstall tcl-tk

@@ -54,6 +54,26 @@ jobs:
         path: |
           dist/
 
+  build_linux_legacy:
+
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Prepare Linux system
+      run: |
+        sudo apt update
+        sudo apt install -y xvfb curl libnotify4 libgtk-3-0 libsdl2-2.0-0 libsdl2-dev libpcsclite-dev
+        sudo apt install -y python3-venv python3-pip python3-pyscard
+    - name: Build bin package
+      run: |
+        xvfb-run --server-args='-screen 0, 1024x768x24' bash package/Build-Linux.sh
+    - name: 'Archive linux bin (unsigned!)'
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuxdist-legacy-unsigned
+        path: |
+          dist/
 
   build_mac:
 

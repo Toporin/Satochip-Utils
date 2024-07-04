@@ -115,6 +115,7 @@ jobs:
           python3 -c 'import tkinter'
       - name: Install dependencies
         run: |
+          brew install swig
           brew install python-tk
       - name: Build bin package
         run: |

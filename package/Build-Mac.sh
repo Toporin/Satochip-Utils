@@ -18,6 +18,7 @@ echo Installing pip dependencies ...
 #python -m pip install pip==21.2.1
 python -m ensurepip --upgrade
 python -m pip install --upgrade setuptools
+python -m pip install --upgrade --force-reinstall Pillow
 python -m pip install .
 
 python -m pip install pyinstaller==5.13.2

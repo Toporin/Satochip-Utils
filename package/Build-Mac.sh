@@ -29,6 +29,13 @@ ls -l dist/satochip_utils.app/Contents/MacOS/
 chmod +x dist/satochip_utils.app/Contents/MacOS/satochip_utils
 ls -l dist/satochip_utils.app/Contents/MacOS/
 
+echo copy tcl lib
+ls -l /usr/local/Cellar/tcl-tk/8.6.14/lib/tcl8.6
+mkdir -p dist/satochip_utils.app/Contents/lib/tcl8.6
+cp -R /usr/local/Cellar/tcl-tk/8.6.14/lib/tcl8.6 dist/satochip_utils.app/Contents/lib/tcl8.6
+ls -l dist/satochip_utils.app/Contents/lib/tcl8.6
+ls -l dist/satochip_utils.app/Contents/MacOS/
+
 setopt +o nomatch
 rm -Rf dist/satochip_utils.app/Contents/MacOS/*-info
 rm -Rf dist/satochip_utils.app/Contents/Resources/*-info

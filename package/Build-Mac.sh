@@ -38,17 +38,17 @@ ls -l dist/satochip_utils.app/Contents/MacOS/
 #echo search tcl tk
 #ls -R /usr/local/Cellar/tcl-tk/
 
-echo copy tcl lib
-ls -l /usr/local/Cellar/tcl-tk/8.6.14/lib/tcl8.6
-mkdir -p dist/satochip_utils.app/Contents/lib/tcl8.6
-cp -R /usr/local/Cellar/tcl-tk/8.6.14/lib/tcl8.6/ dist/satochip_utils.app/Contents/lib/tcl8.6
-ls -l dist/satochip_utils.app/Contents/lib/tcl8.6
+#echo copy tcl lib
+#ls -l /usr/local/Cellar/tcl-tk/8.6.14/lib/tcl8.6
+#mkdir -p dist/satochip_utils.app/Contents/lib/tcl8.6
+#cp -R /usr/local/Cellar/tcl-tk/8.6.14/lib/tcl8.6/ dist/satochip_utils.app/Contents/lib/tcl8.6
+#ls -l dist/satochip_utils.app/Contents/lib/tcl8.6
 
-echo copy tk
-ls -l /usr/local/Cellar/tcl-tk/8.6.14/lib/tk8.6
-mkdir -p dist/satochip_utils.app/Contents/lib/tk8.6
-cp -R /usr/local/Cellar/tcl-tk/8.6.14/lib/tk8.6/ dist/satochip_utils.app/Contents/lib/tk8.6
-ls -l dist/satochip_utils.app/Contents/lib/tk8.6
+#echo copy tk
+#ls -l /usr/local/Cellar/tcl-tk/8.6.14/lib/tk8.6
+#mkdir -p dist/satochip_utils.app/Contents/lib/tk8.6
+#cp -R /usr/local/Cellar/tcl-tk/8.6.14/lib/tk8.6/ dist/satochip_utils.app/Contents/lib/tk8.6
+#ls -l dist/satochip_utils.app/Contents/lib/tk8.6
 
 #echo copy tcl lib to MacOs
 #cp -R /usr/local/Cellar/tcl-tk/8.6.14/lib/tcl8.6 dist/satochip_utils.app/Contents/MacOS

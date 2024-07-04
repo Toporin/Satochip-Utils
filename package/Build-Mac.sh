@@ -25,7 +25,10 @@ python -OO -m PyInstaller package/satochip_utils.spec
 deactivate
 
 rm -Rf dist/satochip_utils-bundle
+ls -l dist/satochip_utils.app/Contents/MacOS/
 chmod +x dist/satochip_utils.app/Contents/MacOS/satochip_utils
+ls -l dist/satochip_utils.app/Contents/MacOS/
+
 setopt +o nomatch
 rm -Rf dist/satochip_utils.app/Contents/MacOS/*-info
 rm -Rf dist/satochip_utils.app/Contents/Resources/*-info

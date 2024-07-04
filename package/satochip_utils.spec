@@ -82,7 +82,7 @@ exe_options = [a.scripts]
 
 if os_platform == "mac":
     bins_apart = True
-    BIN_PKG_NAME = "Satochip-Utils"
+    BIN_PKG_NAME = "satochip_utils"
 else:
     bins_apart = False
     exe_options += [a.binaries, a.zipfiles, a.datas]

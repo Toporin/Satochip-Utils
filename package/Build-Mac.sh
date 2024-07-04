@@ -29,14 +29,14 @@ ls -l dist/satochip_utils.app/Contents/MacOS/
 chmod +x dist/satochip_utils.app/Contents/MacOS/satochip_utils
 ls -l dist/satochip_utils.app/Contents/MacOS/
 
-echo DEBUG ls -l /usr/local/
-ls -l /usr/local/
-echo DEBUG ls -l /usr/local/Cellar/
-ls -l /usr/local/Cellar/
-echo DEBUG ls -l /usr/local/Cellar/
-ls -l /usr/local/Cellar/
-echo search tcl tk
-ls -R /usr/local/Cellar/tcl-tk/
+#echo DEBUG ls -l /usr/local/
+#ls -l /usr/local/
+#echo DEBUG ls -l /usr/local/Cellar/
+#ls -l /usr/local/Cellar/
+#echo DEBUG ls -l /usr/local/Cellar/
+#ls -l /usr/local/Cellar/
+#echo search tcl tk
+#ls -R /usr/local/Cellar/tcl-tk/
 
 echo copy tcl lib
 ls -l /usr/local/Cellar/tcl-tk/8.6.14/lib/tcl8.6

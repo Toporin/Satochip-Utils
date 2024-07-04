@@ -97,19 +97,19 @@ jobs:
     - name: 'Archive MacOS bin (unsigned!)'
       uses: actions/upload-artifact@v4
       with:
-        name: macdist-unsigned
+        name: macdist-x86_64-unsigned
         path: |
           dist/
 
   build_mac_arm64:
 
-    runs-on: macos-13-xlarge
+    runs-on: macos-latest
 
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
       - name: test import tkinter
         run: | 
           python3 -c 'import tkinter'
@@ -123,6 +123,6 @@ jobs:
       - name: 'Archive MacOS bin (unsigned!)'
         uses: actions/upload-artifact@v4
         with:
-          name: macdist-unsigned
+          name: macdist-arm64-unsigned
           path: |
             dist/

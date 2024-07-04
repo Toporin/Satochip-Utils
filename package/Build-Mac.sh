@@ -39,3 +39,8 @@ echo Binary result is in the dist folder.
 
 echo Now need : code sign, notarization, dmg bundling, and notarization of the bundle.
 echo DMG building requires biplist and dmgbuild.
+
+python -m pip install biplist, dmgbuild
+python -m dmgbuild -s packages/dmg_build.py
+ls -l
+ls -l dist/

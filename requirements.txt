@@ -1,20 +1,21 @@
-altgraph==0.17.4
-cffi==1.16.0
-cryptography==42.0.8
 customtkinter==5.2.2
-darkdetect==0.8.0
-ecdsa==0.19.0
 mnemonic==0.20
-packaging==24.1
-pefile==2023.2.7
 pillow==10.3.0
-pyaes==1.6.1
-pycparser==2.22
-pyinstaller==6.7.0
-pyinstaller-hooks-contrib==2024.6
-pyOpenSSL==24.1.0
 pysatochip==0.15.1
 pyscard==2.0.9
-pywin32-ctypes==0.2.2
-setuptools==69.5.1
-six==1.16.0
+# unused modules
+# pyaes==1.6.1
+# ecdsa==0.19.0
+# cryptography==42.0.8
+# pyOpenSSL==24.1.0
+# pyinstaller==6.7.0
+# pyinstaller-hooks-contrib==2024.6
+# setuptools==69.5.1
+# altgraph==0.17.4
+# cffi==1.16.0
+# darkdetect==0.8.0
+# packaging==24.1
+# pefile==2023.2.7
+# pycparser==2.22
+# pywin32-ctypes==0.2.2
+# six==1.16.0

@@ -37,7 +37,8 @@ def icon_from_app(app_path):
     return os.path.join(app_path, "Contents", "Resources", icon_name)
 
 
-filename = f"dist/Satochip-Utils-mac-{VERSION}.dmg"
+#filename = f"dist/Satochip-Utils-mac-{VERSION}.dmg"
+filename = f"dist/satochip_utils.dmg"
 volume_name = f"Satochip-Utils {VERSION} install disk image"
 format = defines.get("format", "UDBZ")
 compression_level = 9

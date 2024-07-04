@@ -42,6 +42,6 @@ echo DMG building requires biplist and dmgbuild.
 
 python -m pip install biplist
 python -m pip install dmgbuild
-python -m dmgbuild -s package/dmg_build.py volume_name Satochip-Utils.dmg
+python -m dmgbuild -s package/dmg_build.py volume_name satochip_utils.dmg
 ls -l
 ls -l dist/

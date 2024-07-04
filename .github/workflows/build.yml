@@ -85,11 +85,9 @@ jobs:
       with:
         python-version: '3.11'
     - name: test import tkinter
-      run: python3 -c 'import tkinter' #python -m tkinter -c "tkinter._test()" #
+      run: python3 -c 'import tkinter'
     - name: Install dependencies
       run: |
-#        brew reinstall tcl-tk
-#        brew link tcl-tk --force
         brew install python-tk
     - name: Build bin package
       run: |
@@ -113,11 +111,10 @@ jobs:
         with:
           python-version: '3.11'
       - name: test import tkinter
-        run: python3 -c 'import tkinter' #python -m tkinter -c "tkinter._test()" #
+        run: | 
+          python3 -c 'import tkinter'
       - name: Install dependencies
         run: |
-#          brew reinstall tcl-tk
-#          brew link tcl-tk --force
           brew install python-tk
       - name: Build bin package
         run: |

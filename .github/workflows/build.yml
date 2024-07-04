@@ -67,7 +67,7 @@ jobs:
         sudo apt install -y python3-venv python3-pip python3-pyscard
     - name: Build bin package
       run: |
-        xvfb-run --server-args='-screen 0, 1024x768x24' bash package/Build-Linux.sh
+        xvfb-run --server-args='-screen 0, 1024x768x24' bash package/Build-Linux-legacy.sh
     - name: 'Archive linux bin (unsigned!)'
       uses: actions/upload-artifact@v4
       with:

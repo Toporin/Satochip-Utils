@@ -43,12 +43,16 @@ datai = [
     ("../pictures_db/*", "pictures_db/"),
 ]
 
+hiddeni = []
+if os_platform == "linux":
+    hiddeni += ["PIL._tkinter_finder"]
+
 a = Analysis(
     ["../satochip_utils.py"],
     pathex=[current_path],
     binaries=[],
     datas=datai,
-    hiddenimports=[],
+    hiddenimports=hiddeni,
     hookspath=[],
     runtime_hooks=[],
 #    excludes=[

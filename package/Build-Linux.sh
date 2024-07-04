@@ -14,7 +14,7 @@ function is_installed {
     fi
 }
 
-softs_req=('libnotify4' 'libgtk-3-0' 'libpcsclite-dev' 'libsdl2-dev' 'python3-venv' 'python3-pip')
+softs_req=('libnotify4' 'libgtk-3-0' 'libpcsclite-dev' 'libsdl2-dev' 'python3-venv' 'python3-pip' 'python3-tk')
 
 for softr in "${softs_req[@]}"; do
   if [ "$(is_installed $softr)" == 'not' ]; then

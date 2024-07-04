@@ -84,6 +84,10 @@ jobs:
     - uses: actions/setup-python@v5
       with:
         python-version: '3.9'
+    - name: Install dependencies
+      run: |
+        brew install tcl-tk
+        brew install python-tk
     - name: Build bin package
       run: |
         chmod +x ./package/Build-Mac.sh

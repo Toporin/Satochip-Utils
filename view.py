@@ -3,6 +3,8 @@ import sys
 import os
 import time
 import tkinter
+from typing import Optional, Dict, Callable, Any, Tuple
+
 import customtkinter
 from customtkinter import CTkImage
 import webbrowser
@@ -10,6 +12,8 @@ from PIL import Image, ImageTk
 from pysatochip.version import PYSATOCHIP_VERSION
 
 from controller import Controller
+from exceptions import MenuCreationError, MenuDeletionError, ViewError, ButtonCreationError
+from log_config import SUCCESS, log_method
 from version import VERSION
 
 if (len(sys.argv) >= 2) and (sys.argv[1] in ['-v', '--verbose']):
@@ -24,27 +28,34 @@ else:
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+# Constants
+BG_MAIN_MENU = "#21283b"
+BG_BUTTON = "#e1e1e0"
+BG_HOVER_BUTTON = "grey"
+BUTTON_TEXT_COLOR = "white"
+DEFAULT_BG_COLOR = "whitesmoke"
+HIGHLIGHT_COLOR = "#D3D3D3"
 MAIN_MENU_COLOR = "#202738"
 BUTTON_COLOR = "#e1e1e0"
 HOVER_COLOR = "grey"
 TEXT_COLOR = "black"
 
-ICON_PATH = "./pictures_db/icon_"
-
-#APP_VERSION = "0.1.0"
-
+#ICON_PATH = "./pictures_db/icon_"
+ICON_PATH = "./pictures_db/"
 
 class View(customtkinter.CTk):
     def __init__(self, loglevel=logging.INFO):
         try:
+            logger.setLevel(loglevel)
+            logger.debug("Log level set to INFO")
             logger.info("Starting View.__init__()")
             super().__init__()
 
             # status infos
             self.welcome_in_display = True
 
-            logger.setLevel(loglevel)
-            logger.debug("Log level set to INFO")
+            # seedkeeper state
+            self.in_backup_process = False
 
             try:
                 logger.info("Initializing controller")
@@ -79,6 +90,8 @@ class View(customtkinter.CTk):
                 self.button = None
                 self.finish_button = None
                 self.menu = None
+                #self.main_menu = None
+                #self.seedkeeper_menu = None
                 self.counter = None
                 self.display_menu = False
                 logger.debug("Widgets declared successfully")
@@ -292,7 +305,7 @@ class View(customtkinter.CTk):
             logger.error(f"An unexpected error occurred in create_an_header: {e}", exc_info=True)
 
     def create_an_header_for_welcome(self, title_text: str = None, icon_name: str = None, label_text: str = None):
-        icon_path = f"./pictures_db/icon_logo.png"
+        icon_path = f"./pictures_db/welcome_logo.png"
         frame = customtkinter.CTkFrame(self.current_frame, width=380, height=178, bg_color='white')
         frame.place(relx=0.1, rely=0.03, anchor='nw')
 
@@ -521,6 +534,62 @@ class View(customtkinter.CTk):
             logger.error(f"An unexpected error occurred in create_button_for_main_menu_item: {e}", exc_info=True)
             return None
 
+    def _create_button_for_main_menu_item( # todo merge with create_button_for_main_menu_item
+            self,
+            frame: customtkinter.CTkFrame,
+            button_label: str,
+            icon_name: str,
+            rel_y: float,
+            rel_x: float,
+            state: str,
+            command: Optional[Callable] = None,
+            text_color: str = 'white',
+    ) -> Optional[customtkinter.CTkButton]:
+        try:
+            logger.info(f"001 Starting main menu button creation for '{button_label}'")
+
+            icon_path = f"{ICON_PATH}{icon_name}"
+            try:
+                image = Image.open(icon_path)
+                image = image.resize((25, 25), Image.LANCZOS)
+                photo_image = customtkinter.CTkImage(image)
+                logger.debug(f"002 Icon loaded and resized: {icon_path}")
+            except FileNotFoundError:
+                logger.error(f"003 Icon file not found: {icon_path}")
+                raise ButtonCreationError(f"004 Failed to load icon: {icon_path}")
+            except IOError as e:
+                logger.error(f"005 Error processing icon: {e}")
+                raise ButtonCreationError(f"006 Failed to process icon: {e}") from e
+
+            try:
+                button = customtkinter.CTkButton(
+                    frame,
+                    text=button_label,
+                    text_color=text_color if text_color != "white" else "white",
+                    font=customtkinter.CTkFont(family="Outfit", weight="normal", size=18),
+                    image=photo_image,
+                    bg_color=BG_MAIN_MENU,
+                    fg_color=BG_MAIN_MENU,
+                    hover_color=BG_MAIN_MENU,
+                    compound="left",
+                    cursor="hand2",
+                    command=command,
+                    state=state
+                )
+                button.image = photo_image  # keep a reference!
+                button.place(rely=rel_y, relx=rel_x, anchor="e")
+                logger.debug(f"007 Button created and placed: {button_label}")
+            except Exception as e:
+                logger.error(f"008 Error while creating button: {e}")
+                raise ButtonCreationError(f"009 Failed to create button: {e}") from e
+
+            logger.log(SUCCESS, f"010 Main menu button '{button_label}' created successfully")
+            return button
+
+        except Exception as e:
+            logger.error(f"011 Unexpected error creating button: {e}")
+            raise ButtonCreationError(f"012 Failed to create button: {e}") from e
+
     def create_entry(self, show_option: str = None) -> customtkinter.CTkEntry:
         try:
             logger.debug("Entering create_entry method")
@@ -731,8 +800,8 @@ class View(customtkinter.CTk):
                 try:
                     logger.info("Refreshing main menu")
                     menu_frame.destroy()
-                    main_menu = self.main_menu()
-                    main_menu.place(relx=0.250, rely=0.5, anchor="e")
+                    self.menu = self.main_menu()
+                    self.menu.place(relx=0.250, rely=0.5, anchor="e")
                 except Exception as e:
                     logger.error(f"An error occurred in refresh_main_menu: {e}", exc_info=True)
 
@@ -906,6 +975,207 @@ class View(customtkinter.CTk):
             logger.error(f"An error occurred in main_menu: {e}", exc_info=True)
 
     ################################
+    """ SEEDKEEPER MENU """
+
+    def create_seedkeeper_menu(self):
+        try:
+            logger.info("001 Starting Seedkeeper menu creation")
+            self.menu = self._seedkeeper_lateral_menu()
+            logger.debug("002 Seedkeeper lateral menu created")
+            self.menu.place(relx=0.250, rely=0.5, anchor="e")
+            logger.debug("003 Seedkeeper menu placed")
+            logger.log(SUCCESS, "004 Seedkeeper menu created and placed successfully")
+        except Exception as e:
+            logger.error(f"005 Error in create_seedkeeper_menu: {e}", exc_info=True)
+            raise MenuCreationError(f"006 Failed to create Seedkeeper menu: {e}") from e
+
+    def _seedkeeper_lateral_menu(
+            self,
+            state=None,
+            frame=None
+    ) -> customtkinter.CTkFrame:
+        try:
+            logger.info("001 Starting Seedkeeper lateral menu creation")
+            if self.menu:
+                self.menu.destroy()
+                logger.debug("002 Existing menu destroyed")
+
+            if state is None:
+                state = "normal" if self.controller.cc.card_present else "disabled"
+                logger.info(
+                    f"003 Card {'detected' if state == 'normal' else 'undetected'}, setting state to {state}")
+
+            menu_frame = customtkinter.CTkFrame(self.main_frame, width=250, height=600,
+                                                bg_color=BG_MAIN_MENU,
+                                                fg_color=BG_MAIN_MENU, corner_radius=0, border_color="black",
+                                                border_width=0)
+            logger.debug("004 Main menu frame created")
+
+            # Logo section
+            image_frame = customtkinter.CTkFrame(menu_frame, bg_color=BG_MAIN_MENU, fg_color=BG_MAIN_MENU,
+                                                 width=284, height=126)
+            image_frame.place(rely=0, relx=0.5, anchor="n")
+            logo_image = Image.open("./pictures_db/logo.png")
+            logo_photo = ImageTk.PhotoImage(logo_image)
+            canvas = customtkinter.CTkCanvas(image_frame, width=284, height=127, bg=BG_MAIN_MENU,
+                                             highlightthickness=0)
+            canvas.pack(fill="both", expand=True)
+            canvas.create_image(142, 63, image=logo_photo, anchor="center")
+            canvas.image = logo_photo  # conserver une référence
+            logger.debug("005 Logo section created")
+
+            if self.controller.cc.card_present:
+                logger.log(SUCCESS, "006 Card Present")
+            else:
+                logger.error(f"007 Card not present")
+
+            # Menu items
+            self._create_button_for_main_menu_item(menu_frame,
+                                                   "My secrets" if self.controller.cc.card_present else "Insert card",
+                                                   "secrets.png" if self.controller.cc.card_present else "insert_card.jpg",
+                                                   0.26, 0.585 if self.controller.cc.card_present else 0.578,
+                                                   state=state,
+                                                   command=self.show_view_my_secrets if self.controller.cc.card_present else None)
+            self._create_button_for_main_menu_item(menu_frame, "Generate",
+                                                   "generate.png" if self.controller.cc.card_present else "generate_locked.png",
+                                                   0.33, 0.56, state=state,
+                                                   command=self.show_view_generate_secret if self.controller.cc.card_present else None,
+                                                   text_color="white" if self.controller.cc.card_present else "grey")
+            self._create_button_for_main_menu_item(menu_frame, "Import",
+                                                   "import.png" if self.controller.cc.card_present else "import_locked.png",
+                                                   0.40, 0.51, state=state,
+                                                   command=self.show_view_import_secret if self.controller.cc.card_present else None,
+                                                   text_color="white" if self.controller.cc.card_present else "grey")
+            self._create_button_for_main_menu_item(menu_frame, "Logs",
+                                                   "logs.png" if self.controller.cc.card_present else "settings_locked.png", # todo icon when locked
+                                                   0.47, 0.49, state=state,
+                                                   command=self.show_view_logs if self.controller.cc.card_present else None,
+                                                   text_color="white" if self.controller.cc.card_present else "grey")
+            self._create_button_for_main_menu_item(menu_frame, "Settings",
+                                                   "settings.png" if self.controller.cc.card_present else "settings_locked.png",
+                                                   0.74, 0.546, state=state,
+                                                   command=self.about if self.controller.cc.card_present else None,
+                                                   text_color="white" if self.controller.cc.card_present else "grey")
+            self._create_button_for_main_menu_item(menu_frame, "Help", "help.png", 0.81, 0.49, state='normal',
+                                                   command=self.show_view_help, text_color="white")
+            self._create_button_for_main_menu_item(menu_frame, "Go to the webshop", "webshop.png", 0.95, 0.82,
+                                                   state='normal',
+                                                   command=lambda: webbrowser.open("https://satochip.io/shop/",
+                                                                                   new=2))
+            logger.debug("008 Menu items created")
+            logger.log(SUCCESS, "009 Seedkeeper lateral menu created successfully")
+            return menu_frame
+        except Exception as e:
+            logger.error(f"010 Unexpected error in _seedkeeper_lateral_menu: {e}", exc_info=True)
+            raise MenuCreationError(f"011 Failed to create Seedkeeper lateral menu: {e}") from e
+
+    @log_method
+    def _delete_seedkeeper_menu(self):
+        try:
+            logger.info("001 Starting Seedkeeper menu deletion")
+            if hasattr(self, 'menu') and self.menu:
+                self.menu.destroy()
+                logger.debug("002 Menu widget destroyed")
+                self.menu = None
+                logger.debug("003 Menu attribute set to None")
+            logger.log(SUCCESS, "004 Seedkeeper menu deleted successfully")
+        except Exception as e:
+            logger.error(f"005 Unexpected error in _delete_seedkeeper_menu: {e}", exc_info=True)
+            raise MenuDeletionError(f"006 Failed to delete Seedkeeper menu: {e}") from e
+
+    ####################################################################################################################
+    """ METHODS TO DISPLAY A VIEW FROM SEEDKEEPER MENU SELECTION """
+
+    # SEEDKEEPER MENU SELECTION
+    @log_method
+    def show_view_my_secrets(self):
+        try:
+            self.in_backup_process = False
+            logger.info("001 Initiating show secrets process")
+            self.welcome_in_display = False
+            self._clear_welcome_frame()
+            self._clear_current_frame()
+            logger.debug("002 Welcome frame cleared")
+            secrets_data = self.controller.retrieve_secrets_stored_into_the_card()
+            for header in secrets_data['headers']:
+                logger.debug(f"Header: {header}")
+            if self.status['protocol_version'] > 1:
+                for secret in secrets_data['headers']:
+                    if secret['type'] == "Public Key":
+                        self.controller.cc.seedkeeper_reset_secret(secret['id'])
+            logger.debug("003 Secrets data retrieved from card")
+            self.view_my_secrets(secrets_data)
+            logger.log(SUCCESS, "004 Secrets displayed successfully")
+        except Exception as e:
+            logger.error(f"005 Error in show_secrets: {e}", exc_info=True)
+            raise ViewError(f"006 Failed to show secrets: {e}") from e
+
+    @log_method
+    def show_view_generate_secret(self):
+        try:
+            self.in_backup_process = False
+            logger.info("001 Initiating secret generation process")
+            self.welcome_in_display = False
+            logger.debug("002 Welcome frame cleared")
+            self._clear_current_frame()
+            self.view_generate_secret()
+            logger.log(SUCCESS, "003 Secret generation process initiated")
+        except Exception as e:
+            logger.error(f"004 Error in show_generate_secret: {e}", exc_info=True)
+            raise ViewError(f"005 Failed to show generate secret: {e}")
+
+    @log_method
+    def show_view_import_secret(self):
+        try:
+            self.in_backup_process = False
+            logger.info("001 Initiating secret import process")
+            self.welcome_in_display = False
+            self._clear_current_frame()
+            logger.debug("002 Welcome frame cleared")
+            self.view_import_secret()
+            logger.log(SUCCESS, "002 Secret import process initiated")
+        except Exception as e:
+            logger.error(f"003 Error in import_secret: {e}", exc_info=True)
+            raise ViewError(f"004 Failed to import secret: {e}") from e
+
+    @log_method
+    def show_view_logs(self):
+        self.in_backup_process = False
+        total_number_of_logs, total_number_available_logs, logs = self.controller.get_logs()
+        self.view_logs_details(logs)
+
+    @log_method
+    def show_view_settings(self):
+        try:
+            self.in_backup_process = False
+            logger.info("001 Displaying settings")
+            self._delete_seedkeeper_menu()
+            logger.debug("002 Seedkeeper menu deleted")
+            self.view_start_setup()
+            logger.debug("003 Setup started")
+            self.create_satochip_utils_menu()
+            logger.debug("004 Satochip utils menu created")
+            logger.log(SUCCESS, "005 Settings displayed successfully")
+        except Exception as e:
+            logger.error(f"006 Error in show_settings: {e}", exc_info=True)
+            raise ViewError(f"007 Failed to show settings: {e}") from e
+
+    @log_method
+    def show_view_help(self):
+        try:
+            logger.info("001 Displaying help information")
+            self.in_backup_process = False
+            self.welcome_in_display = False
+            self._clear_current_frame()
+            self._clear_welcome_frame()
+            logger.debug("002 Welcome and current frames cleared")
+            self.view_help()
+            logger.log(SUCCESS, "003 Help information displayed successfully")
+        except Exception as e:
+            logger.error(f"003 Error in show_help: {e}", exc_info=True)
+            raise ViewError(f"004 Failed to show help: {e}") from e
+
+    ################################
     """ UTILS FOR CARD CONNECTOR """
 
     def update_status(self, isConnected=None):
@@ -984,7 +1254,7 @@ class View(customtkinter.CTk):
 
             try:
                 # Ajout d'un label avec une image dans le popup
-                icon_image = Image.open("./pictures_db/icon_change_pin_popup.jpg")
+                icon_image = Image.open("./pictures_db/change_pin_popup.jpg")
                 icon = customtkinter.CTkImage(light_image=icon_image, size=(20, 20))
                 icon_label = customtkinter.CTkLabel(popup, image=icon, text=f"\nEnter the PIN code of your card.",
                                                     compound='top',
@@ -1083,13 +1353,13 @@ class View(customtkinter.CTk):
             self.canvas.create_image(0, 0, image=self.background_photo, anchor="nw")
             logger.debug("New frame and background created and placed")
 
-            '''self.satochip_logo = View.create_background_photo(self, "./pictures_db/icon_logo.png")
-            self.canvas_logo = View.create_canvas(self)
-            self.canvas.place(relx=0.5, rely=0.5, anchor="center")
-            self.canvas.create_image(0, 0, image=self.satochip_logo, anchor="nw")'''
+            # self.satochip_logo = View.create_background_photo(self, "./pictures_db/icon_logo.png")
+            # self.canvas_logo = View.create_canvas(self)
+            # self.canvas.place(relx=0.5, rely=0.5, anchor="center")
+            # self.canvas.create_image(0, 0, image=self.satochip_logo, anchor="nw")
 
             logger.debug("Creating header for welcome")
-            self.create_an_header_for_welcome('SATOCHIP', 'logo.png', 'Secure the future.')
+            self.create_an_header_for_welcome('SATOCHIP', 'welcome_logo.png', 'Secure the future.') # todo args not used remove
             logger.debug("Header created and placed")
 
             logger.debug("Setting up labels")
@@ -1187,10 +1457,16 @@ class View(customtkinter.CTk):
             self.label.place(relx=0.33, rely=0.32, anchor="w")
             logger.debug("Labels created and placed")
 
-            logger.debug("Creating main menu")
-            main_menu = self.main_menu()
-            main_menu.place(relx=0.250, rely=0.5, anchor="e")
-            logger.debug("Main menu created and placed")
+            if self.controller.cc.card_type == "SeedKeeper":
+                logger.debug("Creating Seedkeeper menu")
+                menu = self.create_seedkeeper_menu()
+                menu.place(relx=0.250, rely=0.5, anchor="e")
+                logger.debug("Seedkeeper menu created and placed")
+            else:
+                logger.debug("Creating main menu")
+                menu = self.main_menu()
+                menu.place(relx=0.250, rely=0.5, anchor="e")
+                logger.debug("Main menu created and placed")
 
         except Exception as e:
             message = f"An unexpected error occurred in start_setup: {e}"
@@ -1224,10 +1500,10 @@ class View(customtkinter.CTk):
             try:
                 logger.debug("Creating main menu")
                 if not self.controller.cc.setup_done:
-                    main_menu = self.main_menu('disabled')
+                    menu = self.main_menu('disabled')
                 else:
-                    main_menu = self.main_menu()
-                main_menu.place(relx=0.250, rely=0.5, anchor="e")
+                    menu = self.main_menu()
+                menu.place(relx=0.250, rely=0.5, anchor="e")
                 logger.debug("Main menu created and placed")
             except Exception as e:
                 logger.error(f"An error occurred while creating main menu: {e}", exc_info=True)
@@ -1316,8 +1592,8 @@ class View(customtkinter.CTk):
 
             try:
                 logger.debug("Creating main menu")
-                main_menu = self.main_menu(state='disabled')
-                main_menu.place(relx=0.250, rely=0.5, anchor="e")
+                menu = self.main_menu(state='disabled')
+                menu.place(relx=0.250, rely=0.5, anchor="e")
                 logger.debug("Main menu created and placed")
             except Exception as e:
                 logger.error(f"An error occurred while creating main menu: {e}", exc_info=True)
@@ -1552,8 +1828,8 @@ class View(customtkinter.CTk):
 
             try:
                 logger.debug("Creating main menu")
-                main_menu = self.main_menu()
-                main_menu.place(relx=0.250, rely=0.5, anchor="e")
+                menu = self.main_menu()
+                menu.place(relx=0.250, rely=0.5, anchor="e")
                 logger.debug("Main menu created and placed")
             except Exception as e:
                 logger.error(f"An error occurred while creating main menu: {e}", exc_info=True)
@@ -1652,8 +1928,8 @@ class View(customtkinter.CTk):
 
             try:
                 logger.debug("Creating main menu")
-                main_menu = self.main_menu()
-                main_menu.place(relx=0.250, rely=0.5, anchor="e")
+                menu = self.main_menu()
+                menu.place(relx=0.250, rely=0.5, anchor="e")
                 logger.debug("Main menu created and placed")
             except Exception as e:
                 logger.error(f"An error occurred while creating main menu: {e}", exc_info=True)
@@ -1781,7 +2057,7 @@ class View(customtkinter.CTk):
                 text.place(relx=0.33, rely=0.27, anchor="w")
                 if self.controller.cc.card_present:
                     if is_authentic:
-                        icon_image = Image.open("./pictures_db/icon_genuine_card.jpg")
+                        icon_image = Image.open("./pictures_db/genuine_card.jpg")
                         icon = customtkinter.CTkImage(light_image=icon_image, size=(30, 30))
                         icon_label = customtkinter.CTkLabel(self.current_frame, image=icon,
                                                             text=f"Your card is authentic. ",
@@ -1791,7 +2067,7 @@ class View(customtkinter.CTk):
                                                                                        weight="normal"))
                         icon_label.place(relx=0.4, rely=0.267, anchor="w")
                     else:
-                        icon_image = Image.open("./pictures_db/icon_not_genuine_card.jpg")
+                        icon_image = Image.open("./pictures_db/not_genuine_card.jpg")
                         icon = customtkinter.CTkImage(light_image=icon_image, size=(30, 30))
                         icon_label = customtkinter.CTkLabel(self.current_frame, image=icon,
                                                             text=f"Your card is not authentic. ",
@@ -1913,21 +2189,21 @@ class View(customtkinter.CTk):
                     self.controller.cc.card_disconnect()
                     msg = 'The card has been reset to factory\nRemaining counter: 0'
                     self.show('SUCCESS', msg, "Ok", lambda: self.restart_app(),
-                              "./pictures_db/icon_reset_popup.jpg")
+                              "./pictures_db/reset_popup.jpg")
                     logger.info("Card has been reset to factory. Counter set to 0.")
                 elif sw1 == 0xFF and sw2 == 0xFF:
                     logger.info("Factory reset aborted. The card must be removed after each reset.")
                     msg = 'RESET ABORTED!\n Remaining counter: MAX.'
                     self.show('ABORTED', msg, "Ok",
                               lambda: [self.controller.cc.set_mode_factory_reset(False), self.start_setup()],
-                              "./pictures_db/icon_reset_popup.jpg")
+                              "./pictures_db/reset_popup.jpg")
                     logger.info("Reset aborted. Counter set to MAX.")
                 elif sw1 == 0xFF and sw2 > 0x00:
                     logger.info(f"Factory reset in progress. Remaining counter: {sw2}")
                     self.counter = str(sw2) + "/4"
                     msg = f"Please follow the instruction bellow.\n{self.counter}"
                     self.show('IN PROGRESS', msg, "Remove card", lambda: self.click_reset_button(),
-                              "./pictures_db/icon_reset_popup.jpg")
+                              "./pictures_db/reset_popup.jpg")
                     self.show_button.configure(state='disabled')
 
                     logger.info("Card needs to be removed and reinserted to continue.")
@@ -1935,13 +2211,13 @@ class View(customtkinter.CTk):
                     logger.info("Factory reset failed with error code 0x6F00.")
                     self.counter = "Unknown error " + str(hex(256 * sw1 + sw2))
                     msg = f"The factory reset failed\n{self.counter}"
-                    self.show('FAILED', msg, "Ok", None, "./pictures_db/icon_reset_popup.jpg")
+                    self.show('FAILED', msg, "Ok", None, "./pictures_db/reset_popup.jpg")
 
                 elif sw1 == 0x6D and sw2 == 0x00:
                     logger.info("Factory reset failed with error code 0x6D00.")
                     self.counter = "Instruction not supported - error code: " + str(hex(256 * sw1 + sw2))
                     msg = f"The factory reset failed\n{self.counter}"
-                    self.show('FAILED', msg, "Ok", None,"./pictures_db/icon_reset_popup.jpg")
+                    self.show('FAILED', msg, "Ok", None,"./pictures_db/reset_popup.jpg")
 
             except Exception as e:
                 logger.error(f"An error occurred while processing the factory reset response: {e}", exc_info=True)
@@ -2037,7 +2313,7 @@ class View(customtkinter.CTk):
                     try:
                         msg = f"Please follow the instruction bellow."
                         self.show('IN PROGRESS', msg, "Remove card", lambda: self.click_reset_button(),
-                                  "./pictures_db/icon_reset_popup.jpg")
+                                  "./pictures_db/reset_popup.jpg")
                         self.show_button.configure(state='disabled')
                     except Exception as e:
                         logger.error(f"An error occurred while quitting and redirecting: {e}", exc_info=True)
@@ -2051,8 +2327,8 @@ class View(customtkinter.CTk):
                                                        lambda: click_start_button())
                 self.reset_button.place(relx=0.85, rely=0.9, anchor="w")
 
-                main_menu = self.main_menu()
-                main_menu.place(relx=0.250, rely=0.5, anchor="e")
+                menu = self.main_menu()
+                menu.place(relx=0.250, rely=0.5, anchor="e")
 
             except Exception as e:
                 logger.error(f"An error occurred while creating quit button: {e}", exc_info=True)
@@ -2094,8 +2370,8 @@ class View(customtkinter.CTk):
 
             try:
                 logger.debug("Creating main menu")
-                main_menu = self.main_menu()
-                main_menu.place(relx=0.250, rely=0.5, anchor="e")
+                menu = self.main_menu()
+                menu.place(relx=0.250, rely=0.5, anchor="e")
                 logger.debug("Main menu created and placed")
             except Exception as e:
                 logger.error(f"An error occurred while creating main menu: {e}", exc_info=True)
@@ -2109,7 +2385,7 @@ class View(customtkinter.CTk):
 
                 self.header.place(relx=0.32, rely=0.05, anchor="nw")
 
-                self.background_photo = View.create_background_photo(self, "./pictures_db/about.png")
+                self.background_photo = View.create_background_photo(self, "./pictures_db/about_background.png")
                 self.canvas = View.create_canvas(self)
                 self.canvas.place(relx=0.250, rely=0.501, anchor="w")
                 self.canvas.create_image(0, 0, image=self.background_photo, anchor="nw")
@@ -2219,3 +2495,5 @@ class View(customtkinter.CTk):
                 logger.error(f"An error occurred while creating header: {e}", exc_info=True)
         except Exception as e:
             logger.error(f"An error occurred while creating header: {e}", exc_info=True)
+
+

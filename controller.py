@@ -71,16 +71,16 @@ class Controller:
                 else:
                     logger.warning("Setup my card PIN: PINs do not match.")
                     self.view.show('ERROR', "Pin and pin confirm do not match!", 'Ok',
-                                   None, "./pictures_db/icon_change_pin_popup.jpg")
+                                   None, "./pictures_db/change_pin_popup.jpg")
             else:
                 logger.warning("Setup my card PIN: PIN is too short.")
                 self.view.show("ERROR",
                                "Pin must contain at least 4 characters",
                                'Ok', None,
-                               "./pictures_db/icon_change_pin_popup.jpg")
+                               "./pictures_db/change_pin_popup.jpg")
         else:
             self.view.show("ERROR", "You have to set up a PIN to continue.", 'Ok',
-                           None, "./pictures_db/icon_change_pin_popup.jpg")
+                           None, "./pictures_db/change_pin_popup.jpg")
 
     def change_card_pin(self, current_pin, new_pin, new_pin_confirm):
         try:
@@ -90,14 +90,14 @@ class Controller:
                     logger.warning("New PIN is too short.")
                     self.view.show("ERROR",
                                    "Pin must contain at least 4 characters", 'Ok',
-                                   None, "./pictures_db/icon_change_pin_popup.jpg")
+                                   None, "./pictures_db/change_pin_popup.jpg")
 
                 if new_pin != new_pin_confirm:
                     logger.warning("New PINs do not match.")
                     self.view.show("WARNING",
                                    "The PIN values do not match! Please type PIN again!",
                                    "Ok", None,
-                                   "./pictures_db/icon_change_pin_popup.jpg")
+                                   "./pictures_db/change_pin_popup.jpg")
                 else:
                     current_pin = list(current_pin.encode('utf8'))
                     new_pin = list(new_pin.encode('utf8'))
@@ -106,17 +106,17 @@ class Controller:
                         logger.info("PIN changed successfully.")
                         msg = "PIN changed successfully!"
                         self.view.show("SUCCESS", msg, 'Ok',
-                                       None, "./pictures_db/icon_change_pin_popup.jpg")
+                                       None, "./pictures_db/change_pin_popup.jpg")
                         self.view.start_setup()
                     else:
                         logger.error(f"Failed to change PIN with error code: {hex(sw1)}{hex(sw2)}")
                         msg = f"Failed to change PIN with error code: {hex(sw1)}{hex(sw2)}"
                         self.view.show("ERROR", f"{msg}\n Probably too long", 'Ok',
-                                       None, "./pictures_db/icon_change_pin_popup.jpg")
+                                       None, "./pictures_db/change_pin_popup.jpg")
         except Exception as e:
             logger.error(f"Error changing PIN: {e}")
             self.view.show("ERROR", "Failed to change PIN.", "Ok",
-                           None, "./pictures_db/icon_change_pin_popup.jpg")
+                           None, "./pictures_db/change_pin_popup.jpg")
 
     def generate_random_seed(self, mnemonic_length):
         try:
@@ -156,12 +156,12 @@ class Controller:
                 self.view.show('WARNING',
                                "Warning!\nInvalid BIP39 seedphrase, please retry.",
                                'Ok', None,
-                               "./pictures_db/icon_seed_popup.jpg")
+                               "./pictures_db/seed_popup.jpg")
 
         except Exception as e:
             logger.error(f"Error while importing seed: {e}")
             self.view.show("ERROR", "Failed to import seed.", "Ok", None,
-                           "./pictures_db/icon_seed_popup.jpg")
+                           "./pictures_db/seed_popup.jpg")
 
     def edit_label(self, label):
         try:
@@ -172,16 +172,16 @@ class Controller:
                 self.view.show("SUCCESS",
                                f"New label set successfully",
                                "Ok", self.view.start_setup(),
-                               "./pictures_db/icon_edit_label_popup.jpg")
+                               "./pictures_db/edit_label_popup.jpg")
             else:
                 logger.warning("Failed to set new label.")
                 self.view.show("ERROR", f"Failed to set label (code {hex(sw1*256+sw2)})", "oK",
-                               None, "./pictures_db/icon_edit_label_popup.jpg")
+                               None, "./pictures_db/edit_label_popup.jpg")
 
         except Exception as e:
             logger.error(f"Failed to edit label: {e}")
             self.view.show("ERROR", f"Failed to edit label: {e}", "Ok", None,
-                           "./pictures_db/icon_edit_label_popup.jpg")
+                           "./pictures_db/edit_label_popup.jpg")
 
     def get_card_label_infos(self):
         """Get label info"""
@@ -221,19 +221,19 @@ class Controller:
                                        'Device cannot be unlocked without PIN code!',
                                        'Ok',
                                        lambda: switch_unlock_to_false_and_quit(),
-                                       "./pictures_db/icon_change_pin_popup.jpg")
+                                       "./pictures_db/change_pin_popup.jpg")
                         break
 
                     elif len(pin) < 4:
                         logger.warning("PIN length is less than 4 characters")
                         msg = "PIN must have at least 4 characters."
                         self.view.show("INFO", msg, 'Ok', None,
-                                       "./pictures_db/icon_change_pin_popup.jpg")
+                                       "./pictures_db/change_pin_popup.jpg")
                     elif len(pin) > 16:
                         logger.warning("PIN length is more than 16 characters")
                         msg = "PIN must have maximum 16 characters."
                         self.view.show("INFO", msg, 'Ok', None,
-                                       "./pictures_db/icon_change_pin_popup.jpg")
+                                       "./pictures_db/change_pin_popup.jpg")
                     else:
                         logger.info("PIN length is valid")
                         pin = pin.encode('utf8')
@@ -243,7 +243,7 @@ class Controller:
                         except Exception as e:
                             logger.info(f"exception from PIN dialog: {e}")
                             self.view.show('ERROR', str(e), 'Ok', None,
-                                           "./pictures_db/icon_change_pin_popup.jpg")
+                                           "./pictures_db/change_pin_popup.jpg")
 
                 except Exception as e:
                     logger.error(f"An error occurred while requesting PIN: {e}", exc_info=True)
@@ -305,7 +305,7 @@ class Controller:
                                'Your card is now seeded!',
                                'Ok',
                                lambda: None,
-                               "./pictures_db/icon_seed_popup.jpg")
+                               "./pictures_db/seed_popup.jpg")
                 self.view.update_status()
                 self.view.start_setup()
 
@@ -313,4 +313,4 @@ class Controller:
                 logger.info(f"Authentikey={hex_authentikey}")
             else:
                 self.view.show('ERROR', 'Error when importing seed to Satochip!', 'Ok', None,
-                               "./pictures_db/icon_seed_popup.jpg")
+                               "./pictures_db/seed_popup.jpg")

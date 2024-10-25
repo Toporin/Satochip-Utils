@@ -2,7 +2,7 @@ import logging
 import sys
 import os
 import time
-import _tkinter
+import tkinter
 import customtkinter
 from customtkinter import CTkImage
 import webbrowser
@@ -10,6 +10,7 @@ from PIL import Image, ImageTk
 from pysatochip.version import PYSATOCHIP_VERSION
 
 from controller import Controller
+from version import VERSION
 
 if (len(sys.argv) >= 2) and (sys.argv[1] in ['-v', '--verbose']):
     logging.basicConfig(level=logging.DEBUG,
@@ -30,7 +31,7 @@ TEXT_COLOR = "black"
 
 ICON_PATH = "./pictures_db/icon_"
 
-APP_VERSION = "0.1.0"
+#APP_VERSION = "0.1.0"
 
 
 class View(customtkinter.CTk):
@@ -2204,7 +2205,7 @@ class View(customtkinter.CTk):
                 software_information = self.create_label("Software information")
                 software_information.place(relx=0.33, rely=0.81, anchor="w")
                 software_information.configure(font=self.make_text_bold())
-                app_version = self.create_label(f"Satochip-utils version: {APP_VERSION}")
+                app_version = self.create_label(f"Satochip-utils version: {VERSION}")
                 app_version.place(relx=0.33, rely=0.83)
                 pysatochip_version = self.create_label(f"Pysatochip version: {PYSATOCHIP_VERSION}")
                 pysatochip_version.place(relx=0.33, rely=0.88)

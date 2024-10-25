@@ -1,135 +1,129 @@
-name: Build Executables
+
+name: Building Satochip-Utils binaries
+
+
 on:
   push:
-    branches:
-      - main
-      - master
-      - dev
-  pull_request:
-    branches:
-      - main
-      - master
-      - dev
+    tags: '*'
+    branches: [ master, dev, test_*]
+
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
 
+  build_win:
+
+    runs-on: windows-2022
+
+    steps:
+    - uses: actions/checkout@v4
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.9'
-
-    - name: Install system dependencies (Ubuntu)
-      if: matrix.os == 'ubuntu-latest'
+        python-version: '3.10'
+        architecture: 'x64'
+    - name: Build bin package
       run: |
-        sudo apt-get update
-        sudo apt-get install -y libpcsclite-dev swig python3-tk fuse libfuse2 appstream fonts-liberation imagemagick
-
-    - name: Install system dependencies (macOS)
-      if: matrix.os == 'macos-latest'
-      run: |
-        brew install swig
-        brew install create-dmg
-
-    - name: Install system dependencies (Windows)
-      if: matrix.os == 'windows-latest'
-      run: |
-        choco install swig
-        choco install imagemagick
-
-    - name: Install Python dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install pyscard || echo "Failed to install pyscard"
-
-    - name: Verify Python dependencies
-      run: |
-        python -c "import sys; print('Python version:', sys.version)"
-        python -c "import PIL; print('Pillow version:', PIL.__version__)"
-        python -c "import tkinter; print('Tkinter is installed')"
-        python -c "import cryptography; print('Cryptography version:', cryptography.__version__)"
-        python -c "import ecdsa; print('ECDSA version:', ecdsa.__version__)"
-        python -c "import mnemonic; print('Mnemonic is installed')"
-        python -c "import pyscard; print('PyScard is installed')" || echo "PyScard is not installed"
-        python -c "import customtkinter; print('CustomTkinter version:', customtkinter.__version__)"
-        python -c "import pyaes; print('PyAES is installed')"
-        python -c "import pycparser; print('pycparser version:', pycparser.__version__)"
-
-    - name: Build executable (Windows)
-      if: matrix.os == 'windows-latest'
-      run: python build_scripts/build_windows.py
-
-    - name: Build executable (Linux)
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
-        chmod +x appimagetool-x86_64.AppImage
-        python build_scripts/build_linux.py
-        echo "Content of current directory:"
-        ls -la
-        echo "Content of AppDir:"
-        ls -R AppDir
-
-    - name: Check AppImage tool
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        ./appimagetool-x86_64.AppImage --version
-        file ./appimagetool-x86_64.AppImage
-
-    - name: List AppDir contents (Linux)
-      if: matrix.os == 'ubuntu-latest'
-      run: ls -R AppDir
-
-    - name: Check executable dependencies (Linux)
-      if: matrix.os == 'ubuntu-latest'
-      run: ldd AppDir/usr/bin/satochip_utils || echo "ldd command failed"
-
-    - name: Build executable (macOS)
-      if: matrix.os == 'macos-latest'
-      run: python build_scripts/build_macos.py
-
-    - name: Upload artifact (Windows)
-      if: success() && matrix.os == 'windows-latest'
+        cd package
+        ./Build-Windows.bat
+    - name: 'Archive windows bin (unsigned!)'
       uses: actions/upload-artifact@v4
       with:
-        name: windows-satochip_utils
-        path: dist/satochip_utils.exe
-
-    - name: Upload artifact (Linux)
-      if: success() && matrix.os == 'ubuntu-latest'
-      uses: actions/upload-artifact@v4
-      with:
-        name: linux-satochip_utils
-        path: satochip_utils.AppImage
-
-    - name: Upload artifact (macOS)
-      if: success() && matrix.os == 'macos-latest'
-      uses: actions/upload-artifact@v4
-      with:
-        name: macos-satochip_utils
-        path: dist/Satochip_Utils.dmg
-
-    - name: Upload AppDir for debugging (Linux)
-      if: failure() && matrix.os == 'ubuntu-latest'
-      uses: actions/upload-artifact@v4
-      with:
-        name: linux-appdir
-        path: AppDir/
-
-    - name: Upload build logs
-      if: failure()
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-logs-${{ matrix.os }}
+        name: windist-unsigned
         path: |
-          *.log
-          build/satochip_utils/warn-satochip_utils.txt
-          build/satochip_utils/xref-satochip_utils.html
+          dist/
+
+
+  build_linux:
+
+    runs-on: ubuntu-22.04
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Prepare Linux system
+      run: |
+        sudo apt update
+        sudo apt install -y xvfb curl libnotify4 libgtk-3-0 libsdl2-2.0-0 libsdl2-dev libpcsclite-dev
+        sudo apt install -y python3-venv python3-pip python3-tk python3-pyscard
+    - name: Build bin package
+      run: |
+        xvfb-run --server-args='-screen 0, 1024x768x24' bash package/Build-Linux.sh
+    - name: 'Archive linux bin (unsigned!)'
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuxdist-unsigned
+        path: |
+          dist/
+
+  build_linux_legacy:
+
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Prepare Linux system
+      run: |
+        sudo apt update
+        sudo apt install -y xvfb curl libnotify4 libgtk-3-0 libsdl2-2.0-0 libsdl2-dev libpcsclite-dev
+        sudo apt install -y python3-venv python3-pip python3-tk python3-pyscard
+    - name: Build bin package
+      run: |
+        xvfb-run --server-args='-screen 0, 1024x768x24' bash package/Build-Linux-legacy.sh
+    - name: 'Archive linux bin (unsigned!)'
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuxdist-legacy-unsigned
+        path: |
+          dist/
+
+  build_mac_x86-64:
+
+    runs-on: macos-12
+
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    - name: test import tkinter
+      run: python3 -c 'import tkinter'
+    - name: Install dependencies
+      run: |
+        brew install python-tk
+    - name: Build bin package
+      run: |
+        chmod +x ./package/Build-Mac.sh
+        ./package/Build-Mac.sh
+        chmod +x ./dist/satochip_utils.app/Contents/MacOS/satochip_utils
+    - name: 'Archive MacOS bin (unsigned!)'
+      uses: actions/upload-artifact@v4
+      with:
+        name: macdist-x86_64-unsigned
+        path: |
+          dist/
+
+  build_mac_arm64:
+
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: test import tkinter
+        run: | 
+          python3 -c 'import tkinter'
+      - name: Install dependencies
+        run: |
+          brew install swig
+          brew install python-tk
+      - name: Build bin package
+        run: |
+          chmod +x ./package/Build-Mac.sh
+          ./package/Build-Mac.sh
+      - name: 'Archive MacOS bin (unsigned!)'
+        uses: actions/upload-artifact@v4
+        with:
+          name: macdist-arm64-unsigned
+          path: |
+            dist/

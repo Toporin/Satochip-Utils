@@ -41,8 +41,8 @@ BUTTON_COLOR = "#e1e1e0"
 HOVER_COLOR = "grey"
 TEXT_COLOR = "black"
 
-#ICON_PATH = "./pictures_db/icon_"
 ICON_PATH = "./pictures_db/"
+
 
 class View(customtkinter.CTk):
     def __init__(self, loglevel=logging.INFO):
@@ -58,59 +58,39 @@ class View(customtkinter.CTk):
             # seedkeeper state
             self.in_backup_process = False
 
-            try:
-                logger.info("Initializing controller")
-                self.controller = Controller(None, self, loglevel=loglevel)
-                logger.info("Controller initialized successfully")
-            except Exception as e:
-                logger.error(f"Failed to initialize the controller: {e}", exc_info=True)
+            # Initializing controller
+            self.controller = Controller(None, self, loglevel=loglevel)
 
-            try:
-                logger.debug("Initializing main window")
-                self.main_window()
-                logger.debug("Main window initialized successfully")
+            # Initializing main window
+            self.main_window()
 
-                logger.debug("Creating main frame")
-                self.main_frame = customtkinter.CTkFrame(self, width=1000, height=600, bg_color="white",
-                                                         fg_color="white")
-                self.main_frame.place(relx=0.5, rely=0.5, anchor="center")
-                logger.debug("Main frame created successfully")
-            except Exception as e:
-                logger.error(f"Failed to initialize the main window or create the main frame: {e}", exc_info=True)
+            # Creating main frame
+            self.main_frame = customtkinter.CTkFrame(self, width=1000, height=600, bg_color="white",
+                                                     fg_color="white")
+            self.main_frame.place(relx=0.5, rely=0.5, anchor="center")
 
-            try:
-                # Widget declaration -> Maybe unnecessary but marked as error if not declared before
-                # TODO: clean code
-                logger.debug("Declaring widgets")
-                self.current_frame = None
-                self.canvas = None
-                self.background_photo = None
-                self.create_background_photo = None
-                self.header = None
-                self.text_box = None
-                self.button = None
-                self.finish_button = None
-                self.menu = None
-                #self.main_menu = None
-                #self.seedkeeper_menu = None
-                self.counter = None
-                self.display_menu = False
-                logger.debug("Widgets declared successfully")
-            except Exception as e:
-                logger.error(f"Failed to declare widgets: {e}", exc_info=True)
+            # Widget declaration -> Maybe unnecessary but marked as error if not declared before
+            # TODO: clean code
+            logger.debug("Declaring widgets")
+            self.current_frame = None
+            self.canvas = None
+            self.background_photo = None
+            self.create_background_photo = None
+            self.header = None
+            self.text_box = None
+            self.button = None
+            self.finish_button = None # todo: local variable
+            self.menu = None
+            #self.main_menu = None
+            #self.seedkeeper_menu = None
+            self.counter = None
+            self.display_menu = False
+            logger.debug("Widgets declared successfully")
 
-            try:
-                # Launching initialization starting with welcome view
-                logger.debug("Launching welcome view")
-                self.welcome()
-                logger.debug("Welcome view launched successfully")
+            # Launching initialization starting with welcome view
+            self.welcome()
+            self.protocol("WM_DELETE_WINDOW", lambda: [self.on_close()])
 
-                self.protocol("WM_DELETE_WINDOW", lambda: [self.on_close()])
-                logger.debug("WM_DELETE_WINDOW protocol set successfully")
-            except Exception as e:
-                logger.error(f"Failed to launch welcome view or set WM_DELETE_WINDOW protocol: {e}", exc_info=True)
-
-            logger.info("Initialization of View.__init__() completed successfully")
         except Exception as e:
             logger.critical(f"An unexpected error occurred in __init__: {e}", exc_info=True)
 

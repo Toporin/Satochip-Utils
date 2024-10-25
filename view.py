@@ -358,7 +358,8 @@ class View(customtkinter.CTk):
         logger.debug("View.create_frame() start")
         frame = customtkinter.CTkFrame(
             self.main_frame,
-            width=width, height=height,
+            width=width,
+            height=height,
             bg_color=bg_fg_color,
             fg_color=bg_fg_color)
         return frame
@@ -435,71 +436,31 @@ class View(customtkinter.CTk):
 
     def update_textbox(self, text):
         try:
-            logger.debug("Entering update_textbox method")
-
-            try:
-                logger.debug("Clearing the current content of the textbox")
-                self.text_box.delete(1.0, "end")  # Efface le contenu actuel
-                logger.debug("Textbox content cleared")
-            except Exception as e:
-                logger.error(f"An error occurred while clearing the textbox content: {e}", exc_info=True)
-                raise
-
-            try:
-                logger.debug("Inserting new text into the textbox")
-                self.text_box.insert("end", text)
-                logger.debug("New text inserted into textbox")
-            except Exception as e:
-                logger.error(f"An error occurred while inserting new text into the textbox: {e}", exc_info=True)
-                raise
-
-            logger.debug("Exiting update_textbox method successfully")
+            logger.debug("update_textbox start")
+            # Efface le contenu actuel
+            self.text_box.delete(1.0, "end")
+            # Inserting new text into the textbox
+            self.text_box.insert("end", text)
         except Exception as e:
             logger.error(f"An unexpected error occurred in update_textbox: {e}", exc_info=True)
 
     @staticmethod
     def create_background_photo(self, picture_path):
-        logger.info("UTILS: View.create_background_photo() | creating background photo")
         try:
-            logger.info(f"Entering create_background_photo method with path: {picture_path}")
+            logger.info(f"create_background_photo method with path: {picture_path}")
+            if getattr(sys, 'frozen', False):
+                application_path = sys._MEIPASS
+                logger.info(f"Running in a bundled application, application path: {application_path}")
+            else:
+                application_path = os.path.dirname(os.path.abspath(__file__))
+                logger.info(f"Running in a regular script, application path: {application_path}")
 
-            try:
-                if getattr(sys, 'frozen', False):
-                    application_path = sys._MEIPASS
-                    logger.info(f"Running in a bundled application, application path: {application_path}")
-                else:
-                    application_path = os.path.dirname(os.path.abspath(__file__))
-                    logger.info(f"Running in a regular script, application path: {application_path}")
-            except Exception as e:
-                logger.error(f"An error occurred while determining application path: {e}", exc_info=True)
-                return None
+            pictures_path = os.path.join(application_path, picture_path)
+            logger.debug(f"Full path to background photo: {pictures_path}")
 
-            try:
-                pictures_path = os.path.join(application_path, picture_path)
-                logger.debug(f"Full path to background photo: {pictures_path}")
-            except Exception as e:
-                logger.error(f"An error occurred while constructing the full path: {e}", exc_info=True)
-                return None
+            background_image = Image.open(pictures_path)
+            photo_image = ImageTk.PhotoImage(background_image)
 
-            try:
-                background_image = Image.open(pictures_path)
-                logger.info("Background image opened successfully")
-            except FileNotFoundError as e:
-                logger.error(f"File not found: {pictures_path}, {e}", exc_info=True)
-                return None
-            except Exception as e:
-                logger.error(f"An error occurred while opening the background image: {e}", exc_info=True)
-                return None
-
-            try:
-                photo_image = ImageTk.PhotoImage(background_image)
-                logger.info("Background photo converted to PhotoImage successfully")
-            except Exception as e:
-                logger.error(f"An error occurred while converting the background image to PhotoImage: {e}",
-                             exc_info=True)
-                return None
-
-            logger.info("Background photo created successfully")
             return photo_image
         except Exception as e:
             logger.error(f"An unexpected error occurred in create_background_photo: {e}", exc_info=True)
@@ -507,15 +468,8 @@ class View(customtkinter.CTk):
 
     def create_canvas(self, frame=None) -> customtkinter.CTkCanvas:
         try:
-            logger.debug("UTILS: View.create_canvas() | creating canvas")
-            try:
-                canvas = customtkinter.CTkCanvas(self.current_frame, bg="whitesmoke", width=1000, height=599)
-                logger.debug("Canvas created successfully")
-            except Exception as e:
-                logger.error(f"An error occurred while creating the canvas: {e}", exc_info=True)
-                raise
-            logger.debug("Exiting create_canvas method successfully")
-            logger.debug("canvas create successfully")
+            logger.debug("View.create_canvas() start")
+            canvas = customtkinter.CTkCanvas(self.current_frame, bg="whitesmoke", width=1000, height=599)
             return canvas
         except Exception as e:
             logger.error(f"An unexpected error occurred in create_canvas: {e}", exc_info=True)
@@ -607,17 +561,6 @@ class View(customtkinter.CTk):
                                                 bg_color=MAIN_MENU_COLOR,
                                                 fg_color=MAIN_MENU_COLOR, corner_radius=0, border_color="black",
                                                 border_width=0)
-            logger.debug("Menu frame created successfully")
-
-            # todo: cancel the function below
-            def refresh_main_menu():
-                try:
-                    logger.info("Refreshing main menu")
-                    menu_frame.destroy()
-                    self.menu = self.main_menu()
-                    self.menu.place(relx=0.250, rely=0.5, anchor="e")
-                except Exception as e:
-                    logger.error(f"An error occurred in refresh_main_menu: {e}", exc_info=True)
 
             # Logo section
             image_frame = customtkinter.CTkFrame(menu_frame, bg_color=MAIN_MENU_COLOR, fg_color=MAIN_MENU_COLOR,
@@ -1049,7 +992,7 @@ class View(customtkinter.CTk):
 
     def get_passphrase(self, msg):
         try:
-            logger.info("CC UTILS: IN View.get_passphrase() | Creating new popup window for PIN entry")
+            logger.info("View.get_passphrase() start")
 
             # Création d'une nouvelle fenêtre pour le popup
             popup = customtkinter.CTkToplevel(self)
@@ -1068,78 +1011,57 @@ class View(customtkinter.CTk):
             logger.debug(
                 f"Popup window geometry set to {popup_width}x{popup_height} at position ({position_right}, {position_down})")
 
-            try:
-                # Ajout d'un label avec une image dans le popup
-                icon_image = Image.open("./pictures_db/change_pin_popup.jpg")
-                icon = customtkinter.CTkImage(light_image=icon_image, size=(20, 20))
-                icon_label = customtkinter.CTkLabel(popup, image=icon, text=f"\nEnter the PIN code of your card.",
-                                                    compound='top',
-                                                    font=customtkinter.CTkFont(family="Outfit",
-                                                                               size=18,
-                                                                               weight="normal"))
-                icon_label.pack(pady=(0, 10))  # Ajout d'un padding différent pour l'icône
-                logger.debug("Label added to popup")
-            except Exception as e:
-                logger.error(f"An error occurred while adding label to popup: {e}", exc_info=True)
+            # Ajout d'un label avec une image dans le popup
+            icon_image = Image.open("./pictures_db/change_pin_popup.jpg")
+            icon = customtkinter.CTkImage(light_image=icon_image, size=(20, 20))
+            icon_label = customtkinter.CTkLabel(
+                popup, image=icon, text=f"\nEnter the PIN code of your card.",
+                compound='top',
+                font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal")
+            )
+            icon_label.pack(pady=(0, 10))  # Ajout d'un padding différent pour l'icône
+            logger.debug("Label added to popup")
 
-            try:
-                # Ajout d'un champ d'entrée
-                passphrase_entry = customtkinter.CTkEntry(popup, show="*", corner_radius=10, border_width=0,
-                                                          width=229, height=37,
-                                                          bg_color='whitesmoke',
-                                                          fg_color=BUTTON_COLOR,
-                                                          text_color='grey')
-                popup.after(100, passphrase_entry.focus_force)
-                passphrase_entry.pack(pady=15)
-                logger.debug("Entry field added to popup")
-            except Exception as e:
-                logger.error(f"An error occurred while adding entry field to popup: {e}", exc_info=True)
+            # Ajout d'un champ d'entrée
+            passphrase_entry = customtkinter.CTkEntry(
+                popup, show="*", corner_radius=10, border_width=0,
+                width=229, height=37, bg_color='whitesmoke',
+                fg_color=BUTTON_COLOR, text_color='grey')
+            popup.after(100, passphrase_entry.focus_force)
+            passphrase_entry.pack(pady=15)
+            logger.debug("Entry field added to popup")
 
             # Variables pour stocker les résultats
             pin = None
 
             # Fonction pour soumettre la passphrase et fermer le popup
             def submit_passphrase():
-                try:
-                    nonlocal pin
-                    pin = passphrase_entry.get()
-                    popup.destroy()
-                    logger.debug("Passphrase submitted and popup destroyed")
-                except Exception as e:
-                    logger.error(f"An error occurred in submit_passphrase: {e}", exc_info=True)
+                nonlocal pin
+                pin = passphrase_entry.get()
+                popup.destroy()
 
-            try:
-                # Bouton pour soumettre la passphrase
-                submit_button = customtkinter.CTkButton(popup, bg_color='whitesmoke', fg_color=MAIN_MENU_COLOR,
-                                                        width=120, height=35, corner_radius=34,
-                                                        hover_color=HOVER_COLOR, text="Submit",
-                                                        command=submit_passphrase,
-                                                        font=customtkinter.CTkFont(family="Outfit",
-                                                                                   size=18,
-                                                                                   weight="normal")
-                                                        )
-                submit_button.pack(pady=10)
-                logger.debug("Submit button added to popup")
-            except Exception as e:
-                logger.error(f"An error occurred while adding submit button to popup: {e}", exc_info=True)
+            # Bouton pour soumettre la passphrase
+            submit_button = customtkinter.CTkButton(
+                popup, bg_color='whitesmoke', fg_color=MAIN_MENU_COLOR,
+                width=120, height=35, corner_radius=34,
+                hover_color=HOVER_COLOR, text="Submit",
+                command=submit_passphrase,
+                font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal")
+            )
+            submit_button.pack(pady=10)
+            logger.debug("Submit button added to popup")
 
-            try:
-                # Rendre la fenêtre modale
-                popup.transient(self)  # Set to be on top of the main window
-                popup.bind('<Return>', lambda event: submit_passphrase())
-                logger.debug("Popup set to be on top of the main window")
+            # Rendre la fenêtre modale
+            popup.transient(self)  # Set to be on top of the main window
+            popup.bind('<Return>', lambda event: submit_passphrase())
+            logger.debug("Popup set to be on top of the main window")
 
-                # Attendre que la fenêtre popup soit détruite
-                self.wait_window(popup)
-                logger.debug("Waiting for popup window to be destroyed")
+            # Attendre que la fenêtre popup soit détruite
+            self.wait_window(popup)
+            logger.debug("Waiting for popup window to be destroyed")
 
-                # Retourner les résultats
-                logger.info(f"Returning results: pin={'****' if pin else None}")
-                return pin
-
-            except Exception as e:
-                logger.error(f"An error occurred while setting popup modal behavior: {e}", exc_info=True)
-                return None
+            # Retourner les résultats
+            return pin
 
         except Exception as e:
             logger.error(f"An error occurred in get_passphrase: {e}", exc_info=True)
@@ -1298,90 +1220,64 @@ class View(customtkinter.CTk):
 
         try:
             if self.current_frame is not None:
-                try:
-                    logger.debug("Clearing current frame")
-                    self.clear_current_frame()
-                    logger.debug("Current frame cleared")
-                except Exception as e:
-                    logger.error(f"An error occurred while clearing current frame: {e}", exc_info=True)
+                self.clear_current_frame()
 
-            try:
-                logger.debug("Creating new frame")
-                self.current_frame = View.create_frame(self)
-                self.current_frame.place(relx=0.5, rely=0.5, anchor="center")
-                logger.debug("New frame created and placed")
-            except Exception as e:
-                logger.error(f"An error occurred while creating new frame: {e}", exc_info=True)
+            # Creating new frame
+            self.current_frame = View.create_frame(self)
+            self.current_frame.place(relx=0.5, rely=0.5, anchor="center")
 
-            try:
-                logger.debug("Creating main menu")
-                if not self.controller.cc.setup_done:
-                    menu = self.main_menu('disabled')
-                else:
-                    menu = self.main_menu()
-                menu.place(relx=0.250, rely=0.5, anchor="e")
-                logger.debug("Main menu created and placed")
-            except Exception as e:
-                logger.error(f"An error occurred while creating main menu: {e}", exc_info=True)
+            # Creating main menu
+            if not self.controller.cc.setup_done:
+                menu = self.main_menu('disabled')
+            else:
+                menu = self.main_menu()
+            menu.place(relx=0.250, rely=0.5, anchor="e")
 
-            try:
-                logger.debug("Creating header")
-                self.header = View.create_an_header(self, f"Setup my card",
-                                                    "change_pin_popup.jpg")
-                self.header.place(relx=0.32, rely=0.05, anchor="nw")
-                logger.debug("Header created and placed")
-            except Exception as e:
-                logger.error(f"An error occurred while creating header: {e}", exc_info=True)
+            # Creating header
+            self.header = View.create_an_header(self, f"Setup my card",
+                                                "change_pin_popup.jpg")
+            self.header.place(relx=0.32, rely=0.05, anchor="nw")
+            logger.debug("Header created and placed")
 
-            try:
-                logger.debug("setup paragraph")
-                text = View.create_label(self, "Create your personal PIN code.")
-                text.place(relx=0.33, rely=0.2, anchor="w")
-                text = View.create_label(self, "We strongly encourage you to set up a strong password between 4 and 16")
-                text.place(relx=0.33, rely=0.25, anchor="w")
-                text = View.create_label(self, "characters. You can use symbols, lower and upper cases, letters and ")
-                text.place(relx=0.33, rely=0.3, anchor="w")
-                text = View.create_label(self, "numbers.")
-                text.place(relx=0.33, rely=0.35, anchor="w")
+            # setup paragraph
+            text = View.create_label(self, "Create your personal PIN code.")
+            text.place(relx=0.33, rely=0.2, anchor="w")
+            text = View.create_label(self, "We strongly encourage you to set up a strong password between 4 and 16")
+            text.place(relx=0.33, rely=0.25, anchor="w")
+            text = View.create_label(self, "characters. You can use symbols, lower and upper cases, letters and ")
+            text.place(relx=0.33, rely=0.3, anchor="w")
+            text = View.create_label(self, "numbers.")
+            text.place(relx=0.33, rely=0.35, anchor="w")
 
-                logger.debug("Setting up PIN entry fields")
-                # edit PIN
-                edit_pin_label = View.create_label(self, "New PIN code :")
-                edit_pin_label.configure(font=self.make_text_size_at(18))
-                edit_pin_label.place(relx=0.33, rely=0.45, anchor="w")
-                edit_pin_entry = View.create_entry(self, "*")
-                self.after(100, edit_pin_entry.focus_force)
-                if self.controller.cc.card_type == "Satodime":
-                    edit_pin_entry.configure(state='disabled')
-                edit_pin_entry.place(relx=0.327, rely=0.52, anchor="w")
+            # edit PIN
+            edit_pin_label = View.create_label(self, "New PIN code :")
+            edit_pin_label.configure(font=self.make_text_size_at(18))
+            edit_pin_label.place(relx=0.33, rely=0.45, anchor="w")
+            edit_pin_entry = View.create_entry(self, "*")
+            self.after(100, edit_pin_entry.focus_force)
+            if self.controller.cc.card_type == "Satodime":
+                edit_pin_entry.configure(state='disabled')
+            edit_pin_entry.place(relx=0.327, rely=0.52, anchor="w")
 
-                # confirm PIN edition
-                edit_confirm_pin_label = View.create_label(self, "Repeat new PIN code :")
-                edit_confirm_pin_label.configure(font=self.make_text_size_at(18))
-                edit_confirm_pin_label.place(relx=0.33, rely=0.65, anchor="w")
-                edit_confirm_pin_entry = View.create_entry(self, "*")
-                if self.controller.cc.card_type == "Satodime":
-                    edit_confirm_pin_entry.configure(state='disabled')
-                edit_confirm_pin_entry.place(relx=0.327, rely=0.72, anchor="w")
-                logger.debug("PIN entry fields created and placed")
-            except Exception as e:
-                logger.error(f"An error occurred while setting up PIN entry fields: {e}", exc_info=True)
+            # confirm PIN edition
+            edit_confirm_pin_label = View.create_label(self, "Repeat new PIN code :")
+            edit_confirm_pin_label.configure(font=self.make_text_size_at(18))
+            edit_confirm_pin_label.place(relx=0.33, rely=0.65, anchor="w")
+            edit_confirm_pin_entry = View.create_entry(self, "*")
+            if self.controller.cc.card_type == "Satodime":
+                edit_confirm_pin_entry.configure(state='disabled')
+            edit_confirm_pin_entry.place(relx=0.327, rely=0.72, anchor="w")
 
-            try:
-                logger.debug("Creating cancel and finish buttons")
-                self.cancel_button = View.create_button(self, "Cancel",
-                                                        lambda: self.start_setup())
-                self.cancel_button.place(relx=0.7, rely=0.9, anchor="w")
+            # Creating cancel and finish buttons
+            self.cancel_button = View.create_button(self, "Cancel",
+                                                    lambda: self.start_setup())
+            self.cancel_button.place(relx=0.7, rely=0.9, anchor="w")
 
-                self.finish_button = View.create_button(self, "Save PIN",
-                                                        lambda: self.controller.setup_card_pin(edit_pin_entry.get(), edit_confirm_pin_entry.get()))
-                self.finish_button.place(relx=0.85, rely=0.9, anchor="w")
-                self.bind('<Return>', lambda event: self.controller.setup_card_pin(edit_pin_entry.get(), edit_confirm_pin_entry.get()))
-                logger.debug("Cancel and finish buttons created and placed")
-            except Exception as e:
-                logger.error(f"An error occurred while creating cancel and finish buttons: {e}", exc_info=True)
+            self.finish_button = View.create_button(self, "Save PIN",
+                                                    lambda: self.controller.setup_card_pin(edit_pin_entry.get(), edit_confirm_pin_entry.get()))
+            self.finish_button.place(relx=0.85, rely=0.9, anchor="w")
+            self.bind('<Return>', lambda event: self.controller.setup_card_pin(edit_pin_entry.get(), edit_confirm_pin_entry.get()))
 
-            logger.debug("Exiting setup_my_card_pin method successfully")
         except Exception as e:
             logger.error(f"An unexpected error occurred in setup_my_card_pin: {e}", exc_info=True)
 
@@ -1389,40 +1285,22 @@ class View(customtkinter.CTk):
     def setup_my_card_seed(self):
         frame_name = "setup_my_card_seed"
         try:
-
             if self.current_frame is not None:
-                try:
-                    logger.debug("Clearing current frame")
-                    self.clear_current_frame()
-                    logger.debug("Current frame cleared")
-                except Exception as e:
-                    logger.error(f"An error occurred while clearing current frame: {e}", exc_info=True)
+                self.clear_current_frame()
 
-            try:
-                logger.debug("Creating new frame")
-                self.current_frame = View.create_frame(self)
-                self.current_frame.place(relx=0.5, rely=0.5, anchor="center")
-                logger.debug("New frame created and placed")
-            except Exception as e:
-                logger.error(f"An error occurred while creating new frame: {e}", exc_info=True)
+            # Creating new frame
+            self.current_frame = View.create_frame(self)
+            self.current_frame.place(relx=0.5, rely=0.5, anchor="center")
 
-            try:
-                logger.debug("Creating main menu")
-                menu = self.main_menu(state='disabled')
-                menu.place(relx=0.250, rely=0.5, anchor="e")
-                logger.debug("Main menu created and placed")
-            except Exception as e:
-                logger.error(f"An error occurred while creating main menu: {e}", exc_info=True)
+            # Creating main menu
+            menu = self.main_menu(state='disabled')
+            menu.place(relx=0.250, rely=0.5, anchor="e")
 
-            try:
-                logger.debug("Creating header")
-                self.header = View.create_an_header(self, "Seed My Card", "seed_popup.jpg")
-                self.header.place(relx=0.32, rely=0.05, anchor="nw")
-                logger.debug("Header created and placed")
-            except Exception as e:
-                logger.error(f"An error occurred while creating header: {e}", exc_info=True)
+            # Creating header
+            self.header = View.create_an_header(self, "Seed My Card", "seed_popup.jpg")
+            self.header.place(relx=0.32, rely=0.05, anchor="nw")
 
-            logger.debug("setup paragraph")
+            # setup paragraph
             text = View.create_label(self, "Set up your Satochip hardware wallet as a new device to get started.")
             text.place(relx=0.33, rely=0.17, anchor="w")
             text = View.create_label(self, "Import or generate a new mnemonic seedphrase and generate new")
@@ -1442,10 +1320,8 @@ class View(customtkinter.CTk):
 
             def update_radio_mnemonic_length():
                 if radio_value_mnemonic.get() == "generate_12":
-                    logger.debug("Generate seed of 12 words")
                     mnemonic_length = 12
                 elif radio_value_mnemonic.get() == "generate_24":
-                    logger.debug("Generate seed of 24 words")
                     mnemonic_length = 24
 
                 mnemonic = self.controller.generate_random_seed(mnemonic_length)
@@ -1529,96 +1405,93 @@ class View(customtkinter.CTk):
                 else:
                     self.controller.PIN_dialog(f'Unlock your {self.controller.cc.card_type}')
 
-            try:
-                logger.debug("Setting up radio buttons and entry fields")
-                radio_button_import_seed = customtkinter.CTkRadioButton(self.current_frame,
-                                                                        text="I already have a seedphrase",
-                                                                        variable=radio_value, value="import",
-                                                                        font=customtkinter.CTkFont(family="Outfit",
-                                                                                                   size=14,
-                                                                                                   weight="normal"),
-                                                                        bg_color="whitesmoke", fg_color="green",
-                                                                        hover_color="green",
-                                                                        command=update_radio_selection)
-                radio_button_import_seed.place(relx=0.33, rely=0.35, anchor="w")
+            # Setting up radio buttons and entry fields
+            radio_button_import_seed = customtkinter.CTkRadioButton(self.current_frame,
+                                                                    text="I already have a seedphrase",
+                                                                    variable=radio_value, value="import",
+                                                                    font=customtkinter.CTkFont(family="Outfit",
+                                                                                               size=14,
+                                                                                               weight="normal"),
+                                                                    bg_color="whitesmoke", fg_color="green",
+                                                                    hover_color="green",
+                                                                    command=update_radio_selection)
+            radio_button_import_seed.place(relx=0.33, rely=0.35, anchor="w")
 
-                radio_button_generate_seed = customtkinter.CTkRadioButton(self.current_frame,
-                                                                     text="I want to generate a new seedphrase",
-                                                                     variable=radio_value, value="generate",
-                                                                     font=customtkinter.CTkFont(family="Outfit",
-                                                                                                size=14,
-                                                                                                weight="normal"),
-                                                                     bg_color="whitesmoke", fg_color="green",
-                                                                     hover_color="green",
-                                                                     command=update_radio_selection, )
-                radio_button_generate_seed.place(relx=0.33, rely=0.42, anchor="w")
+            radio_button_generate_seed = customtkinter.CTkRadioButton(self.current_frame,
+                                                                 text="I want to generate a new seedphrase",
+                                                                 variable=radio_value, value="generate",
+                                                                 font=customtkinter.CTkFont(family="Outfit",
+                                                                                            size=14,
+                                                                                            weight="normal"),
+                                                                 bg_color="whitesmoke", fg_color="green",
+                                                                 hover_color="green",
+                                                                 command=update_radio_selection, )
+            radio_button_generate_seed.place(relx=0.33, rely=0.42, anchor="w")
 
-                radio_button_generate_12_words = customtkinter.CTkRadioButton(self.current_frame,
-                                                                              text="12 - words",
-                                                                              variable=radio_value_mnemonic,
-                                                                              value="generate_12",
-                                                                              font=customtkinter.CTkFont(
-                                                                                  family="Outfit",
-                                                                                  size=14,
-                                                                                  weight="normal"),
-                                                                              bg_color="whitesmoke", fg_color="green",
-                                                                              hover_color="green",
-                                                                              command=update_radio_mnemonic_length)
-                radio_button_generate_24_words = customtkinter.CTkRadioButton(self.current_frame,
-                                                                              text="24 - words",
-                                                                              variable=radio_value_mnemonic, value="generate_24",
-                                                                              font=customtkinter.CTkFont(
-                                                                                  family="Outfit",
-                                                                                  size=14,
-                                                                                  weight="normal"),
-                                                                              bg_color="whitesmoke", fg_color="green",
-                                                                              hover_color="green",
-                                                                              command=update_radio_mnemonic_length)
+            radio_button_generate_12_words = customtkinter.CTkRadioButton(self.current_frame,
+                                                                          text="12 - words",
+                                                                          variable=radio_value_mnemonic,
+                                                                          value="generate_12",
+                                                                          font=customtkinter.CTkFont(
+                                                                              family="Outfit",
+                                                                              size=14,
+                                                                              weight="normal"),
+                                                                          bg_color="whitesmoke", fg_color="green",
+                                                                          hover_color="green",
+                                                                          command=update_radio_mnemonic_length)
+            radio_button_generate_24_words = customtkinter.CTkRadioButton(self.current_frame,
+                                                                          text="24 - words",
+                                                                          variable=radio_value_mnemonic, value="generate_24",
+                                                                          font=customtkinter.CTkFont(
+                                                                              family="Outfit",
+                                                                              size=14,
+                                                                              weight="normal"),
+                                                                          bg_color="whitesmoke", fg_color="green",
+                                                                          hover_color="green",
+                                                                          command=update_radio_mnemonic_length)
 
-                checkbox_passphrase = customtkinter.CTkCheckBox(self.current_frame,
-                                                                text="Use a passphrase (optional)",
-                                                                command=update_checkbox_passphrase,
-                                                                variable=value_checkbox_passphrase,
-                                                                onvalue="on",
-                                                                offvalue="off")
+            checkbox_passphrase = customtkinter.CTkCheckBox(self.current_frame,
+                                                            text="Use a passphrase (optional)",
+                                                            command=update_checkbox_passphrase,
+                                                            variable=value_checkbox_passphrase,
+                                                            onvalue="on",
+                                                            offvalue="off")
 
-                passphrase_entry = View.create_entry(self)
+            passphrase_entry = View.create_entry(self)
 
-                self.text_box = customtkinter.CTkTextbox(self, corner_radius=20,
-                                                         bg_color="whitesmoke", fg_color=BUTTON_COLOR,
-                                                         border_color=BUTTON_COLOR, border_width=1,
-                                                         width=557, height=83,
-                                                         text_color="grey",
-                                                         font=customtkinter.CTkFont(family="Outfit", size=13,
-                                                                                    weight="normal"))
+            self.text_box = customtkinter.CTkTextbox(self, corner_radius=20,
+                                                     bg_color="whitesmoke", fg_color=BUTTON_COLOR,
+                                                     border_color=BUTTON_COLOR, border_width=1,
+                                                     width=557, height=83,
+                                                     text_color="grey",
+                                                     font=customtkinter.CTkFont(family="Outfit", size=13,
+                                                                                weight="normal"))
 
-                warning_text = "Your mnemonic is important, be sure to save it in a safe place!"
-                warning_label = customtkinter.CTkLabel(
-                    self.current_frame,
-                    text=warning_text,
-                    text_color="red",
-                    font=customtkinter.CTkFont(family="Outfit", size=12, weight="normal"))
+            warning_text = "Your mnemonic is important, be sure to save it in a safe place!"
+            warning_label = customtkinter.CTkLabel(
+                self.current_frame,
+                text=warning_text,
+                text_color="red",
+                font=customtkinter.CTkFont(family="Outfit", size=12, weight="normal")
+            )
 
-                self.cancel_button = View.create_button(self, "Back",
-                                                        command=lambda: self.start_setup()
-                                                        )
-                self.cancel_button.place(relx=0.85, rely=0.9, anchor="w")
+            self.cancel_button = View.create_button(
+                self, "Back",
+                command=lambda: self.start_setup()
+            )
+            self.cancel_button.place(relx=0.85, rely=0.9, anchor="w")
 
-                self.finish_button = View.create_button(self, "Import",
-                                                        command=lambda: [
-                                                            update_verify_pin(),
-                                                            self.controller.import_seed(
-                                                                self.text_box.get(1.0, "end-1c"),
-                                                                passphrase_entry.get() if generate_with_passphrase else None,
-                                                            )
-                                                        ])
-                # self.finish_button.place(relx=0.85, rely=0.9, anchor="w")
-                logger.debug("Radio buttons and entry fields set up")
+            self.finish_button = View.create_button( # will be placed after mnemonic is generated
+                self, "Import",
+                command=lambda: [
+                    update_verify_pin(),
+                    self.controller.import_seed(
+                        self.text_box.get(1.0, "end-1c"),
+                        passphrase_entry.get() if generate_with_passphrase else None,
+                    )
+                ]
+            )
 
-            except Exception as e:
-                logger.error(f"An error occurred while setting up radio buttons and entry fields: {e}", exc_info=True)
-
-            logger.debug("Exiting setup_my_card_seed method successfully")
         except Exception as e:
             logger.error(f"An unexpected error occurred in setup_my_card_seed: {e}", exc_info=True)
 
@@ -1626,193 +1499,142 @@ class View(customtkinter.CTk):
         try:
             logger.info("IN View.change_pin() | Entering change_pin method")
             if self.current_frame is not None:
-                try:
-                    logger.debug("Clearing current frame")
-                    self.clear_current_frame()
-                    logger.debug("Current frame cleared")
-                except Exception as e:
-                    logger.error(f"An error occurred while clearing current frame: {e}", exc_info=True)
+                self.clear_current_frame()
 
             frame_name = "change_pin"
-            try:
-                logger.debug("Creating new frame")
-                self.current_frame = View.create_frame(self)
-                self.current_frame.place(relx=0.5, rely=0.5, anchor="center")
-                logger.debug("New frame created and placed")
-            except Exception as e:
-                logger.error(f"An error occurred while creating new frame: {e}", exc_info=True)
+            # Creating new frame
+            self.current_frame = View.create_frame(self)
+            self.current_frame.place(relx=0.5, rely=0.5, anchor="center")
 
-            try:
-                logger.debug("Creating main menu")
-                menu = self.main_menu()
-                menu.place(relx=0.250, rely=0.5, anchor="e")
-                logger.debug("Main menu created and placed")
-            except Exception as e:
-                logger.error(f"An error occurred while creating main menu: {e}", exc_info=True)
+            # Creating main menu
+            menu = self.main_menu()
+            menu.place(relx=0.250, rely=0.5, anchor="e")
+            logger.debug("Main menu created and placed")
 
-            try:
-                logger.debug("Creating header")
-                self.header = View.create_an_header(self, "Change PIN ", "change_pin_popup.jpg")
-                self.header.place(relx=0.32, rely=0.05, anchor="nw")
-                logger.debug("Header created and placed")
-            except Exception as e:
-                logger.error(f"An error occurred while creating header: {e}", exc_info=True)
+            # Creating header
+            self.header = View.create_an_header(self, "Change PIN ", "change_pin_popup.jpg")
+            self.header.place(relx=0.32, rely=0.05, anchor="nw")
+            logger.debug("Header created and placed")
 
-            try:
-                logger.debug("setup paragraph")
-                text = View.create_label(self, "Change your personal PIN code. ")
-                text.place(relx=0.33, rely=0.17, anchor="w")
-                text = View.create_label(self, "We strongly encourage you to set up a strong password between 4 and 16")
-                text.place(relx=0.33, rely=0.22, anchor="w")
-                text = View.create_label(self, "characters. You can use symbols, lower and upper cases, letters and ")
-                text.place(relx=0.33, rely=0.27, anchor="w")
-                text = View.create_label(self, "numbers.")
-                text.place(relx=0.33, rely=0.32, anchor="w")
+            #setup paragraph
+            text = View.create_label(self, "Change your personal PIN code. ")
+            text.place(relx=0.33, rely=0.17, anchor="w")
+            text = View.create_label(self, "We strongly encourage you to set up a strong password between 4 and 16")
+            text.place(relx=0.33, rely=0.22, anchor="w")
+            text = View.create_label(self, "characters. You can use symbols, lower and upper cases, letters and ")
+            text.place(relx=0.33, rely=0.27, anchor="w")
+            text = View.create_label(self, "numbers.")
+            text.place(relx=0.33, rely=0.32, anchor="w")
 
-                logger.debug("Setting up PIN entry fields")
-                # input current PIN
-                current_pin_label = View.create_label(self, "Current PIN:")
-                current_pin_label.configure(font=self.make_text_size_at(18))
-                current_pin_label.place(relx=0.33, rely=0.40, anchor="w")
-                current_pin_entry = View.create_entry(self, "*")
-                self.after(100, current_pin_entry.focus_force)
-                current_pin_entry.place(relx=0.33, rely=0.45, anchor="w")
+            # Setting up PIN entry fields
+            # input current PIN
+            current_pin_label = View.create_label(self, "Current PIN:")
+            current_pin_label.configure(font=self.make_text_size_at(18))
+            current_pin_label.place(relx=0.33, rely=0.40, anchor="w")
+            current_pin_entry = View.create_entry(self, "*")
+            self.after(100, current_pin_entry.focus_force)
+            current_pin_entry.place(relx=0.33, rely=0.45, anchor="w")
 
-                # input new PIN
-                new_pin_label = View.create_label(self, "New PIN code:")
-                new_pin_label.configure(font=self.make_text_size_at(18))
-                new_pin_label.place(relx=0.33, rely=0.55, anchor="w")
-                new_pin_entry = View.create_entry(self, "*")
-                new_pin_entry.place(relx=0.33, rely=0.60, anchor="w")
+            # input new PIN
+            new_pin_label = View.create_label(self, "New PIN code:")
+            new_pin_label.configure(font=self.make_text_size_at(18))
+            new_pin_label.place(relx=0.33, rely=0.55, anchor="w")
+            new_pin_entry = View.create_entry(self, "*")
+            new_pin_entry.place(relx=0.33, rely=0.60, anchor="w")
 
-                # confirm new PIN
-                confirm_new_pin_label = View.create_label(self, "Repeat new PIN code:")
-                confirm_new_pin_label.configure(font=self.make_text_size_at(18))
-                confirm_new_pin_label.place(relx=0.33, rely=0.70, anchor="w")
-                confirm_new_pin_entry = View.create_entry(self, "*")
-                confirm_new_pin_entry.place(relx=0.33, rely=0.75, anchor="w")
-                logger.debug("PIN entry fields created and placed")
-            except Exception as e:
-                logger.error(f"An error occurred while setting up PIN entry fields: {e}", exc_info=True)
+            # confirm new PIN
+            confirm_new_pin_label = View.create_label(self, "Repeat new PIN code:")
+            confirm_new_pin_label.configure(font=self.make_text_size_at(18))
+            confirm_new_pin_label.place(relx=0.33, rely=0.70, anchor="w")
+            confirm_new_pin_entry = View.create_entry(self, "*")
+            confirm_new_pin_entry.place(relx=0.33, rely=0.75, anchor="w")
+            logger.debug("PIN entry fields created and placed")
 
-            try:
-                logger.debug("Creating cancel and finish buttons")
-                cancel_button = View.create_button(self, "Cancel", lambda: self.start_setup())
-                cancel_button.place(relx=0.7, rely=0.9, anchor="w")
+            # Creating cancel and finish buttons
+            cancel_button = View.create_button(self, "Cancel", lambda: self.start_setup())
+            cancel_button.place(relx=0.7, rely=0.9, anchor="w")
 
-                finish_button = View.create_button(self, "Change it",
-                                                   lambda: self.controller.change_card_pin(current_pin_entry.get(),
-                                                                                           new_pin_entry.get(),
-                                                                                           confirm_new_pin_entry.get()))
+            finish_button = View.create_button(self, "Change it",
+                                               lambda: self.controller.change_card_pin(current_pin_entry.get(),
+                                                                                       new_pin_entry.get(),
+                                                                                       confirm_new_pin_entry.get()))
 
-                finish_button.place(relx=0.85, rely=0.9, anchor="w")
-                self.bind('<Return>', lambda event: self.controller.change_card_pin(
-                    current_pin_entry.get(),
-                    new_pin_entry.get(),
-                    confirm_new_pin_entry.get()))
-                logger.debug("Cancel and finish buttons created and placed")
+            finish_button.place(relx=0.85, rely=0.9, anchor="w")
+            self.bind('<Return>', lambda event: self.controller.change_card_pin(
+                current_pin_entry.get(),
+                new_pin_entry.get(),
+                confirm_new_pin_entry.get()))
 
-            except Exception as e:
-                logger.error(f"An error occurred while creating cancel and finish buttons: {e}", exc_info=True)
-
-            logger.debug("Exiting change_pin method successfully")
         except Exception as e:
             logger.error(f"An unexpected error occurred in change_pin: {e}", exc_info=True)
 
     def edit_label(self):
         try:
-            logger.info("IN View.edit_label() | Entering edit_label method")
+            logger.info("View.edit_label() start")
             frame_name = "edit_label"
             cancel_button = "Cancel"
             finish_button = "Finish"
 
             if self.current_frame is not None:
-                try:
-                    logger.debug("Clearing current frame")
-                    self.clear_current_frame()
-                    logger.debug("Current frame cleared")
-                except Exception as e:
-                    logger.error(f"An error occurred while clearing current frame: {e}", exc_info=True)
+                self.clear_current_frame()
 
-            try:
-                logger.debug("Creating new frame")
-                self.current_frame = View.create_frame(self)
-                self.current_frame.place(relx=0.5, rely=0.5, anchor="center")
-                logger.debug("New frame created and placed")
-            except Exception as e:
-                logger.error(f"An error occurred while creating new frame: {e}", exc_info=True)
+            # Creating new frame
+            self.current_frame = View.create_frame(self)
+            self.current_frame.place(relx=0.5, rely=0.5, anchor="center")
+            logger.debug("New frame created and placed")
 
-            try:
-                logger.debug("Creating main menu")
-                menu = self.main_menu()
-                menu.place(relx=0.250, rely=0.5, anchor="e")
-                logger.debug("Main menu created and placed")
-            except Exception as e:
-                logger.error(f"An error occurred while creating main menu: {e}", exc_info=True)
+            # Creating main menu
+            menu = self.main_menu()
+            menu.place(relx=0.250, rely=0.5, anchor="e")
+            logger.debug("Main menu created and placed")
 
-            try:
-                logger.debug("Creating header")
+            # Creating header
+            header_conditional_title = "Edit Label"
+            header_conditional_label = f"Find a friendly name for your {self.controller.cc.card_type} Card."
 
-                header_conditional_title = "Edit Label"
-                header_conditional_label = f"Find a friendly name for your {self.controller.cc.card_type} Card."
+            self.header = View.create_an_header(self,
+                                                header_conditional_title,
+                                                "edit_label_popup.jpg")
 
-                self.header = View.create_an_header(self,
-                                                    header_conditional_title,
-                                                    "edit_label_popup.jpg")
+            self.header.place(relx=0.32, rely=0.05, anchor="nw")
 
-                self.header.place(relx=0.32, rely=0.05, anchor="nw")
-                logger.debug("Header created and placed")
-            except Exception as e:
-                logger.error(f"An error occurred while creating header: {e}", exc_info=True)
+            # setup paragraph
+            text = View.create_label(self, f"Edit the label of your {self.controller.cc.card_type}.")
+            text.place(relx=0.33, rely=0.17, anchor="w")
+            text = View.create_label(self,
+                                     "The label is a tag that identifies your card. It can be used to distinguish ")
+            text.place(relx=0.33, rely=0.22, anchor="w")
+            text = View.create_label(self, "several cards, or to associate it with a person, a name or a story.")
+            text.place(relx=0.33, rely=0.27, anchor="w")
 
-            try:
-                logger.debug("setup paragraph")
-                text = View.create_label(self, f"Edit the label of your {self.controller.cc.card_type}.")
-                text.place(relx=0.33, rely=0.17, anchor="w")
-                text = View.create_label(self,
-                                         "The label is a tag that identifies your card. It can be used to distinguish ")
-                text.place(relx=0.33, rely=0.22, anchor="w")
-                text = View.create_label(self, "several cards, or to associate it with a person, a name or a story.")
-                text.place(relx=0.33, rely=0.27, anchor="w")
+            logger.debug("Setting up label entry fields")
+            edit_card_label = View.create_label(self, "Label :")
+            edit_card_label.place(relx=0.33, rely=0.4, anchor="w")
+            edit_card_entry = View.create_entry(self)
+            self.after(100, edit_card_entry.focus_force)
+            edit_card_entry.place(relx=0.33, rely=0.45, anchor="w")
 
-                logger.debug("Setting up label entry fields")
-                edit_card_label = View.create_label(self, "Label :")
-                edit_card_label.place(relx=0.33, rely=0.4, anchor="w")
-                edit_card_entry = View.create_entry(self)
-                self.after(100, edit_card_entry.focus_force)
+            # Creating cancel and finish buttons
+            self.cancel_button = View.create_button(self, cancel_button,
+                                                    lambda: self.start_setup())
 
-                edit_card_entry.place(relx=0.33, rely=0.45, anchor="w")
-                logger.debug("Label entry fields created and placed")
-            except Exception as e:
-                logger.error(f"An error occurred while setting up label entry fields: {e}", exc_info=True)
+            self.cancel_button.place(relx=0.7, rely=0.9, anchor="w")
 
-            try:
-                logger.debug("Creating cancel and finish buttons")
-                self.cancel_button = View.create_button(self, cancel_button,
-                                                        lambda: self.start_setup())
+            finish_button_conditional_label = "Change it"
 
-                self.cancel_button.place(relx=0.7, rely=0.9, anchor="w")
+            self.finish_button = View.create_button(
+                self, finish_button_conditional_label,
+                lambda: self.controller.edit_label(edit_card_entry.get())
+            )
+            self.finish_button.place(relx=0.85, rely=0.9, anchor="w")
+            self.bind('<Return>', lambda event: self.controller.edit_label(edit_card_entry.get()))
 
-                finish_button_conditional_label = "Change it"
-
-                self.finish_button = View.create_button(self,
-                                                        finish_button_conditional_label,
-                                                        lambda:
-                                                        self.controller.edit_label(edit_card_entry.get()))
-
-                self.finish_button.place(relx=0.85, rely=0.9, anchor="w")
-                self.bind('<Return>', lambda event: self.controller.edit_label(edit_card_entry.get()))
-                logger.debug("Cancel and finish buttons created and placed")
-            except Exception as e:
-                logger.error(f"An error occurred while creating cancel and finish buttons: {e}", exc_info=True)
             if self.controller.cc.card_type != "Satodime":
-                logger.info("IN View.change_pin() | Requesting card verification PIN")
                 if self.controller.cc.is_pin_set():
                     self.controller.cc.card_verify_PIN_simple()
                 else:
                     self.controller.PIN_dialog(f'Unlock your {self.controller.cc.card_type}')
 
-            logger.debug("Exiting edit_label method successfully")
         except Exception as e:
             logger.error(f"An unexpected error occurred in edit_label: {e}", exc_info=True)
 
@@ -1824,336 +1646,250 @@ class View(customtkinter.CTk):
                 txt_device = txt_error + "\n------------------\n" + txt_device
 
         try:
-            logger.info("IN View.check_authenticity | Entering check_authenticity method")
+            logger.info("View.check_authenticity start")
 
             if self.current_frame is not None:
-                try:
-                    logger.debug("Clearing current frame")
-                    self.clear_current_frame()
-                    logger.debug("Current frame cleared")
-                except Exception as e:
-                    logger.error(f"An error occurred while clearing current frame: {e}", exc_info=True)
+                self.clear_current_frame()
 
-            try:
-                logger.debug("Creating new frame")
-                self.current_frame = View.create_frame(self)
-                self.current_frame.place(relx=0.5, rely=0.5, anchor="center")
-                logger.debug("New frame created and placed")
+            # Creating new frame
+            self.current_frame = View.create_frame(self)
+            self.current_frame.place(relx=0.5, rely=0.5, anchor="center")
 
-                self.header = View.create_an_header(self, "Check authenticity", "check_authenticity_popup.jpg")
-                self.header.place(relx=0.32, rely=0.05, anchor="nw")
-            except Exception as e:
-                logger.error(f"An error occurred while creating new frame: {e}", exc_info=True)
+            self.header = View.create_an_header(self, "Check authenticity", "check_authenticity_popup.jpg")
+            self.header.place(relx=0.32, rely=0.05, anchor="nw")
 
             certificate_radio_value = customtkinter.StringVar(value="")
 
             def update_radio_selection():
+                logger.info(f"Button clicked: {certificate_radio_value.get()}")
+                if certificate_radio_value.get() == 'root_ca_certificate':
+                    self.update_textbox(txt_ca)
+                    self.text_box.place(relx=0.33, rely=0.4, anchor="nw")
+                if certificate_radio_value.get() == 'sub_ca_certificate':
+                    self.update_textbox(txt_subca)
+                    self.text_box.place(relx=0.33, rely=0.4, anchor="nw")
+                if certificate_radio_value.get() == 'device_certificate':
+                    self.update_textbox(txt_device)
+                    self.text_box.place(relx=0.33, rely=0.4, anchor="nw")
+
+            #
+            text = View.create_label(self, f"Check whether or not you have a genuine Satochip card.")
+            text.place(relx=0.33, rely=0.17, anchor="w")
+
+            text = View.create_label(self, f"Status:")
+            text.configure(font=self.make_text_bold())
+            text.place(relx=0.33, rely=0.27, anchor="w")
+            if self.controller.cc.card_present:
+                if is_authentic:
+                    icon_image = Image.open("./pictures_db/genuine_card.jpg")
+                    icon = customtkinter.CTkImage(light_image=icon_image, size=(30, 30))
+                    icon_label = customtkinter.CTkLabel(self.current_frame, image=icon,
+                                                        text=f"Your card is authentic. ",
+                                                        compound='right', bg_color="whitesmoke", fg_color="whitesmoke",
+                                                        font=customtkinter.CTkFont(family="Outfit",
+                                                                                   size=18,
+                                                                                   weight="normal"))
+                    icon_label.place(relx=0.4, rely=0.267, anchor="w")
+                else:
+                    icon_image = Image.open("./pictures_db/not_genuine_card.jpg")
+                    icon = customtkinter.CTkImage(light_image=icon_image, size=(30, 30))
+                    icon_label = customtkinter.CTkLabel(self.current_frame, image=icon,
+                                                        text=f"Your card is not authentic. ",
+                                                        compound='right', bg_color="whitesmoke", fg_color="whitesmoke",
+                                                        font=customtkinter.CTkFont(family="Outfit",
+                                                                                   size=18,
+                                                                                   weight="normal"))
+                    icon_label.place(relx=0.4, rely=0.267, anchor="w")
+
+                    text = View.create_label(self, f"Warning!")
+                    text.configure(font=self.make_text_bold())
+                    text.place(relx=0.33, rely=0.7, anchor="w")
+                    text = View.create_label(self, f"We could not authenticate the issuer of this card.")
+                    text.place(relx=0.33, rely=0.75, anchor="w")
+                    text = View.create_label(self,
+                                             f"If you did not load the card applet by yourself, be extremely careful!")
+                    text.place(relx=0.33, rely=0.8, anchor="w")
+                    text = View.create_label(self,
+                                             f"Contact support@satochip.io to report any suspicious device.")
+                    text.place(relx=0.33, rely=0.85, anchor="w")
+
+            # Setting up radio buttons
+            self.root_ca_certificate = customtkinter.CTkRadioButton(
+                self.current_frame,
+                text="Root CA certificate",
+                variable=certificate_radio_value,
+                value="root_ca_certificate",
+                font=customtkinter.CTkFont(family="Outfit", size=14, weight="normal"),
+                bg_color="whitesmoke", fg_color="green", hover_color="green",
+                command=update_radio_selection
+            )
+            self.root_ca_certificate.place(relx=0.33, rely=0.35, anchor="w")
+
+            self.sub_ca_certificate = customtkinter.CTkRadioButton(
+                self.current_frame,
+                text="Sub CA certificate",
+                variable=certificate_radio_value,
+                value="sub_ca_certificate",
+                font=customtkinter.CTkFont(family="Outfit", size=14, weight="normal"),
+                bg_color="whitesmoke", fg_color="green", hover_color="green",
+                command=update_radio_selection
+            )
+            self.sub_ca_certificate.place(relx=0.50, rely=0.35, anchor="w")
+
+            self.device_certificate = customtkinter.CTkRadioButton(
+                self.current_frame,
+                text="Device certificate",
+                variable=certificate_radio_value,
+                value="device_certificate",
+                font=customtkinter.CTkFont(family="Outfit", size=14, weight="normal"),
+                bg_color="whitesmoke", fg_color="green", hover_color="green",
+                command=update_radio_selection
+            )
+            self.device_certificate.place(relx=0.67, rely=0.35, anchor="w")
+
+            # Setting up text box
+            self.text_box = customtkinter.CTkTextbox(
+                self, corner_radius=10,
+                bg_color='whitesmoke', fg_color=BUTTON_COLOR, border_color=BUTTON_COLOR,
+                border_width=0, width=581, height=228 if is_authentic else 150,
+                text_color="grey",
+                font=customtkinter.CTkFont(family="Outfit", size=13, weight="normal")
+            )
+
+            self.cancel_button = View.create_button(self, "Back", lambda: self.start_setup())
+            self.cancel_button.place(relx=0.85, rely=0.9, anchor="w")
+            if self.controller.cc.card_type != "Satodime":
                 try:
-                    if certificate_radio_value.get() == 'root_ca_certificate':
-                        logger.info(f"Button clicked: {certificate_radio_value.get()}")
-                        self.update_textbox(txt_ca)
-                        self.text_box.place(relx=0.33, rely=0.4, anchor="nw")
-                    if certificate_radio_value.get() == 'sub_ca_certificate':
-                        logger.info(f"Button clicked: {certificate_radio_value.get()}")
-                        self.update_textbox(txt_subca)
-                        self.text_box.place(relx=0.33, rely=0.4, anchor="nw")
-                    if certificate_radio_value.get() == 'device_certificate':
-                        logger.info(f"Button clicked: {certificate_radio_value.get()}")
-                        self.update_textbox(txt_device)
-                        self.text_box.place(relx=0.33, rely=0.4, anchor="nw")
+                    self.controller.cc.card_verify_PIN_simple()
                 except Exception as e:
-                    logger.error(f"An error occurred in update_radio_selection: {e}", exc_info=True)
+                    self.start_setup()
 
-            try:
-                text = View.create_label(self, f"Check whether or not you have a genuine Satochip card.")
-                text.place(relx=0.33, rely=0.17, anchor="w")
+            # Creating and placing main menu
+            self.menu = self.main_menu()
+            self.menu.place(relx=0.250, rely=0.5, anchor="e")
 
-                text = View.create_label(self, f"Status:")
-                text.configure(font=self.make_text_bold())
-                text.place(relx=0.33, rely=0.27, anchor="w")
-                if self.controller.cc.card_present:
-                    if is_authentic:
-                        icon_image = Image.open("./pictures_db/genuine_card.jpg")
-                        icon = customtkinter.CTkImage(light_image=icon_image, size=(30, 30))
-                        icon_label = customtkinter.CTkLabel(self.current_frame, image=icon,
-                                                            text=f"Your card is authentic. ",
-                                                            compound='right', bg_color="whitesmoke", fg_color="whitesmoke",
-                                                            font=customtkinter.CTkFont(family="Outfit",
-                                                                                       size=18,
-                                                                                       weight="normal"))
-                        icon_label.place(relx=0.4, rely=0.267, anchor="w")
-                    else:
-                        icon_image = Image.open("./pictures_db/not_genuine_card.jpg")
-                        icon = customtkinter.CTkImage(light_image=icon_image, size=(30, 30))
-                        icon_label = customtkinter.CTkLabel(self.current_frame, image=icon,
-                                                            text=f"Your card is not authentic. ",
-                                                            compound='right', bg_color="whitesmoke", fg_color="whitesmoke",
-                                                            font=customtkinter.CTkFont(family="Outfit",
-                                                                                       size=18,
-                                                                                       weight="normal"))
-                        icon_label.place(relx=0.4, rely=0.267, anchor="w")
-
-                        text = View.create_label(self, f"Warning!")
-                        text.configure(font=self.make_text_bold())
-                        text.place(relx=0.33, rely=0.7, anchor="w")
-                        text = View.create_label(self, f"We could not authenticate the issuer of this card.")
-                        text.place(relx=0.33, rely=0.75, anchor="w")
-                        text = View.create_label(self,
-                                                 f"If you did not load the card applet by yourself, be extremely careful!")
-                        text.place(relx=0.33, rely=0.8, anchor="w")
-                        text = View.create_label(self,
-                                                 f"Contact support@satochip.io to report any suspicious device.")
-                        text.place(relx=0.33, rely=0.85, anchor="w")
-
-                logger.debug("Setting up radio buttons")
-                self.root_ca_certificate = customtkinter.CTkRadioButton(self.current_frame,
-                                                                        text="Root CA certificate",
-                                                                        variable=certificate_radio_value,
-                                                                        value="root_ca_certificate",
-                                                                        font=customtkinter.CTkFont(family="Outfit",
-                                                                                                   size=14,
-                                                                                                   weight="normal"),
-                                                                        bg_color="whitesmoke", fg_color="green",
-                                                                        hover_color="green",
-                                                                        command=update_radio_selection)
-                self.root_ca_certificate.place(relx=0.33, rely=0.35, anchor="w")
-
-                self.sub_ca_certificate = customtkinter.CTkRadioButton(self.current_frame,
-                                                                       text="Sub CA certificate",
-                                                                       variable=certificate_radio_value,
-                                                                       value="sub_ca_certificate",
-                                                                       font=customtkinter.CTkFont(family="Outfit",
-                                                                                                  size=14,
-                                                                                                  weight="normal"),
-                                                                       bg_color="whitesmoke", fg_color="green",
-                                                                       hover_color="green",
-                                                                       command=update_radio_selection)
-                self.sub_ca_certificate.place(relx=0.50, rely=0.35, anchor="w")
-
-                self.device_certificate = customtkinter.CTkRadioButton(self.current_frame,
-                                                                       text="Device certificate",
-                                                                       variable=certificate_radio_value,
-                                                                       value="device_certificate",
-                                                                       font=customtkinter.CTkFont(family="Outfit",
-                                                                                                  size=14,
-                                                                                                  weight="normal"),
-                                                                       bg_color="whitesmoke", fg_color="green",
-                                                                       hover_color="green",
-                                                                       command=update_radio_selection)
-                self.device_certificate.place(relx=0.67, rely=0.35, anchor="w")
-                logger.debug("Radio buttons set up")
-            except Exception as e:
-                logger.error(f"An error occurred while setting up radio buttons: {e}", exc_info=True)
-
-            try:
-                logger.info("Setting up text box")
-                self.text_box = customtkinter.CTkTextbox(self, corner_radius=10,
-                                                         bg_color='whitesmoke', fg_color=BUTTON_COLOR,
-                                                         border_color=BUTTON_COLOR, border_width=0,
-                                                         width=581, height=228 if is_authentic else 150,
-                                                         text_color="grey",
-                                                         font=customtkinter.CTkFont(family="Outfit", size=13,
-                                                                                    weight="normal"))
-                logger.debug("Text box set up")
-
-                self.cancel_button = View.create_button(self, "Back",
-                                                        lambda: self.start_setup())
-                self.cancel_button.place(relx=0.85, rely=0.9, anchor="w")
-                if self.controller.cc.card_type != "Satodime":
-                    try:
-                        self.controller.cc.card_verify_PIN_simple()
-                    except Exception as e:
-                        self.start_setup()
-
-            except Exception as e:
-                logger.error(f"An error occurred while setting up text box: {e}", exc_info=True)
-
-            try:
-                logger.info("Creating and placing main menu")
-                self.menu = self.main_menu()
-                self.menu.place(relx=0.250, rely=0.5, anchor="e")
-                logger.debug("Main menu created and placed")
-            except Exception as e:
-                logger.error(f"An error occurred while creating main menu: {e}", exc_info=True)
-
-            logger.info("Exiting check_authenticity method successfully")
         except Exception as e:
             logger.error(f"An unexpected error occurred in check_authenticity: {e}", exc_info=True)
 
-    def click_reset_button(self):
+    def click_reset_button(self): # todo implement reset factory v1 & v2
         try:
-            logger.info("Attempting to reset the card.")
-            try:
-                # self.reset_card_button.configure(state='disabled')
-                logger.info("Reset button disabled.")
-            except Exception as e:
-                logger.error(f"An error occurred while disabling the reset button: {e}", exc_info=True)
+            logger.info("click_reset_button attempting to reset the card.")
 
-            try:
-                logger.info("Calling controller.cc.card_reset_factory()")
-                #(response, sw1, sw2) = self.controller.card_transmit_reset()
-                (response, sw1, sw2) = self.controller.cc.card_reset_factory_signal()
-                logger.info(f"card_reset_factory response: {hex(256 * sw1 + sw2)}")
-            except Exception as e:
-                logger.error(f"An error occurred during card_reset_factory call: {e}", exc_info=True)
-                return
+            (response, sw1, sw2) = self.controller.cc.card_reset_factory_signal()
+            logger.info(f"card_reset_factory response: {hex(256 * sw1 + sw2)}")
+            if sw1 == 0xFF and sw2 == 0x00:
+                logger.info("Factory reset successful. Disconnecting the card.")
+                #self.controller.cc.card_factory_disconnect()
+                self.controller.cc.card_disconnect()
+                msg = 'The card has been reset to factory\nRemaining counter: 0'
+                self.show('SUCCESS', msg, "Ok", lambda: self.restart_app(),
+                          "./pictures_db/reset_popup.jpg")
+                logger.info("Card has been reset to factory. Counter set to 0.")
+            elif sw1 == 0xFF and sw2 == 0xFF:
+                logger.info("Factory reset aborted. The card must be removed after each reset.")
+                msg = 'RESET ABORTED!\n Remaining counter: MAX.'
+                self.show('ABORTED', msg, "Ok",
+                          lambda: [self.controller.cc.set_mode_factory_reset(False), self.start_setup()],
+                          "./pictures_db/reset_popup.jpg")
+                logger.info("Reset aborted. Counter set to MAX.")
+            elif sw1 == 0xFF and sw2 > 0x00:
+                logger.info(f"Factory reset in progress. Remaining counter: {sw2}")
+                self.counter = str(sw2) + "/4"
+                msg = f"Please follow the instruction bellow.\n{self.counter}"
+                self.show('IN PROGRESS', msg, "Remove card", lambda: self.click_reset_button(),
+                          "./pictures_db/reset_popup.jpg")
+                self.show_button.configure(state='disabled')
+                logger.info("Card needs to be removed and reinserted to continue.")
+            elif sw1 == 0x6F and sw2 == 0x00:
+                logger.info("Factory reset failed with error code 0x6F00.")
+                self.counter = "Unknown error " + str(hex(256 * sw1 + sw2))
+                msg = f"The factory reset failed\n{self.counter}"
+                self.show('FAILED', msg, "Ok", None, "./pictures_db/reset_popup.jpg")
+            elif sw1 == 0x6D and sw2 == 0x00:
+                logger.info("Factory reset failed with error code 0x6D00.")
+                self.counter = "Instruction not supported - error code: " + str(hex(256 * sw1 + sw2))
+                msg = f"The factory reset failed\n{self.counter}"
+                self.show('FAILED', msg, "Ok", None,"./pictures_db/reset_popup.jpg")
 
-            try:
-                if sw1 == 0xFF and sw2 == 0x00:
-                    logger.info("Factory reset successful. Disconnecting the card.")
-                    #self.controller.cc.card_factory_disconnect()
-                    self.controller.cc.card_disconnect()
-                    msg = 'The card has been reset to factory\nRemaining counter: 0'
-                    self.show('SUCCESS', msg, "Ok", lambda: self.restart_app(),
-                              "./pictures_db/reset_popup.jpg")
-                    logger.info("Card has been reset to factory. Counter set to 0.")
-                elif sw1 == 0xFF and sw2 == 0xFF:
-                    logger.info("Factory reset aborted. The card must be removed after each reset.")
-                    msg = 'RESET ABORTED!\n Remaining counter: MAX.'
-                    self.show('ABORTED', msg, "Ok",
-                              lambda: [self.controller.cc.set_mode_factory_reset(False), self.start_setup()],
-                              "./pictures_db/reset_popup.jpg")
-                    logger.info("Reset aborted. Counter set to MAX.")
-                elif sw1 == 0xFF and sw2 > 0x00:
-                    logger.info(f"Factory reset in progress. Remaining counter: {sw2}")
-                    self.counter = str(sw2) + "/4"
-                    msg = f"Please follow the instruction bellow.\n{self.counter}"
-                    self.show('IN PROGRESS', msg, "Remove card", lambda: self.click_reset_button(),
-                              "./pictures_db/reset_popup.jpg")
-                    self.show_button.configure(state='disabled')
-
-                    logger.info("Card needs to be removed and reinserted to continue.")
-                elif sw1 == 0x6F and sw2 == 0x00:
-                    logger.info("Factory reset failed with error code 0x6F00.")
-                    self.counter = "Unknown error " + str(hex(256 * sw1 + sw2))
-                    msg = f"The factory reset failed\n{self.counter}"
-                    self.show('FAILED', msg, "Ok", None, "./pictures_db/reset_popup.jpg")
-
-                elif sw1 == 0x6D and sw2 == 0x00:
-                    logger.info("Factory reset failed with error code 0x6D00.")
-                    self.counter = "Instruction not supported - error code: " + str(hex(256 * sw1 + sw2))
-                    msg = f"The factory reset failed\n{self.counter}"
-                    self.show('FAILED', msg, "Ok", None,"./pictures_db/reset_popup.jpg")
-
-            except Exception as e:
-                logger.error(f"An error occurred while processing the factory reset response: {e}", exc_info=True)
         except Exception as e:
             logger.error(f"An unexpected error occurred during the factory reset process: {e}", exc_info=True)
 
     def reset_my_card_window(self):
         self.controller.cc.set_mode_factory_reset(True)
-
         self.in_reset_card = 'display'
         logger.info(f'in reset card: {self.in_reset_card}')
 
         try:
             if self.current_frame is not None:
-                try:
-                    logger.debug("Clearing current frame")
-                    self.clear_current_frame()
-                    logger.debug("Current frame cleared")
-                except Exception as e:
-                    logger.error(f"An error occurred while clearing current frame: {e}", exc_info=True)
+                self.clear_current_frame()
 
-            try:
-                logger.info("Creating new frame for reset card window")
-                self.current_frame = View.create_frame(self)
-                self.current_frame.place(relx=0.5, rely=0.5, anchor="center")
-                logger.debug("New frame created and placed")
-            except Exception as e:
-                logger.error(f"An error occurred while creating new frame: {e}", exc_info=True)
+            # Creating new frame for reset card window
+            self.current_frame = View.create_frame(self)
+            self.current_frame.place(relx=0.5, rely=0.5, anchor="center")
 
+            # Load background photo
             self.background_photo = View.create_background_photo(self, "./pictures_db/reset_my_card.png")
             self.canvas = View.create_canvas(self)
             self.canvas.place(relx=0.250, rely=0.501, anchor="w")
             self.canvas.create_image(0, 0, image=self.background_photo, anchor="nw")
-            logger.debug("Background photo loaded and placed")
 
-            try:
-                logger.info("Creating header")
-                self.header = View.create_an_header(self, f"Reset Your {self.controller.cc.card_type}", "reset_popup.jpg")
-                self.header.place(relx=0.32, rely=0.05, anchor="nw")
-                logger.debug("Header created and placed")
+            # Creating header
+            self.header = View.create_an_header(self, f"Reset Your {self.controller.cc.card_type}", "reset_popup.jpg")
+            self.header.place(relx=0.32, rely=0.05, anchor="nw")
 
-                logger.debug("setup paragraph")
-                text = View.create_label(self,
-                                         f"Resetting your card to factory settings removes all private keys, saved ")
-                text.place(relx=0.33, rely=0.17, anchor="w")
-                text = View.create_label(self,
-                                         "information, and settings (PIN code) from your device.")
-                text.place(relx=0.33, rely=0.22, anchor="w")
+            # setup paragraph
+            text = View.create_label(self,
+                                     f"Resetting your card to factory settings removes all private keys, saved ")
+            text.place(relx=0.33, rely=0.17, anchor="w")
+            text = View.create_label(self,
+                                     "information, and settings (PIN code) from your device.")
+            text.place(relx=0.33, rely=0.22, anchor="w")
 
-                text = View.create_label(self, "Before your start: be sure to have a backup of its content; either the")
-                text.place(relx=0.33, rely=0.32, anchor="w")
-                text = View.create_label(self,
-                                         f"seedphrase or any other passwords stored in it.")
-                text.place(relx=0.33, rely=0.37, anchor="w")
+            text = View.create_label(self, "Before your start: be sure to have a backup of its content; either the")
+            text.place(relx=0.33, rely=0.32, anchor="w")
+            text = View.create_label(self,
+                                     f"seedphrase or any other passwords stored in it.")
+            text.place(relx=0.33, rely=0.37, anchor="w")
 
-                text = View.create_label(self,
-                                         "The reset process is simple: click on “Reset”, follow the pop-up wizard and")
-                text.place(relx=0.33, rely=0.47, anchor="w")
-                text = View.create_label(self,
-                                         "remove your card from the chip card reader, insert it again. And do that")
-                text.place(relx=0.33, rely=0.52, anchor="w")
-                text = View.create_label(self,
-                                         "several times.")
-                text.place(relx=0.33, rely=0.57, anchor="w")
-            except Exception as e:
-                logger.error(f"An error occurred while creating header: {e}", exc_info=True)
+            text = View.create_label(self,
+                                     "The reset process is simple: click on “Reset”, follow the pop-up wizard and")
+            text.place(relx=0.33, rely=0.47, anchor="w")
+            text = View.create_label(self,
+                                     "remove your card from the chip card reader, insert it again. And do that")
+            text.place(relx=0.33, rely=0.52, anchor="w")
+            text = View.create_label(self,
+                                     "several times.")
+            text.place(relx=0.33, rely=0.57, anchor="w")
 
-            try:
-                logger.info("Creating counter label")
-                self.counter_label = customtkinter.CTkLabel(self, text="Card isn't reset actually",
-                                                            bg_color='white', fg_color='white',
-                                                            font=customtkinter.CTkFont(family="Outfit",
-                                                                                       size=30,
-                                                                                       weight="bold"))
-                # self.counter_label.place(relx=0.25, rely=0.53, anchor='w')
-                logger.debug("Counter label created and placed")
-            except Exception as e:
-                logger.error(f"An error occurred while creating counter label: {e}", exc_info=True)
+            # Creating counter label
+            self.counter_label = customtkinter.CTkLabel(
+                self, text="Card isn't reset actually",
+                bg_color='white', fg_color='white',
+                font=customtkinter.CTkFont(family="Outfit", size=30, weight="bold")
+            )
+            # self.counter_label.place(relx=0.25, rely=0.53, anchor='w')
 
-            try:
-                logger.info("Creating quit button")
+            # Creating quit & start button
+            def click_cancel_button():
+                logger.info("Executing quit button action")
+                self.controller.cc.set_mode_factory_reset(False)
+                time.sleep(0.5) # todo remove?
+                self.start_setup()
 
-                def click_cancel_button():
-                    try:
-                        logger.info("Executing quit button action")
-                        self.controller.cc.set_mode_factory_reset(False)
-                        time.sleep(0.5) # todo remove?
-                        self.start_setup()
-                    except Exception as e:
-                        logger.error(f"An error occurred while quitting and redirecting: {e}", exc_info=True)
+            def click_start_button():
+                msg = f"Please follow the instruction bellow."
+                self.show('IN PROGRESS', msg, "Remove card", lambda: self.click_reset_button(),
+                          "./pictures_db/reset_popup.jpg")
+                self.show_button.configure(state='disabled')
 
-                def click_start_button():
-                    try:
-                        msg = f"Please follow the instruction bellow."
-                        self.show('IN PROGRESS', msg, "Remove card", lambda: self.click_reset_button(),
-                                  "./pictures_db/reset_popup.jpg")
-                        self.show_button.configure(state='disabled')
-                    except Exception as e:
-                        logger.error(f"An error occurred while quitting and redirecting: {e}", exc_info=True)
+            self.cancel_button = View.create_button(self, 'Cancel', lambda: click_cancel_button())
+            self.cancel_button.place(relx=0.7, rely=0.9, anchor="w")
+            self.reset_button = View.create_button(self,'Start',lambda: click_start_button())
+            self.reset_button.place(relx=0.85, rely=0.9, anchor="w")
 
-                self.cancel_button = View.create_button(self, 'Cancel',
-                                                        lambda: click_cancel_button())
-                self.cancel_button.place(relx=0.7, rely=0.9, anchor="w")
+            menu = self.main_menu()
+            menu.place(relx=0.250, rely=0.5, anchor="e")
 
-                self.reset_button = View.create_button(self,
-                                                       'Start',
-                                                       lambda: click_start_button())
-                self.reset_button.place(relx=0.85, rely=0.9, anchor="w")
-
-                menu = self.main_menu()
-                menu.place(relx=0.250, rely=0.5, anchor="e")
-
-            except Exception as e:
-                logger.error(f"An error occurred while creating quit button: {e}", exc_info=True)
-
-            logger.info("IN View.reset_my_card_window() | Attempting to switch to factory observer")
-            try:
-                logger.debug("switch to factory observer successfully")
-            except Exception as e:
-                logger.error(f"An error occurred during the switch to factory observer: {e}", exc_info=True)
         except Exception as e:
             logger.error(f"An unexpected error occurred in reset_my_card_window: {e}", exc_info=True)
 
@@ -2169,146 +1905,127 @@ class View(customtkinter.CTk):
             finish_button = "Finish"
 
             if self.current_frame is not None:
-                try:
-                    logger.debug("Clearing current frame")
-                    self.clear_current_frame()
-                    logger.debug("Current frame cleared")
-                except Exception as e:
-                    logger.error(f"An error occurred while clearing current frame: {e}", exc_info=True)
+                self.clear_current_frame()
 
-            try:
-                logger.debug("Creating new frame")
-                self.current_frame = View.create_frame(self)
-                self.current_frame.place(relx=0.5, rely=0.5, anchor="center")
-                logger.debug("New frame created and placed")
-            except Exception as e:
-                logger.error(f"An error occurred while creating new frame: {e}", exc_info=True)
+            # Creating new frame
+            self.current_frame = View.create_frame(self)
+            self.current_frame.place(relx=0.5, rely=0.5, anchor="center")
 
-            try:
-                logger.debug("Creating main menu")
-                menu = self.main_menu()
-                menu.place(relx=0.250, rely=0.5, anchor="e")
-                logger.debug("Main menu created and placed")
-            except Exception as e:
-                logger.error(f"An error occurred while creating main menu: {e}", exc_info=True)
+            # Creating main menu
+            menu = self.main_menu()
+            menu.place(relx=0.250, rely=0.5, anchor="e")
 
-            try:
-                logger.debug("Creating header")
+            # Creating header
+            self.header = View.create_an_header(self,
+                                                "About",
+                                                "about_popup.jpg")
+            self.header.place(relx=0.32, rely=0.05, anchor="nw")
 
-                self.header = View.create_an_header(self,
-                                                    "About",
-                                                    "about_popup.jpg")
+            self.background_photo = View.create_background_photo(self, "./pictures_db/about_background.png")
+            self.canvas = View.create_canvas(self)
+            self.canvas.place(relx=0.250, rely=0.501, anchor="w")
+            self.canvas.create_image(0, 0, image=self.background_photo, anchor="nw")
 
-                self.header.place(relx=0.32, rely=0.05, anchor="nw")
-
-                self.background_photo = View.create_background_photo(self, "./pictures_db/about_background.png")
-                self.canvas = View.create_canvas(self)
-                self.canvas.place(relx=0.250, rely=0.501, anchor="w")
-                self.canvas.create_image(0, 0, image=self.background_photo, anchor="nw")
-
-                def unlock():
-                    if self.controller.cc.card_type != "Satodime":
-                        if self.controller.cc.is_pin_set():
-                            self.controller.cc.card_verify_PIN_simple()
-                        else:
-                            try:
-                                self.controller.PIN_dialog(f'Unlock your {self.controller.cc.card_type}')
-                            except Exception as e:
-                                self.start_setup()
-                    self.update_status()
-                    self.about()
-
-                # card infos
-                card_information = self.create_label("Card information")
-                card_information.place(relx=0.33, rely=0.25, anchor="w")
-                card_information.configure(font=self.make_text_bold())
-
-                applet_version = self.create_label(f"Applet version: {self.controller.card_status['applet_full_version_string']}")
-                if self.controller.cc.card_type == "Satodime" or self.controller.cc.is_pin_set():
-                    if self.controller.cc.card_type != "Satodime":
-                        self.controller.cc.card_verify_PIN_simple()
-                    card_label_named = self.create_label(f"Label: [{self.controller.get_card_label_infos()}]")
-                    is_authentic, txt_ca, txt_subca, txt_device, txt_error = self.controller.cc.card_verify_authenticity()
-                    if is_authentic:
-                        card_genuine = self.create_label(f"Genuine: YES")
-                    else:
-                        card_genuine = self.create_label("Genuine: NO")
-                elif not self.controller.cc.setup_done:
-                    watch_all = self.create_label("Card requires setup")
-                    watch_all.place(relx=0.33, rely=0.17)
-                    unlock_button = self.create_button("Setup card", lambda: self.setup_my_card_pin())
-                    unlock_button.configure(font=self.make_text_size_at(15))
-                    unlock_button.place(relx= 0.55, rely=0.17)
-                    card_label_named = self.create_label(f"Label: [UNKNOWN]")
-                    card_genuine = self.create_label(f"Genuine: [UNKNOWN]")
-                else:
-                    watch_all = self.create_label("PIN required to look at complete information")
-                    watch_all.place(relx=0.33, rely=0.17)
-                    unlock_button = self.create_button("Unlock", lambda: [unlock()])
-                    unlock_button.configure(font=self.make_text_size_at(15))
-                    unlock_button.place(relx=0.75, rely=0.17)
-                    card_label_named = self.create_label(f"Label: [UNKNOWN]")
-                    card_genuine = self.create_label(f"Genuine: [UNKNOWN]")
-
-                card_label_named.place(relx=0.33, rely=0.28)
-                applet_version.place(relx=0.33, rely=0.33)
-                card_genuine.place(relx=0.33, rely=0.38)
-
-                # card configuration
-                card_configuration = self.create_label("Card configuration")
-                card_configuration.place(relx=0.33, rely=0.48, anchor="w")
-                card_configuration.configure(font=self.make_text_bold())
+            def unlock():
                 if self.controller.cc.card_type != "Satodime":
-                    pin_information = self.create_label(f"PIN counter:[{self.controller.card_status['PIN0_remaining_tries']}] tries remaining")
-                    pin_information.place(relx=0.33, rely=0.52)
+                    if self.controller.cc.is_pin_set():
+                        self.controller.cc.card_verify_PIN_simple()
+                    else:
+                        try:
+                            self.controller.PIN_dialog(f'Unlock your {self.controller.cc.card_type}')
+                        except Exception as e:
+                            self.start_setup()
+                self.update_status()
+                self.about()
+
+            # card infos
+            card_information = self.create_label("Card information")
+            card_information.place(relx=0.33, rely=0.25, anchor="w")
+            card_information.configure(font=self.make_text_bold())
+
+            applet_version = self.create_label(f"Applet version: {self.controller.card_status['applet_full_version_string']}")
+            if self.controller.cc.card_type == "Satodime" or self.controller.cc.is_pin_set():
+                if self.controller.cc.card_type != "Satodime":
+                    self.controller.cc.card_verify_PIN_simple()
+                card_label_named = self.create_label(f"Label: [{self.controller.get_card_label_infos()}]")
+                is_authentic, txt_ca, txt_subca, txt_device, txt_error = self.controller.cc.card_verify_authenticity()
+                if is_authentic:
+                    card_genuine = self.create_label(f"Genuine: YES")
                 else:
-                    pin_information = self.create_label("No PIN required")
-                    pin_information.place(relx=0.33, rely=0.52)
+                    card_genuine = self.create_label("Genuine: NO")
+            elif not self.controller.cc.setup_done:
+                watch_all = self.create_label("Card requires setup")
+                watch_all.place(relx=0.33, rely=0.17)
+                unlock_button = self.create_button("Setup card", lambda: self.setup_my_card_pin())
+                unlock_button.configure(font=self.make_text_size_at(15))
+                unlock_button.place(relx= 0.55, rely=0.17)
+                card_label_named = self.create_label(f"Label: [UNKNOWN]")
+                card_genuine = self.create_label(f"Genuine: [UNKNOWN]")
+            else:
+                watch_all = self.create_label("PIN required to look at complete information")
+                watch_all.place(relx=0.33, rely=0.17)
+                unlock_button = self.create_button("Unlock", lambda: [unlock()])
+                unlock_button.configure(font=self.make_text_size_at(15))
+                unlock_button.place(relx=0.75, rely=0.17)
+                card_label_named = self.create_label(f"Label: [UNKNOWN]")
+                card_genuine = self.create_label(f"Genuine: [UNKNOWN]")
 
-                # for a next implementation of 2FA functionality you have the code below
-                if self.controller.cc.card_type == "Satochip":
-                    two_FA = self.create_label(f"2FA enabled" if self.controller.cc.needs_2FA else f"2FA disabled")
-                    two_FA.place(relx=0.33, rely=0.58)
-                    # if self.controller.cc.needs_2FA:
-                    #     self.button_2FA = self.create_button("Disable 2FA", None)
-                    # else:
-                    #     self.button_2FA = self.create_button("Enable 2FA")
-                    # self.button_2FA.configure(font=self.make_text_size_at(15), state='disabled')
-                    # self.button_2FA.place(relx=0.5, rely=0.58)
+            card_label_named.place(relx=0.33, rely=0.28)
+            applet_version.place(relx=0.33, rely=0.33)
+            card_genuine.place(relx=0.33, rely=0.38)
 
-                # card connectivity
-                card_connectivity = self.create_label("Card connectivity")
-                card_connectivity.place(relx=0.33, rely=0.68, anchor="w")
-                card_connectivity.configure(font=self.make_text_bold())
+            # card configuration
+            card_configuration = self.create_label("Card configuration")
+            card_configuration.place(relx=0.33, rely=0.48, anchor="w")
+            card_configuration.configure(font=self.make_text_bold())
+            if self.controller.cc.card_type != "Satodime":
+                pin_information = self.create_label(f"PIN counter:[{self.controller.card_status['PIN0_remaining_tries']}] tries remaining")
+                pin_information.place(relx=0.33, rely=0.52)
+            else:
+                pin_information = self.create_label("No PIN required")
+                pin_information.place(relx=0.33, rely=0.52)
 
-                if self.controller.cc.nfc_policy == 0:
-                    nfc = self.create_label(f"NFC enabled")
-                    #self.button_nfc = self.create_button("Disable NFC")
-                elif self.controller.cc.nfc_policy == 1:
-                    nfc = self.create_label(f"NFC disabled:")
-                    #self.button_nfc = self.create_button("Enable NFC")
-                else:
-                    nfc = self.create_label(f"NFC: [BLOCKED]")
-                nfc.place(relx=0.33, rely=0.715)
-                #self.button_nfc.configure(font=self.make_text_size_at(15), state='disabled')
-                #self.button_nfc.place(relx=0.5, rely=0.71)
+            # for a next implementation of 2FA functionality you have the code below
+            if self.controller.cc.card_type == "Satochip":
+                two_FA = self.create_label(f"2FA enabled" if self.controller.cc.needs_2FA else f"2FA disabled")
+                two_FA.place(relx=0.33, rely=0.58)
+                # if self.controller.cc.needs_2FA:
+                #     self.button_2FA = self.create_button("Disable 2FA", None)
+                # else:
+                #     self.button_2FA = self.create_button("Enable 2FA")
+                # self.button_2FA.configure(font=self.make_text_size_at(15), state='disabled')
+                # self.button_2FA.place(relx=0.5, rely=0.58)
 
-                # software information
-                software_information = self.create_label("Software information")
-                software_information.place(relx=0.33, rely=0.81, anchor="w")
-                software_information.configure(font=self.make_text_bold())
-                app_version = self.create_label(f"Satochip-utils version: {VERSION}")
-                app_version.place(relx=0.33, rely=0.83)
-                pysatochip_version = self.create_label(f"Pysatochip version: {PYSATOCHIP_VERSION}")
-                pysatochip_version.place(relx=0.33, rely=0.88)
-                back_button = View.create_button(self,
-                                                       'Back',
-                                                       lambda: self.start_setup())
-                back_button.place(relx=0.85, rely=0.9, anchor="w")
+            # card connectivity
+            card_connectivity = self.create_label("Card connectivity")
+            card_connectivity.place(relx=0.33, rely=0.68, anchor="w")
+            card_connectivity.configure(font=self.make_text_bold())
 
-                logger.debug("Header created and placed")
-            except Exception as e:
-                logger.error(f"An error occurred while creating header: {e}", exc_info=True)
+            if self.controller.cc.nfc_policy == 0:
+                nfc = self.create_label(f"NFC enabled")
+                #self.button_nfc = self.create_button("Disable NFC")
+            elif self.controller.cc.nfc_policy == 1:
+                nfc = self.create_label(f"NFC disabled:")
+                #self.button_nfc = self.create_button("Enable NFC")
+            else:
+                nfc = self.create_label(f"NFC: [BLOCKED]")
+            nfc.place(relx=0.33, rely=0.715)
+            #self.button_nfc.configure(font=self.make_text_size_at(15), state='disabled')
+            #self.button_nfc.place(relx=0.5, rely=0.71)
+
+            # software information
+            software_information = self.create_label("Software information")
+            software_information.place(relx=0.33, rely=0.81, anchor="w")
+            software_information.configure(font=self.make_text_bold())
+            app_version = self.create_label(f"Satochip-utils version: {VERSION}")
+            app_version.place(relx=0.33, rely=0.83)
+            pysatochip_version = self.create_label(f"Pysatochip version: {PYSATOCHIP_VERSION}")
+            pysatochip_version.place(relx=0.33, rely=0.88)
+            back_button = View.create_button(self,
+                                                   'Back',
+                                                   lambda: self.start_setup())
+            back_button.place(relx=0.85, rely=0.9, anchor="w")
+
         except Exception as e:
             logger.error(f"An error occurred while creating header: {e}", exc_info=True)
 

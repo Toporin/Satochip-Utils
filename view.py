@@ -75,7 +75,7 @@ class View(customtkinter.CTk):
             self.current_frame = None
             self.canvas = None
             self.background_photo = None
-            self.create_background_photo = None
+            #self.create_background_photo = None
             self.header = None
             self.text_box = None
             self.button = None
@@ -263,13 +263,14 @@ class View(customtkinter.CTk):
             raise FrameClearingError(f"009 Unexpected error during welcome frame clearing: {e}") from e
 
 
-    def make_text_bold(self, size=18):
+    @staticmethod
+    def make_text_bold(size=18):
         logger.debug("make_text_bold start")
         result = customtkinter.CTkFont(weight="bold", size=size)
         return result
 
     def make_text_size_at(self, size=18):
-        logger.debug("Entering make_text_bold method")
+        logger.debug("make_text_size_at start")
         result = customtkinter.CTkFont(size=size)
         return result
 
@@ -449,7 +450,7 @@ class View(customtkinter.CTk):
     def create_canvas(self, frame=None) -> customtkinter.CTkCanvas:
         try:
             logger.debug("View.create_canvas() start")
-            canvas = customtkinter.CTkCanvas(self.current_frame, bg="whitesmoke", width=1000, height=599)
+            canvas = customtkinter.CTkCanvas(self.current_frame, bg="whitesmoke", width=1000, height=599)# todo: 599 or 600?
             return canvas
         except Exception as e:
             logger.error(f"An unexpected error occurred in create_canvas: {e}", exc_info=True)
@@ -739,7 +740,11 @@ class View(customtkinter.CTk):
                 logger.info(
                     f"003 Card {'detected' if state == 'normal' else 'undetected'}, setting state to {state}")
 
-            menu_frame = customtkinter.CTkFrame(self.main_frame, width=250, height=600,
+            # menu_frame = customtkinter.CTkFrame(self.main_frame, width=250, height=600,
+            #                                     bg_color=BG_MAIN_MENU,
+            #                                     fg_color=BG_MAIN_MENU, corner_radius=0, border_color="black",
+            #                                     border_width=0)
+            menu_frame = customtkinter.CTkFrame(self.current_frame, width=250, height=600,
                                                 bg_color=BG_MAIN_MENU,
                                                 fg_color=BG_MAIN_MENU, corner_radius=0, border_color="black",
                                                 border_width=0)
@@ -1136,7 +1141,7 @@ class View(customtkinter.CTk):
 
             logger.debug("Creating header")
             self.header = View.create_an_header(self, "Welcome", "home_popup.jpg")
-            self.header.place(relx=0.32, rely=0.08, anchor="nw")
+            self.header.place(relx=0.32, rely=0.08, anchor="nw") # todo: update rely to 0.05
             logger.debug("Header created and placed")
 
             logger.debug("Creating main frame")

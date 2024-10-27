@@ -1,3 +1,4 @@
+import binascii
 import gc
 import logging
 import sys
@@ -13,7 +14,8 @@ from PIL import Image, ImageTk
 from pysatochip.version import PYSATOCHIP_VERSION
 
 from controller import Controller
-from exceptions import MenuCreationError, MenuDeletionError, ViewError, ButtonCreationError, FrameClearingError
+from exceptions import MenuCreationError, MenuDeletionError, ViewError, ButtonCreationError, FrameClearingError, \
+    FrameCreationError, HeaderCreationError, UIElementError, SecretFrameCreationError, ControllerError
 from log_config import SUCCESS, log_method
 from version import VERSION
 
@@ -86,6 +88,18 @@ class View(customtkinter.CTk):
             self.counter = None
             self.display_menu = False
             logger.debug("Widgets declared successfully")
+
+            # Application state attributes
+            # Status de l'application et de certains widgets
+            # TODO: remove??
+            self.app_open: bool = True
+            self.welcome_in_display: bool = True
+            self.spot_if_unlock: bool = False
+            self.pin_left: Optional[int] = None
+            self.mnemonic_textbox_active: bool = False
+            self.mnemonic_textbox: Optional[customtkinter.CTkTextbox] = None
+            self.password_text_box_active: bool = False
+            self.password_text_box: Optional[customtkinter.CTkTextbox] = None
 
             # Launching initialization starting with welcome view
             self.welcome()
@@ -182,7 +196,6 @@ class View(customtkinter.CTk):
             logger.debug("OUT View.clear_current_frame")
         except Exception as e:
             logger.error(f"An unexpected error occurred in clear_current_frame: {e}", exc_info=True)
-
 
     def _clear_current_frame(self): # todo merge with clear_current_frame
         try:
@@ -335,6 +348,38 @@ class View(customtkinter.CTk):
         logo_canvas.create_image(x_center, y_center, anchor='nw', image=photo)
         logo_canvas.image = photo
 
+    def _create_an_header( # todo merge with create_an_header
+            self,
+            title_text: Optional[str] = None,
+            icon_name: Optional[str] = None,
+    ) -> customtkinter.CTkFrame:
+        try:
+            logger.info(f"_create_an_header start with title: '{title_text}' and icon: '{icon_name}'")
+
+            header_frame = customtkinter.CTkFrame(
+                self.current_frame, fg_color="whitesmoke", bg_color="whitesmoke",
+                width=750, height=40
+            )
+
+            if title_text and icon_name:
+                icon_path = f"{ICON_PATH}{icon_name}"
+                image = Image.open(icon_path)
+                photo_image = customtkinter.CTkImage(image, size=(40, 40))
+
+                button = customtkinter.CTkButton(
+                    header_frame, text=f"   {title_text}", image=photo_image,
+                    font=customtkinter.CTkFont(family="Outfit", size=25, weight="bold"),
+                    bg_color="whitesmoke", fg_color="whitesmoke", text_color="black",
+                    hover_color="whitesmoke", compound="left"
+                )
+                button.image = photo_image
+                button.place(rely=0.5, relx=0, anchor="w")
+
+            return header_frame
+        except Exception as e:
+            logger.error(f"010 Unexpected error in _create_an_header: {e}", exc_info=True)
+            raise HeaderCreationError(f"011 Failed to create header: {e}") from e
+
     def create_frame(self, bg_fg_color: str = "whitesmoke", width: int = 1000, height: int = 600) -> customtkinter.CTkFrame:
         logger.debug("View.create_frame() start")
         frame = customtkinter.CTkFrame(
@@ -345,7 +390,102 @@ class View(customtkinter.CTk):
             fg_color=bg_fg_color)
         return frame
 
+    def _create_frame(self):
+        try:
+            logger.info("_create_frame start")
+            self._clear_current_frame()
+            self.current_frame = customtkinter.CTkFrame(
+                self.main_frame, width=750, height=600,
+                fg_color=DEFAULT_BG_COLOR, bg_color=DEFAULT_BG_COLOR
+            )
+            self.current_frame.place(relx=0.250, rely=0.5, anchor='w')
+        except Exception as e:
+            logger.error(f"004 Error in _create_frame: {e}", exc_info=True)
+            raise FrameCreationError(f"005 Failed to create frame: {e}") from e
+
+    def _create_scrollable_frame(
+            self,
+            parent_frame,
+            width,
+            height,
+            x,
+            y
+    ) -> customtkinter.CTkFrame:
+        try:
+            logger.info("_create_scrollable_frame start")
+
+            # Create a frame to hold the canvas and scrollbar
+            container = customtkinter.CTkFrame(parent_frame, width=width, height=height, fg_color=DEFAULT_BG_COLOR)
+            container.place(x=x, y=y)
+            container.pack_propagate(False)  # Prevent the frame from shrinking to fit its contents
+
+            # Create a canvas with specific dimensions
+            canvas = customtkinter.CTkCanvas(container, bg=DEFAULT_BG_COLOR, highlightthickness=0)
+            canvas.pack(side="left", fill="both", expand=True)
+
+            # Add a scrollbar to the canvas
+            scrollbar = customtkinter.CTkScrollbar(container, orientation="vertical", command=canvas.yview)
+            scrollbar.pack(side="right", fill="y")
+
+            # Configure scrollbar colors
+            scrollbar.configure(fg_color=DEFAULT_BG_COLOR, button_color=DEFAULT_BG_COLOR,
+                                button_hover_color=BG_HOVER_BUTTON)
+
+            # Configure the canvas
+            canvas.configure(yscrollcommand=scrollbar.set)
+
+            # Create a frame inside the canvas
+            inner_frame = customtkinter.CTkFrame(canvas, fg_color=DEFAULT_BG_COLOR)
+
+            # Add that frame to a window in the canvas
+            canvas_window = canvas.create_window((0, 0), window=inner_frame, anchor="nw")
+
+            def _configure_inner_frame(event):
+                # Update the scrollregion to encompass the inner frame
+                canvas.configure(scrollregion=canvas.bbox("all"))
+
+                # Resize the inner frame to fit the canvas width
+                canvas.itemconfig(canvas_window, width=canvas.winfo_width())
+
+            inner_frame.bind("<Configure>", _configure_inner_frame)
+
+            def _configure_canvas(event):
+                # Resize the inner frame to fit the canvas width
+                canvas.itemconfig(canvas_window, width=event.width)
+
+            canvas.bind("<Configure>", _configure_canvas)
+
+            def _on_mousewheel(event):
+                # Check if there's actually something to scroll
+                if canvas.bbox("all")[3] <= canvas.winfo_height():
+                    return  # No scrolling needed, so do nothing
+
+                if event.delta > 0:
+                    canvas.yview_scroll(-1, "units")
+                elif event.delta < 0:
+                    canvas.yview_scroll(1, "units")
+
+            # Bind mouse wheel to the canvas
+            canvas.bind_all("<MouseWheel>", _on_mousewheel)
+
+            return inner_frame
+        except Exception as e:
+            logger.error(f"003 Error in _create_scrollable_frame: {e}", exc_info=True)
+            raise FrameCreationError(f"004 Failed to create scrollable frame: {e}") from e
+
     def create_label(self, text, bg_fg_color: str = "whitesmoke", frame=None) -> customtkinter.CTkLabel:
+        # todo use frame
+        logger.debug("view.create_label start")
+        label = customtkinter.CTkLabel(
+            self.current_frame,
+            text=text,
+            bg_color=bg_fg_color,
+            fg_color=bg_fg_color,
+            font=customtkinter.CTkFont(family="Outfit", size=18,weight="normal")
+        )
+        return label
+
+    def _create_label(self, text, bg_fg_color: str = "whitesmoke", frame=None) -> customtkinter.CTkLabel:
         # todo use frame
         logger.debug("view.create_label start")
         label = customtkinter.CTkLabel(
@@ -368,6 +508,23 @@ class View(customtkinter.CTk):
             hover_color=HOVER_COLOR, cursor="hand2",
             command=command)
         return button
+
+    def _create_button( # todo merge with create_button
+            self,
+            text: Optional[str] = None,
+            command: Optional[Callable] = None,
+            frame: Optional[customtkinter.CTkFrame] = None
+    ) -> customtkinter.CTkButton:
+        logger.info(f"_create_button with text: '{text}'")
+        button = customtkinter.CTkButton(
+            self.current_frame, text=text, corner_radius=100,
+            font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal"),
+            bg_color='white', fg_color=BG_MAIN_MENU,
+            hover_color=BG_HOVER_BUTTON, cursor="hand2", width=120, height=35,
+            command=command
+        )
+        return button
+
 
     def create_button_for_main_menu_item(
             self,
@@ -407,6 +564,15 @@ class View(customtkinter.CTk):
         return button
 
     def create_entry(self, show_option: str = "")-> customtkinter.CTkEntry:
+        logger.debug("create_entry start")
+        entry = customtkinter.CTkEntry(
+            self.current_frame, width=555, height=37, corner_radius=10,
+            bg_color='white', fg_color=BUTTON_COLOR, border_color=BUTTON_COLOR,
+            show=show_option, text_color='grey'
+        )
+        return entry
+
+    def _create_entry(self, show_option: str = "")-> customtkinter.CTkEntry: # todo merge with create_entry
         logger.debug("create_entry start")
         entry = customtkinter.CTkEntry(
             self.current_frame, width=555, height=37, corner_radius=10,
@@ -538,10 +704,11 @@ class View(customtkinter.CTk):
                 state = "normal" if self.controller.cc.card_present else "disabled"
                 logger.info(f"Card {'detected' if state == 'normal' else 'undetected'}, setting state to {state}")
 
-            menu_frame = customtkinter.CTkFrame(self.current_frame, width=250, height=600,
-                                                bg_color=MAIN_MENU_COLOR,
-                                                fg_color=MAIN_MENU_COLOR, corner_radius=0, border_color="black",
-                                                border_width=0)
+            menu_frame = customtkinter.CTkFrame(
+                self.current_frame, width=250, height=600,
+                bg_color=MAIN_MENU_COLOR, fg_color=MAIN_MENU_COLOR,
+                corner_radius=0, border_color="black", border_width=0
+            )
 
             # Logo section
             image_frame = customtkinter.CTkFrame(menu_frame, bg_color=MAIN_MENU_COLOR, fg_color=MAIN_MENU_COLOR,
@@ -711,213 +878,6 @@ class View(customtkinter.CTk):
 
         except Exception as e:
             logger.error(f"An error occurred in main_menu: {e}", exc_info=True)
-
-    ################################
-    """ SEEDKEEPER MENU """
-
-    def create_seedkeeper_menu(self):
-        try:
-            logger.info("create_seedkeeper_menu start")
-            menu = self._seedkeeper_lateral_menu()
-            return menu
-        except Exception as e:
-            logger.error(f"005 Error in create_seedkeeper_menu: {e}", exc_info=True)
-            raise MenuCreationError(f"006 Failed to create Seedkeeper menu: {e}") from e
-
-    def _seedkeeper_lateral_menu(
-            self,
-            state=None,
-            frame=None
-    ) -> customtkinter.CTkFrame:
-        try:
-            logger.info("001 Starting Seedkeeper lateral menu creation")
-            if self.menu:
-                self.menu.destroy()
-                logger.debug("002 Existing menu destroyed")
-
-            if state is None:
-                state = "normal" if self.controller.cc.card_present else "disabled"
-                logger.info(
-                    f"003 Card {'detected' if state == 'normal' else 'undetected'}, setting state to {state}")
-
-            # menu_frame = customtkinter.CTkFrame(self.main_frame, width=250, height=600,
-            #                                     bg_color=BG_MAIN_MENU,
-            #                                     fg_color=BG_MAIN_MENU, corner_radius=0, border_color="black",
-            #                                     border_width=0)
-            menu_frame = customtkinter.CTkFrame(self.current_frame, width=250, height=600,
-                                                bg_color=BG_MAIN_MENU,
-                                                fg_color=BG_MAIN_MENU, corner_radius=0, border_color="black",
-                                                border_width=0)
-            logger.debug("004 Main menu frame created")
-
-            # Logo section
-            image_frame = customtkinter.CTkFrame(menu_frame, bg_color=BG_MAIN_MENU, fg_color=BG_MAIN_MENU,
-                                                 width=284, height=126)
-            image_frame.place(rely=0, relx=0.5, anchor="n")
-            logo_image = Image.open("./pictures_db/logo.png")
-            logo_photo = ImageTk.PhotoImage(logo_image)
-            canvas = customtkinter.CTkCanvas(image_frame, width=284, height=127, bg=BG_MAIN_MENU,
-                                             highlightthickness=0)
-            canvas.pack(fill="both", expand=True)
-            canvas.create_image(142, 63, image=logo_photo, anchor="center")
-            canvas.image = logo_photo  # conserver une référence
-            logger.debug("005 Logo section created")
-
-            if self.controller.cc.card_present:
-                logger.log(SUCCESS, "006 Card Present")
-            else:
-                logger.error(f"007 Card not present")
-
-            # Menu items
-            self.create_button_for_main_menu_item(menu_frame,
-                                                   "My secrets" if self.controller.cc.card_present else "Insert card",
-                                                   "secrets.png" if self.controller.cc.card_present else "insert_card.jpg",
-                                                   0.26, 0.585 if self.controller.cc.card_present else 0.578,
-                                                   state=state,
-                                                   command=self.show_view_my_secrets if self.controller.cc.card_present else None)
-            self.create_button_for_main_menu_item(menu_frame, "Generate",
-                                                   "generate.png" if self.controller.cc.card_present else "generate_locked.png",
-                                                   0.33, 0.56, state=state,
-                                                   command=self.show_view_generate_secret if self.controller.cc.card_present else None,
-                                                   text_color="white" if self.controller.cc.card_present else "grey")
-            self.create_button_for_main_menu_item(menu_frame, "Import",
-                                                   "import.png" if self.controller.cc.card_present else "import_locked.png",
-                                                   0.40, 0.51, state=state,
-                                                   command=self.show_view_import_secret if self.controller.cc.card_present else None,
-                                                   text_color="white" if self.controller.cc.card_present else "grey")
-            self.create_button_for_main_menu_item(menu_frame, "Logs",
-                                                   "logs.png" if self.controller.cc.card_present else "settings_locked.png", # todo icon when locked
-                                                   0.47, 0.49, state=state,
-                                                   command=self.show_view_logs if self.controller.cc.card_present else None,
-                                                   text_color="white" if self.controller.cc.card_present else "grey")
-            self.create_button_for_main_menu_item(menu_frame, "Settings",
-                                                   "settings.png" if self.controller.cc.card_present else "settings_locked.png",
-                                                   0.74, 0.546, state=state,
-                                                   command=self.about if self.controller.cc.card_present else None,
-                                                   text_color="white" if self.controller.cc.card_present else "grey")
-            self.create_button_for_main_menu_item(menu_frame, "Help", "help.png", 0.81, 0.49, state='normal',
-                                                   command=self.show_view_help, text_color="white")
-            self.create_button_for_main_menu_item(menu_frame, "Go to the webshop", "webshop.png", 0.95, 0.82,
-                                                   state='normal',
-                                                   command=lambda: webbrowser.open("https://satochip.io/shop/",
-                                                                                   new=2))
-            logger.debug("008 Menu items created")
-            logger.log(SUCCESS, "009 Seedkeeper lateral menu created successfully")
-            return menu_frame
-        except Exception as e:
-            logger.error(f"010 Unexpected error in _seedkeeper_lateral_menu: {e}", exc_info=True)
-            raise MenuCreationError(f"011 Failed to create Seedkeeper lateral menu: {e}") from e
-
-    @log_method
-    def _delete_seedkeeper_menu(self):
-        try:
-            logger.info("001 Starting Seedkeeper menu deletion")
-            if hasattr(self, 'menu') and self.menu:
-                self.menu.destroy()
-                logger.debug("002 Menu widget destroyed")
-                self.menu = None
-                logger.debug("003 Menu attribute set to None")
-            logger.log(SUCCESS, "004 Seedkeeper menu deleted successfully")
-        except Exception as e:
-            logger.error(f"005 Unexpected error in _delete_seedkeeper_menu: {e}", exc_info=True)
-            raise MenuDeletionError(f"006 Failed to delete Seedkeeper menu: {e}") from e
-
-    ####################################################################################################################
-    """ METHODS TO DISPLAY A VIEW FROM SEEDKEEPER MENU SELECTION """
-
-    # SEEDKEEPER MENU SELECTION
-    @log_method
-    def show_view_my_secrets(self):
-        try:
-            self.in_backup_process = False
-            logger.info("001 Initiating show secrets process")
-            self.welcome_in_display = False
-            self._clear_welcome_frame()
-            self._clear_current_frame()
-            logger.debug("002 Welcome frame cleared")
-
-            secrets_data = self.controller.retrieve_secrets_stored_into_the_card()
-            logger.debug(f"Fetched {len(secrets_data['headers'])} headers")
-            # for header in secrets_data['headers']:
-            #     logger.debug(f"Header: {header}")
-
-            # TODO why reset some pubkey??
-            # card_status = self.controller.get_card_status()
-            # if card_status['protocol_version'] > 1:
-            #     for secret in secrets_data['headers']:
-            #         if secret['type'] == "Public Key":
-            #             self.controller.cc.seedkeeper_reset_secret(secret['id'])
-            logger.debug("003 Secrets data retrieved from card")
-            self.view_my_secrets(secrets_data)
-            logger.log(SUCCESS, "004 Secrets displayed successfully")
-        except Exception as e:
-            logger.error(f"005 Error in show_secrets: {e}", exc_info=True)
-            raise ViewError(f"006 Failed to show secrets: {e}") from e
-
-    @log_method
-    def show_view_generate_secret(self):
-        try:
-            self.in_backup_process = False
-            logger.info("001 Initiating secret generation process")
-            self.welcome_in_display = False
-            logger.debug("002 Welcome frame cleared")
-            self._clear_current_frame()
-            self.view_generate_secret()
-            logger.log(SUCCESS, "003 Secret generation process initiated")
-        except Exception as e:
-            logger.error(f"004 Error in show_generate_secret: {e}", exc_info=True)
-            raise ViewError(f"005 Failed to show generate secret: {e}")
-
-    @log_method
-    def show_view_import_secret(self):
-        try:
-            self.in_backup_process = False
-            logger.info("001 Initiating secret import process")
-            self.welcome_in_display = False
-            self._clear_current_frame()
-            logger.debug("002 Welcome frame cleared")
-            self.view_import_secret()
-            logger.log(SUCCESS, "002 Secret import process initiated")
-        except Exception as e:
-            logger.error(f"003 Error in import_secret: {e}", exc_info=True)
-            raise ViewError(f"004 Failed to import secret: {e}") from e
-
-    @log_method
-    def show_view_logs(self):
-        self.in_backup_process = False
-        total_number_of_logs, total_number_available_logs, logs = self.controller.get_logs()
-        self.view_logs_details(logs)
-
-    @log_method
-    def show_view_settings(self):
-        try:
-            self.in_backup_process = False
-            logger.info("001 Displaying settings")
-            self._delete_seedkeeper_menu()
-            logger.debug("002 Seedkeeper menu deleted")
-            self.view_start_setup()
-            logger.debug("003 Setup started")
-            self.create_satochip_utils_menu()
-            logger.debug("004 Satochip utils menu created")
-            logger.log(SUCCESS, "005 Settings displayed successfully")
-        except Exception as e:
-            logger.error(f"006 Error in show_settings: {e}", exc_info=True)
-            raise ViewError(f"007 Failed to show settings: {e}") from e
-
-    @log_method
-    def show_view_help(self):
-        try:
-            logger.info("001 Displaying help information")
-            self.in_backup_process = False
-            self.welcome_in_display = False
-            self._clear_current_frame()
-            self._clear_welcome_frame()
-            logger.debug("002 Welcome and current frames cleared")
-            self.view_help()
-            logger.log(SUCCESS, "003 Help information displayed successfully")
-        except Exception as e:
-            logger.error(f"003 Error in show_help: {e}", exc_info=True)
-            raise ViewError(f"004 Failed to show help: {e}") from e
 
     ################################
     """ UTILS FOR CARD CONNECTOR """
@@ -2014,8 +1974,1112 @@ class View(customtkinter.CTk):
         except Exception as e:
             logger.error(f"An error occurred while creating header: {e}", exc_info=True)
 
+    ################################
+    """ SEEDKEEPER MENU """
+
+    def create_seedkeeper_menu(self): #todo merge with _seedkeeper_lateral_menu
+        try:
+            logger.info("create_seedkeeper_menu start")
+            menu = self._seedkeeper_lateral_menu()
+            return menu
+        except Exception as e:
+            logger.error(f"005 Error in create_seedkeeper_menu: {e}", exc_info=True)
+            raise MenuCreationError(f"006 Failed to create Seedkeeper menu: {e}") from e
+
+    def _seedkeeper_lateral_menu(
+            self,
+            state=None,
+            frame=None
+    ) -> customtkinter.CTkFrame:
+        try:
+            logger.info("001 Starting Seedkeeper lateral menu creation")
+            if self.menu:
+                self.menu.destroy()
+                logger.debug("002 Existing menu destroyed")
+
+            if state is None:
+                state = "normal" if self.controller.cc.card_present else "disabled"
+                logger.info(
+                    f"003 Card {'detected' if state == 'normal' else 'undetected'}, setting state to {state}")
+
+            # menu_frame = customtkinter.CTkFrame(self.main_frame, width=250, height=600,
+            #                                     bg_color=BG_MAIN_MENU,
+            #                                     fg_color=BG_MAIN_MENU, corner_radius=0, border_color="black",
+            #                                     border_width=0)
+            menu_frame = customtkinter.CTkFrame(self.current_frame, width=250, height=600,
+                                                bg_color=BG_MAIN_MENU,
+                                                fg_color=BG_MAIN_MENU, corner_radius=0, border_color="black",
+                                                border_width=0)
+            logger.debug("004 Main menu frame created")
+
+            # Logo section
+            image_frame = customtkinter.CTkFrame(menu_frame, bg_color=BG_MAIN_MENU, fg_color=BG_MAIN_MENU,
+                                                 width=284, height=126)
+            image_frame.place(rely=0, relx=0.5, anchor="n")
+            logo_image = Image.open("./pictures_db/logo.png")
+            logo_photo = ImageTk.PhotoImage(logo_image)
+            canvas = customtkinter.CTkCanvas(image_frame, width=284, height=127, bg=BG_MAIN_MENU,
+                                             highlightthickness=0)
+            canvas.pack(fill="both", expand=True)
+            canvas.create_image(142, 63, image=logo_photo, anchor="center")
+            canvas.image = logo_photo  # conserver une référence
+            logger.debug("005 Logo section created")
+
+            if self.controller.cc.card_present:
+                logger.log(SUCCESS, "006 Card Present")
+            else:
+                logger.error(f"007 Card not present")
+
+            # Menu items
+            self.create_button_for_main_menu_item(
+                menu_frame,
+                "My secrets" if self.controller.cc.card_present else "Insert card",
+                "secrets.png" if self.controller.cc.card_present else "insert_card.jpg",
+                0.26, 0.585 if self.controller.cc.card_present else 0.578,
+                state=state,
+                command=self.show_view_my_secrets if self.controller.cc.card_present else None
+            )
+            self.create_button_for_main_menu_item(
+                menu_frame, "Generate",
+                "generate.png" if self.controller.cc.card_present else "generate_locked.png",
+                0.33, 0.56, state=state,
+                command=self.show_view_generate_secret if self.controller.cc.card_present else None,
+                text_color="white" if self.controller.cc.card_present else "grey"
+            )
+            self.create_button_for_main_menu_item(
+                menu_frame, "Import",
+                "import.png" if self.controller.cc.card_present else "import_locked.png",
+                0.40, 0.51, state=state,
+                command=self.show_view_import_secret if self.controller.cc.card_present else None,
+                text_color="white" if self.controller.cc.card_present else "grey"
+            )
+            self.create_button_for_main_menu_item(
+                menu_frame, "Logs",
+                "logs.png" if self.controller.cc.card_present else "settings_locked.png", # todo icon when locked
+                0.47, 0.49, state=state,
+                command=self.show_view_logs if self.controller.cc.card_present else None,
+                text_color="white" if self.controller.cc.card_present else "grey"
+            )
+            self.create_button_for_main_menu_item(
+                menu_frame, "Settings",
+                "settings.png" if self.controller.cc.card_present else "settings_locked.png",
+                0.74, 0.546, state=state,
+                command=self.about if self.controller.cc.card_present else None,
+                text_color="white" if self.controller.cc.card_present else "grey"
+            )
+            self.create_button_for_main_menu_item(
+                menu_frame, "Help", "help.png",
+                0.81, 0.49, state='normal',
+                command=self.show_view_help, text_color="white"
+            )
+            self.create_button_for_main_menu_item(
+                menu_frame, "Go to the webshop", "webshop.png",
+                0.95, 0.82, state='normal',
+                command=lambda: webbrowser.open("https://satochip.io/shop/",new=2)
+            )
+            return menu_frame
+        except Exception as e:
+            logger.error(f"010 Unexpected error in _seedkeeper_lateral_menu: {e}", exc_info=True)
+            raise MenuCreationError(f"011 Failed to create Seedkeeper lateral menu: {e}") from e
+
+    @log_method
+    def _delete_seedkeeper_menu(self):
+        try:
+            logger.debug("_delete_seedkeeper_menu start")
+            if hasattr(self, 'menu') and self.menu:
+                self.menu.destroy()
+                logger.debug("002 Menu widget destroyed")
+                self.menu = None
+                logger.debug("003 Menu attribute set to None")
+        except Exception as e:
+            logger.error(f"005 Unexpected error in _delete_seedkeeper_menu: {e}", exc_info=True)
+            raise MenuDeletionError(f"006 Failed to delete Seedkeeper menu: {e}") from e
+
+    ####################################################################################################################
+    """ METHODS TO DISPLAY A VIEW FROM SEEDKEEPER MENU SELECTION """
+
+    # SEEDKEEPER MENU SELECTION
+    @log_method
+    def show_view_my_secrets(self):
+        try:
+            logger.debug("show_view_my_secrets start")
+            self.in_backup_process = False
+            self.welcome_in_display = False
+            self._clear_welcome_frame()
+            self._clear_current_frame()
+
+            # verify PIN
+            if self.controller.cc.is_pin_set():
+                self.controller.cc.card_verify_PIN_simple()
+            else:
+                self.controller.PIN_dialog(f'Unlock your {self.controller.cc.card_type}')
+
+            secrets_data = self.controller.retrieve_secrets_stored_into_the_card()
+            logger.debug(f"Fetched {len(secrets_data['headers'])} headers")
+            # for header in secrets_data['headers']:
+            #     logger.debug(f"Header: {header}")
+
+            # TODO why reset some pubkey??
+            # card_status = self.controller.get_card_status()
+            # if card_status['protocol_version'] > 1:
+            #     for secret in secrets_data['headers']:
+            #         if secret['type'] == "Public Key":
+            #             self.controller.cc.seedkeeper_reset_secret(secret['id'])
+            logger.debug("003 Secrets data retrieved from card")
+
+            self.view_my_secrets(secrets_data)
+            logger.log(SUCCESS, "004 Secrets displayed successfully")
+        except Exception as e:
+            logger.error(f"005 Error in show_secrets: {e}", exc_info=True)
+            raise ViewError(f"006 Failed to show secrets: {e}") from e
+
+    @log_method
+    def show_view_generate_secret(self):
+        try:
+            self.in_backup_process = False
+            logger.info("001 Initiating secret generation process")
+            self.welcome_in_display = False
+            logger.debug("002 Welcome frame cleared")
+            self._clear_current_frame()
+            self.view_generate_secret()
+            logger.log(SUCCESS, "003 Secret generation process initiated")
+        except Exception as e:
+            logger.error(f"004 Error in show_generate_secret: {e}", exc_info=True)
+            raise ViewError(f"005 Failed to show generate secret: {e}")
+
+    @log_method
+    def show_view_import_secret(self):
+        try:
+            self.in_backup_process = False
+            logger.info("001 Initiating secret import process")
+            self.welcome_in_display = False
+            self._clear_current_frame()
+            logger.debug("002 Welcome frame cleared")
+            self.view_import_secret()
+            logger.log(SUCCESS, "002 Secret import process initiated")
+        except Exception as e:
+            logger.error(f"003 Error in import_secret: {e}", exc_info=True)
+            raise ViewError(f"004 Failed to import secret: {e}") from e
+
+    @log_method
+    def show_view_logs(self):
+        self.in_backup_process = False
+        total_number_of_logs, total_number_available_logs, logs = self.controller.get_logs()
+        self.view_logs_details(logs)
+
+    @log_method
+    def show_view_settings(self):
+        try:
+            self.in_backup_process = False
+            logger.info("001 Displaying settings")
+            self._delete_seedkeeper_menu()
+            logger.debug("002 Seedkeeper menu deleted")
+            self.view_start_setup()
+            logger.debug("003 Setup started")
+            self.create_satochip_utils_menu()
+            logger.debug("004 Satochip utils menu created")
+            logger.log(SUCCESS, "005 Settings displayed successfully")
+        except Exception as e:
+            logger.error(f"006 Error in show_settings: {e}", exc_info=True)
+            raise ViewError(f"007 Failed to show settings: {e}") from e
+
+    @log_method
+    def show_view_help(self):
+        try:
+            logger.info("001 Displaying help information")
+            self.in_backup_process = False
+            self.welcome_in_display = False
+            self._clear_current_frame()
+            self._clear_welcome_frame()
+            logger.debug("002 Welcome and current frames cleared")
+            self.view_help()
+            logger.log(SUCCESS, "003 Help information displayed successfully")
+        except Exception as e:
+            logger.error(f"003 Error in show_help: {e}", exc_info=True)
+            raise ViewError(f"004 Failed to show help: {e}") from e
 
     ##########################
     '''SEEDKEEPER OPTIONS'''
+
+    @log_method
+    def view_my_secrets(
+            self,
+            secrets_data: Dict[str, Any]
+    ):
+        """
+            This method manages to:
+                - Show a list of all secrets stored on the card.
+                - Select and display details about each secret from the list.
+                - Include specific widgets and buttons according to the secret type/subtype.
+                - This method is built using a structural encapsulation approach, meaning that each function within it contains everything necessary for its operation, ensuring modularity and self-sufficiency.
+        """
+
+        @log_method
+        def _create_secrets_frame():
+            try:
+                logger.info("001 Creating secrets frame")
+                self._create_frame()
+            except Exception as e:
+                logger.error(f"003 Error creating secrets frame: {e}", exc_info=True)
+                raise FrameCreationError(f"004 Failed to create secrets frame: {e}") from e
+
+        @log_method
+        def _create_secrets_header():
+            try:
+                logger.info("Creating secrets header")
+                self.header = self._create_an_header("My secrets", "secrets_icon_popup.png")
+                self.header.place(relx=0.03, rely=0.08, anchor="nw")
+                logger.log(SUCCESS, "Secrets header created successfully")
+            except Exception as e:
+                logger.error(f"Error creating secrets header: {e}", exc_info=True)
+                raise UIElementError(f"Failed to create secrets header: {e}") from e
+
+        @log_method
+        def _create_secrets_table(secrets_data):
+            logger.debug(f"_create_secrets_table secret data: {secrets_data}")
+
+            def _on_mouse_on_secret(event, buttons):
+                for button in buttons:
+                    button.configure(fg_color=HIGHLIGHT_COLOR, cursor="hand2")
+
+            def _on_mouse_out_secret(event, buttons):
+                for button in buttons:
+                    button.configure(fg_color=button.default_color)
+
+            def _show_secret_details(secret):
+                try:
+                    # Showing details for secret ID: {secret['id']}
+                    self._create_frame()
+
+                    # Managing export rights control
+                    secret_details = {}
+                    if secret['export_rights'] == '0x2':
+                        secret_details['type'] = secret['type']
+                        secret_details['label'] = secret['label']
+                        secret_details['secret'] = 'Export failed: export not allowed by SeedKeeper policy.'
+                        secret_details['subtype'] = 0x0 if secret['subtype'] == '0x0' else '0x1'
+                        logger.debug(f"Export_rights: Not allowed for {secret} with id {secret['id']}")
+                    else:
+                        logger.debug(f"Export rights allowed for {secret} with id {secret['id']}")
+                        secret_details = self.controller.retrieve_details_about_secret_selected(secret['id'])
+                        secret_details['id'] = secret['id']
+                        logger.debug(f"secret id details: {secret_details} for id: {secret_details['id']}")
+                    logger.log(SUCCESS, f"Secret details retrieved: {secret_details}")
+
+                    logger.debug("Creating and placing header for Secret détails frame")
+                    self.header = self._create_an_header("Secret details", "secrets_icon_popup.png")
+                    self.header.place(relx=0.03, rely=0.08, anchor="nw")
+
+                    # Calling the main menu for seedkeeper
+                    self.create_seedkeeper_menu()
+
+                    logger.debug("Starting to control the secret type to choose the corresponding frame to dsplay")
+                    if secret['type'] == 'Password':
+                        logger.debug(f"Secret: {secret}, with id {secret['id']} is a couple login password")
+                        _create_password_secret_frame(secret_details)
+                        logger.debug(f"Frame corresponding to {secret['type']} details called")
+                    elif secret['type'] == 'Masterseed':
+                        if secret_details['subtype'] > 0 or secret_details['subtype'] == '0x1':
+                            logger.info(f"this is mnemonic, subtype: {secret['subtype']}")
+                            logger.debug(f"Frame corresponding to {secret['type']} details called for subtype: {secret['subtype']}")
+                            _create_mnemonic_secret_frame(secret_details)
+                        else:
+                            logger.info(f"this is masterseed, subtype: {secret['subtype']}")
+                            _create_masterseed_secret_frame(secret_details)
+                            logger.debug(f"Frame corresponding to {secret['type']} details called for subtype: {secret['subtype']}")
+                    elif secret['type'] == "BIP39 mnemonic":
+                        logger.debug(f"Secret: {secret}, with id {secret['id']} is a {secret['type']}")
+                        _create_mnemonic_secret_frame(secret_details)
+                        logger.debug(f"Frame corresponding to {secret['type']}{secret['type']} details called")
+                    elif secret['type'] == 'Electrum mnemonic':
+                        logger.debug(f"Secret: {secret}, with id {secret['id']} is a {secret['type']}")
+                        _create_mnemonic_secret_frame(secret_details)
+                        logger.debug(f"Frame corresponding to {secret['type']} details called")
+                    elif secret['type'] == '2FA secret':
+                        logger.debug(f"Secret: {secret}, with id {secret['id']} is a {secret['type']}")
+                        _create_2FA_secret_frame(secret_details)
+                        logger.debug(f"Frame corresponding to {secret['type']} details called")
+                    elif secret['type'] == 'Free text':
+                        logger.info(f"this is mnemonic, subtype: {secret['subtype']}")
+                        logger.debug(f"Frame corresponding to {secret['type']} details called for subtype: {secret['subtype']}")
+                        _create_free_text_secret_frame(secret_details)
+                    elif secret['type'] == 'Wallet descriptor':
+                        logger.info(f"this is wallet descriptor, subtype: {secret['subtype']}")
+                        logger.debug(f"Frame corresponding to {secret['type']} details called for subtype: {secret['subtype']}")
+                        _create_wallet_descriptor_secret_frame(secret_details)
+                    else:
+                        logger.warning(f"Unsupported secret type: {secret['type']}")
+                        self.show("WARNING", f"Unsupported type:\n{secret['type']}", "Ok", None, "./pictures_db/secrets_icon_popup.png")
+
+                    back_button = self._create_button(text="Back", command=self.show_view_my_secrets)
+                    back_button.place(relx=0.95, rely=0.98, anchor="se")
+
+                    logger.log(SUCCESS, f"012 Secret details displayed for ID: {secret['id']}")
+                except Exception as e:
+                    logger.error(f"013 Error displaying secret details: {e}", exc_info=True)
+                    raise SecretFrameCreationError("Error displaying secret details") from e
+
+            try:
+                logger.info("Creating secrets table")
+
+                subtype_dict = {
+                    '0x0': 'masterseed',
+                    '0x1': 'Mnemonic seedphrase',
+                }
+
+                # Introduce table
+                label_text = self._create_label(text="Click on a secret to manage it:")
+                label_text.place(relx=0.05, rely=0.25, anchor="w")
+
+                # Define headers
+                headers = ["Id", "Type of secret", "Label"]
+                rely = 0.3
+
+                # Create header labels
+                header_frame = customtkinter.CTkFrame(
+                    self.current_frame, width=750, bg_color=DEFAULT_BG_COLOR,
+                    corner_radius=0, fg_color=DEFAULT_BG_COLOR)
+                header_frame.place(relx=0.05, rely=rely, relwidth=0.9, anchor="w")
+
+                header_widths = [100, 250, 350]  # Define specific widths for each header
+                for col, width in zip(headers, header_widths):
+                    header_button = customtkinter.CTkButton(
+                        header_frame, text=col,
+                        font=customtkinter.CTkFont(size=14, family='Outfit', weight="bold"),
+                        corner_radius=0, state='disabled', text_color='white',
+                        fg_color=BG_MAIN_MENU, width=width
+                    )
+                    header_button.pack(side="left", expand=True, fill="both")
+
+                logger.debug("015 Table headers created")
+
+                table_frame = self._create_scrollable_frame(
+                    self.current_frame, width=700, height=400, x=33.5, y=200)
+
+                # Create rows of labels with alternating colors
+                for i, secret in enumerate(secrets_data['headers']):
+                    try:
+                        rely += 0.06
+                        row_frame = customtkinter.CTkFrame(
+                            table_frame, width=750,
+                            bg_color=DEFAULT_BG_COLOR,
+                            fg_color=DEFAULT_BG_COLOR
+                        )
+                        row_frame.pack(pady=2, fill="x")
+
+                        fg_color = DEFAULT_BG_COLOR if i % 2 == 0 else BG_HOVER_BUTTON
+                        text_color = TEXT_COLOR if i % 2 == 0 else BUTTON_TEXT_COLOR
+
+                        buttons = []
+                        secret_type = None
+                        if secret['type'] == "Masterseed" and secret['subtype'] == '0x1':
+                            secret_type = "Mnemonic seedphrase"
+                        values = [secret['id'], secret['type'] if not secret_type else secret_type, secret['label']]
+                        for value, width in zip(values, header_widths):
+                            cell_button = customtkinter.CTkButton(
+                                row_frame, text=value,
+                                text_color=text_color, fg_color=fg_color,
+                                font=customtkinter.CTkFont(size=14, family='Outfit'),
+                                hover_color=HIGHLIGHT_COLOR, corner_radius=0, width=width
+                            )
+                            cell_button.default_color = fg_color  # Store the default color
+                            cell_button.pack(side='left', expand=True, fill="both")
+                            buttons.append(cell_button)
+
+                        # Bind hover events to change color for all buttons in the row
+                        for button in buttons:
+                            button.bind("<Enter>", lambda event, btns=buttons: _on_mouse_on_secret(event, btns))
+                            button.bind("<Leave>", lambda event, btns=buttons: _on_mouse_out_secret(event, btns))
+                            button.configure(command=lambda s=secret: _show_secret_details(s))
+
+                        logger.debug(f"016 Row created for secret ID: {secret['id']}")
+                    except Exception as e:
+                        logger.error(f"017 Error creating row for secret {secret['id']}: {str(e)}")
+                        raise UIElementError(f"018 Failed to create row for secret {secret['id']}") from e
+
+                logger.log(SUCCESS, "019 Secrets table created successfully")
+            except Exception as e:
+                logger.error(f"020 Error in _create_secrets_table: {e}", exc_info=True)
+                raise UIElementError(f"021 Failed to create secrets table: {e}") from e
+
+        @log_method
+        def _create_password_secret_frame(secret_details):
+            try:
+                logger.info("_create_password_secret_frame start")
+
+                # Create field for label login, url and password
+                try:
+                    label_label = self._create_label("Label:")
+                    label_label.place(relx=0.045, rely=0.2)
+                    self.label_entry = self._create_entry()
+                    self.label_entry.insert(0, secret_details['label'])
+                    self.label_entry.place(relx=0.045, rely=0.27)
+                    logger.debug("002 label fields created")
+
+                    login_label = self._create_label("Login:")
+                    login_label.place(relx=0.045, rely=0.34)
+                    self.login_entry = self._create_entry(show_option="*")
+                    self.login_entry.place(relx=0.045, rely=0.41)
+                    logger.debug("003 login fields created")
+
+                    url_label = self._create_label("Url:")
+                    url_label.place(relx=0.045, rely=0.48)
+                    self.url_entry = self._create_entry(show_option="*")
+                    self.url_entry.place(relx=0.045, rely=0.55)
+                    logger.debug("004 url fields created")
+
+                    password_label = self._create_label("Password:")
+                    password_label.place(relx=0.045, rely=0.7, anchor="w")
+                    self.password_entry = self._create_entry(show_option="*")
+                    self.password_entry.configure(width=500)
+                    self.password_entry.place(relx=0.04, rely=0.77, anchor="w")
+                    logger.debug("005 password fields created")
+
+                    # Decode secret
+                    try:
+                        logger.debug("006 Decoding secret to show")
+                        self.decoded_login_password = self.controller.decode_password(secret_details, binascii.unhexlify(secret_details['secret']))
+                        logger.log(
+                            SUCCESS, f"login password secret decoded successfully: {self.decoded_login_password}"
+                        )
+                    except ValueError as e:
+                        self.show("ERROR", f"Invalid secret format: {str(e)}", "Ok")
+                    except ControllerError as e:
+                        self.show("ERROR", f"Failed to decode secret: {str(e)}", "Ok")
+
+                    self.login_entry.insert(0, self.decoded_login_password['login'])
+                    self.url_entry.insert(0, self.decoded_login_password['url'])
+                    self.password_entry.insert(0, self.decoded_login_password['password'][1:])
+
+                except Exception as e:
+                    logger.error(f"008 Error creating fields: {e}", exc_info=True)
+                    raise UIElementError(f"009 Failed to create fields: {e}") from e
+
+                def _toggle_password_visibility(login_entry, url_entry, password_entry):
+                    # todo: only hides secret, not login/url/... fields
+                    try:
+                        # login
+                        login_current_state = login_entry.cget("show")
+                        login_new_state = "" if login_current_state == "*" else "*"
+                        login_entry.configure(show=login_new_state)
+                        # url
+                        url_current_state =  url_entry.cget("show")
+                        url_new_state = "" if url_current_state == "*" else "*"
+                        url_entry.configure(show=url_new_state)
+                        # password
+                        password_current_state = password_entry.cget("show")
+                        password_new_state = "" if password_current_state == "*" else "*"
+                        password_entry.configure(show=password_new_state)
+                    except Exception as e:
+                        logger.error(f"018 Error toggling password visibility: {e}", exc_info=True)
+                        raise UIElementError(f"019 Failed to toggle password visibility: {e}") from e
+
+                # Create action buttons
+                try:
+                    show_button = self._create_button(
+                        text="Show",
+                        command=lambda: _toggle_password_visibility(
+                            self.login_entry, self.url_entry, self.password_entry)
+                    )
+                    show_button.place(relx=0.9, rely=0.8, anchor="se")
+
+                    delete_button = self._create_button(
+                        text="Delete secret",
+                        command=lambda: [
+                            self.show(
+                                "WARNING",
+                                "Are you sure to delete this secret ?!\n Click Yes for delete the secret or close popup",
+                                "Yes",
+                                lambda: [self.controller.cc.seedkeeper_reset_secret(secret_details['id']),
+                                         self.show_view_my_secrets()],
+                                './pictures_db/secrets_icon_popup.png'),
+                            self.show_view_my_secrets()
+                        ]
+                    )
+                    delete_button.place(relx=0.75, rely=0.98, anchor="se")
+                    logger.debug("010 Action buttons created")
+                except Exception as e:
+                    logger.error(f"011 Error creating action buttons: {e}", exc_info=True)
+                    raise UIElementError(f"012 Failed to create action buttons: {e}") from e
+
+                logger.log(SUCCESS, "013 Password secret frame created successfully")
+            except Exception as e:
+                logger.error(f"014 Unexpected error in _create_password_secret_frame: {e}", exc_info=True)
+                raise ViewError(f"015 Failed to create password secret frame: {e}") from e
+
+        @log_method
+        def _create_masterseed_secret_frame(secret_details):
+            try:
+                logger.debug(f"masterseed_secret_details: {secret_details}")
+                logger.info("001 Creating mnemonic secret frame")
+                # Create labels and entry fields
+                labels = ['Label:', 'Mnemonic type:']
+                entries = {}
+
+                for i, label_text in enumerate(labels):
+                    try:
+                        label = self._create_label(label_text)
+                        label.place(relx=0.045, rely=0.2 + i * 0.15, anchor="w")
+                        logger.debug(f"Created label: {label_text}")
+
+                        entry = self._create_entry()
+                        entry.place(relx=0.04, rely=0.27 + i * 0.15, anchor="w")
+                        entries[label_text.lower()[:-1]] = entry
+                        logger.debug(f"Created entry for: {label_text}")
+                    except Exception as e:
+                        logger.error(f"Error creating label or entry for {label_text}: {e}", exc_info=True)
+                        raise UIElementError(f"Failed to create label or entry for {label_text}: {e}") from e
+
+                # Set values to label and mnemonic type
+                entries['label'].insert(0, secret_details['label'])
+                entries['mnemonic type'].insert(0, secret_details['type'])
+
+                # lock possibilities to wright into entries
+                entries['label'].configure(state='disabled')
+                entries['mnemonic type'].configure(state='disabled')
+                logger.debug("Entry values set")
+
+                if secret_details['secret'] != "Export failed: export not allowed by SeedKeeper policy.":
+                    # Decode seed to mnemonic
+                    try:
+                        logger.debug("Decoding seed to mnemonic words")
+                        secret = self.controller.decode_masterseed(secret_details)
+                        mnemonic = secret['mnemonic']
+                        passphrase = secret['passphrase']
+                    except Exception as e:
+                        logger.error(f"Error decoding Masterseed: {e}", exc_info=True)
+                        raise ControllerError(f"015 Failed to decode Masterseed: {e}") from e
+                else:
+                    mnemonic = secret_details['secret']
+                    passphrase = secret_details['secret']
+
+                # Create mnemonic field
+                try:
+                    mnemonic_label = self._create_label("Mnemonic:")
+                    mnemonic_label.place(relx=0.045, rely=0.65, anchor="w")
+
+                    mnemonic_textbox = self._create_textbox()
+                    mnemonic_textbox.place(relx=0.04, rely=0.8, relheight=0.23, anchor="w")
+                    mnemonic_textbox.insert("1.0", '*' * len(mnemonic))
+                    logger.debug("013 Mnemonic field created")
+                except Exception as e:
+                    logger.error(f"014 Error creating mnemonic field: {e}", exc_info=True)
+                    raise UIElementError(f"015 Failed to create mnemonic field: {e}") from e
+
+                # Function to toggle visibility of mnemonic
+                @log_method
+                def _toggle_mnemonic_visibility(textbox, original_text):
+                    try:
+                        logger.info("016 Toggling mnemonic visibility")
+                        textbox.configure(state='normal')
+                        # Obtenir le contenu actuel de la textbox
+                        current_text = textbox.get("1.0", "end-1c")
+
+                        if current_text == '*' * len(original_text):
+                            # Si la textbox contient uniquement des étoiles, afficher le texte original
+                            textbox.delete("1.0", "end")
+                            textbox.insert("1.0", original_text)
+                            textbox.configure(state='disabled')
+                            logger.log(SUCCESS, "017 Mnemonic visibility toggled to visible")
+                        else:
+                            # Sinon, masquer le texte avec des étoiles
+                            textbox.delete("1.0", "end")
+                            textbox.insert("1.0", '*' * len(original_text))
+                            textbox.configure(state='disabled')
+                            logger.log(SUCCESS, "017 Mnemonic visibility toggled to hidden")
+
+                    except Exception as e:
+                        logger.error(f"018 Error toggling mnemonic visibility: {e}", exc_info=True)
+                        raise UIElementError(f"019 Failed to toggle mnemonic visibility: {e}") from e
+
+                # Create action buttons
+                try:
+                    delete_button = self._create_button(
+                        text="Delete secret",
+                        command=lambda: [
+                            self.show(
+                                "WARNING",
+                                "Are you sure to delete this secret ?!\n Click Yes for delete the secret or close popup",
+                                "Yes",
+                                lambda: [self.controller.cc.seedkeeper_reset_secret(secret_details['id']),
+                                         self.show_view_my_secrets()],
+                                './pictures_db/secrets_icon_popup.png'),
+                            self.show_view_my_secrets()
+                        ]
+                    )
+                    delete_button.place(relx=0.75, rely=0.98, anchor="se")
+
+                    show_button = self._create_button(text="Show",
+                                                      command=lambda: [_toggle_mnemonic_visibility(mnemonic_textbox, mnemonic)])
+                    show_button.place(relx=0.95, rely=0.8, anchor="e")
+                    logger.debug("020 Action buttons created")
+                except Exception as e:
+                    logger.error(f"021 Error creating action buttons: {e}", exc_info=True)
+                    raise UIElementError(f"022 Failed to create action buttons: {e}") from e
+
+                logger.log(SUCCESS, "023 Mnemonic secret frame created successfully")
+            except Exception as e:
+                logger.error(f"024 Unexpected error in _create_mnemonic_secret_frame: {e}", exc_info=True)
+                raise ViewError(f"025 Failed to create mnemonic secret frame: {e}") from e
+
+        @log_method
+        def _create_mnemonic_secret_frame(secret_details):
+            try:
+
+                logger.debug(f"masterseed_secret_details: {secret_details}")
+                logger.info("001 Creating mnemonic secret frame")
+                # Create labels and entry fields
+                labels = ['Label:', 'Mnemonic type:']
+                entries = {}
+
+                for i, label_text in enumerate(labels):
+                    try:
+                        label = self._create_label(label_text)
+                        label.place(relx=0.045, rely=0.2 + i * 0.15, anchor="w")
+                        logger.debug(f"Created label: {label_text}")
+
+                        entry = self._create_entry()
+                        entry.place(relx=0.04, rely=0.255 + i * 0.15, anchor="w")
+                        entries[label_text.lower()[:-1]] = entry
+                        logger.debug(f"Created entry for: {label_text}")
+                    except Exception as e:
+                        logger.error(f"Error creating label or entry for {label_text}: {e}", exc_info=True)
+                        raise UIElementError(f"Failed to create label or entry for {label_text}: {e}") from e
+
+                # Set values to label and mnemonic type
+                entries['label'].insert(0, secret_details['label'])
+                entries['mnemonic type'].insert(0, 'Mnemonic seedphrase')
+
+
+                # lock possibilities to wright into entries
+                entries['label'].configure(state='disabled')
+                entries['mnemonic type'].configure(state='disabled')
+                logger.debug("Entry values set")
+
+                def show_seed_qr_code():
+                    import pyqrcode
+                    # Fonction pour générer et afficher le QR code
+                    qr_data = f'{mnemonic} {passphrase if passphrase else ""}'
+                    qr = pyqrcode.create(qr_data, error='L')
+                    qr_xbm = qr.xbm(scale=3) if len(mnemonic.split()) <=12 else qr.xbm(scale=2)
+                    # Convertir le code XBM en image Tkinter
+                    qr_bmp = tkinter.BitmapImage(data=qr_xbm)
+                    label = self._create_label("")
+                    label.place(relx=0.8, rely=0.4)
+                    label.configure(image=qr_bmp)
+                    label.image = qr_bmp  # Prévenir le garbage collection
+
+                # seed_qr button
+                try:
+                    seedqr_button = self._create_button(text="SeedQR",
+                                                        command=lambda: show_seed_qr_code())
+                    seedqr_button.place(relx=0.78, rely=0.51, anchor="se")
+                    logger.debug("SeedQR buttons created")
+                except Exception as e:
+                    logger.error(f"Error creating Xpub and SeedQR buttons: {e}", exc_info=True)
+                    raise UIElementError(f"Failed to create Xpub and SeedQR buttons: {e}") from e
+
+                if secret_details['secret'] != "Export failed: export not allowed by SeedKeeper policy.":
+                    # Decode seed to mnemonic
+                    try:
+                        logger.debug("Decoding seed to mnemonic words")
+                        secret = self.controller.decode_masterseed(secret_details)
+                        mnemonic = secret['mnemonic']
+                        passphrase = secret['passphrase']
+                        print(passphrase)
+                    except Exception as e:
+                        logger.error(f"Error decoding Masterseed: {e}", exc_info=True)
+                        raise ControllerError(f"015 Failed to decode Masterseed: {e}") from e
+                else:
+                    mnemonic = secret_details['secret']
+                    passphrase = secret_details['secret']
+
+                # Create passphrase field
+                try:
+                    passphrase_label = self._create_label("Passphrase:")
+                    passphrase_label.place(relx=0.045, rely=0.56, anchor="w")
+
+                    passphrase_entry = self._create_entry()
+                    passphrase_entry.place(relx=0.2, rely=0.56, anchor="w", relwidth=0.585)
+                    passphrase_entry.insert(0, '*' * len(
+                        passphrase) if passphrase != '' else 'None')  # Masque la passphrase
+                    logger.debug("010 Passphrase field created")
+                except Exception as e:
+                    logger.error(f"011 Error creating passphrase field: {e}", exc_info=True)
+                    raise UIElementError(f"012 Failed to create passphrase field: {e}") from e
+
+                # Create mnemonic field
+                try:
+                    mnemonic_label = self._create_label("Mnemonic:")
+                    mnemonic_label.place(relx=0.045, rely=0.63, anchor="w")
+
+                    self.seed_mnemonic_textbox = self._create_textbox()
+                    self.seed_mnemonic_textbox.place(relx=0.04, rely=0.77, relheight=0.23, anchor="w")
+                    self.seed_mnemonic_textbox.insert("1.0", '*' * len(mnemonic))
+                    logger.debug("013 Mnemonic field created")
+                except Exception as e:
+                    logger.error(f"014 Error creating mnemonic field: {e}", exc_info=True)
+                    raise UIElementError(f"015 Failed to create mnemonic field: {e}") from e
+
+                # Function to toggle visibility of passphrase
+                @log_method
+                def _toggle_passphrase_visibility(entry, original_text):
+                    try:
+                        entry.configure(state='normal')
+                        logger.info("020 Toggling passphrase visibility")
+                        # retrieve the content from actual entry
+                        current_text = entry.get()
+
+                        if current_text == '*' * len(original_text):
+                            # if entry contains only stars, logger.debug origina text
+                            entry.delete(0, "end")
+                            entry.insert(0, original_text)
+                            logger.log(SUCCESS, "021 Passphrase visibility toggled to visible")
+                            entry.configure(state='disabled')
+                        else:
+                            entry.delete(0, "end")
+                            entry.insert(0, '*' * len(original_text))
+                            entry.configure(state='disabled')
+                            logger.log(SUCCESS, "021 Passphrase visibility toggled to hidden")
+
+                    except Exception as e:
+                        logger.error(f"022 Error toggling passphrase visibility: {e}", exc_info=True)
+                        raise UIElementError(f"023 Failed to toggle passphrase visibility: {e}") from e
+
+                # Function to toggle visibility of mnemonic
+                @log_method
+                def _toggle_mnemonic_visibility(textbox, original_text):
+                    try:
+                        logger.info("016 Toggling mnemonic visibility")
+                        textbox.configure(state='normal')
+                        # Obtenir le contenu actuel de la textbox
+                        current_text = textbox.get("1.0", "end-1c")
+
+                        if current_text == '*' * len(original_text):
+                            # Si la textbox contient uniquement des étoiles, afficher le texte original
+                            textbox.delete("1.0", "end")
+                            textbox.insert("1.0", original_text)
+                            textbox.configure(state='disabled')
+                            logger.log(SUCCESS, "017 Mnemonic visibility toggled to visible")
+                        else:
+                            # Sinon, masquer le texte avec des étoiles
+                            textbox.delete("1.0", "end")
+                            textbox.insert("1.0", '*' * len(original_text))
+                            textbox.configure(state='disabled')
+                            logger.log(SUCCESS, "017 Mnemonic visibility toggled to hidden")
+
+                    except Exception as e:
+                        logger.error(f"018 Error toggling mnemonic visibility: {e}", exc_info=True)
+                        raise UIElementError(f"019 Failed to toggle mnemonic visibility: {e}") from e
+
+                # Create action buttons
+                try:
+                    delete_button = self._create_button(
+                        text="Delete secret",
+                        command=lambda: [
+                            self.show(
+                                "WARNING",
+                                "Are you sure to delete this secret ?!\n Click Yes for delete the secret or close popup",
+                                "Yes",
+                                lambda: [self.controller.cc.seedkeeper_reset_secret(secret_details['id']), self.show_view_my_secrets()],
+                                './pictures_db/secrets_icon_popup.png'),
+                            self.show_view_my_secrets()
+                        ]
+                    )
+                    delete_button.place(relx=0.75, rely=0.95, anchor="e")
+
+                    show_button = self._create_button(text="Show",
+                                                      command=lambda: [_toggle_mnemonic_visibility(self.seed_mnemonic_textbox, mnemonic), _toggle_passphrase_visibility(passphrase_entry, passphrase)])
+                    show_button.place(relx=0.95, rely=0.8, anchor="e")
+                    logger.debug("020 Action buttons created")
+                except Exception as e:
+                    logger.error(f"021 Error creating action buttons: {e}", exc_info=True)
+                    raise UIElementError(f"022 Failed to create action buttons: {e}") from e
+
+                logger.log(SUCCESS, "023 Mnemonic secret frame created successfully")
+            except Exception as e:
+                logger.error(f"024 Unexpected error in _create_mnemonic_secret_frame: {e}", exc_info=True)
+                raise ViewError(f"025 Failed to create mnemonic secret frame: {e}") from e
+
+        @log_method
+        def _create_2FA_secret_frame(secret_details):
+            try:
+                logger.debug(f"2FA secret details: {secret_details}")
+                self.label_2FA = self._create_label('Label:')
+                self.label_2FA.place(relx=0.045, rely=0.2)
+                self.label_2FA_entry = self._create_entry()
+                self.label_2FA_entry.place(relx=0.045, rely=0.25)
+                self.label_2FA_entry.insert(0, secret_details['label'])
+
+                self.secret_2FA_label = self._create_label('Secret:')
+                self.secret_2FA_label.place(relx=0.045, rely=0.32)
+                self.secret_2FA_entry = self._create_entry(show_option="*")
+                self.secret_2FA_entry.place(relx=0.045, rely=0.37)
+                self.secret_2FA_entry.configure(width=450)
+                self.secret_2FA_entry.insert(0, secret_details['secret'][2:])
+
+                def _toggle_2FA_visibility(secret_2FA_entry):
+                    try:
+                        # secret 2FA
+                        secret_2FA_current_state = secret_2FA_entry.cget("show")
+                        secret_2FA_new_state = "" if secret_2FA_current_state == "*" else "*"
+                        secret_2FA_entry.configure(show=secret_2FA_new_state)
+
+                        logger.log(
+                            SUCCESS,
+                            f"{'hidden' if (secret_2FA_new_state) == '*' else 'visible'}"
+                        )
+                    except Exception as e:
+                        logger.error(f"Error toggling password visibility: {e}", exc_info=True)
+                        raise UIElementError(f"Failed to toggle password visibility: {e}") from e
+
+                # Create action buttons
+                try:
+                    show_button = self._create_button(
+                        text="Show",
+                        command=lambda: _toggle_2FA_visibility(self.secret_2FA_entry))
+                    show_button.place(relx=0.9, rely=0.433, anchor="se")
+
+                    delete_button = self._create_button(
+                        text="Delete secret",
+                        command=lambda: [
+                            self.show(
+                                "WARNING",
+                                "Are you sure to delete this secret ?!\n Click Yes for delete the secret or close popup",
+                                "Yes",
+                                lambda: [self.controller.cc.seedkeeper_reset_secret(secret_details['id']),
+                                         self.show_view_my_secrets()],
+                                './pictures_db/secrets_icon_popup.png'),
+                            self.show_view_my_secrets()
+                        ]
+                    )
+                    delete_button.place(relx=0.75, rely=0.95, anchor="e")
+                    logger.debug("Action buttons created")
+                except Exception as e:
+                    logger.error(f"Error creating action buttons: {e}", exc_info=True)
+                    raise UIElementError(f"Failed to create action buttons: {e}") from e
+                logger.log(SUCCESS, "Generic secret frame created")
+            except Exception as e:
+                logger.error(f"Error creating generic secret frame: {e}", exc_info=True)
+                raise UIElementError(f"Failed to create generic secret frame: {e}")
+
+        @log_method
+        def _create_generic_secret_frame(secret_details):
+            try:
+                for key, value in secret_details.items():
+                    label = self._create_label(f"{key}:")
+                    label.place(relx=0.1, rely=0.2 + len(secret_details) * 0.05, anchor="w")
+
+                    entry = self._create_entry(show_option="*" if key.lower() == "value" else None)
+                    entry.insert(0, value)
+                    entry.configure(state="readonly")
+                    entry.place(relx=0.3, rely=0.2 + len(secret_details) * 0.05, anchor="w")
+
+                logger.log(SUCCESS, "Generic secret frame created")
+            except Exception as e:
+                logger.error(f"Error creating generic secret frame: {e}", exc_info=True)
+                raise UIElementError(f"Failed to create generic secret frame: {e}")
+
+        @log_method
+        def _create_free_text_secret_frame(secret_details):
+            try:
+                logger.info("Creating free text secret frame to display secret details")
+
+                # Create field for label
+                label_label = self._create_label("Label:")
+                label_label.place(relx=0.045, rely=0.2)
+                self.label_entry = self._create_entry()
+                self.label_entry.insert(0, secret_details['label'])
+                self.label_entry.place(relx=0.045, rely=0.27)
+                self.label_entry.configure(state='disabled')
+                logger.debug("Label field created")
+
+                # Create field for free text content
+                free_text_label = self._create_label("Free Text Content:")
+                free_text_label.place(relx=0.045, rely=0.34)
+                self.free_text_textbox = self._create_textbox()
+                self.free_text_textbox.place(relx=0.045, rely=0.41, relheight=0.4, relwidth=0.7)
+                logger.debug("Free text content field created")
+
+                # Decode secret
+                try:
+                    logger.debug("Decoding free text to show")
+                    self.decoded_text = self.controller.decode_free_text(secret_details)
+                    free_text = self.decoded_text['text']
+                    logger.log(SUCCESS, f"Free text secret decoded successfully")
+                except ValueError as e:
+                    self.show("ERROR", f"Invalid secret format: {str(e)}", "Ok")
+                except ControllerError as e:
+                    self.show("ERROR", f"Failed to decode secret: {str(e)}", "Ok")
+
+                # Insert decoded text into textbox
+                self.free_text_textbox.insert("1.0", '*' * len(self.decoded_text['text']))
+                self.free_text_textbox.configure(state='disabled')
+
+                # Function to toggle visibility of free text
+                @log_method
+                def _toggle_free_text_visibility(free_text_textbox, original_text):
+                    try:
+                        logger.info("Toggling Free text visibility")
+                        free_text_textbox.configure(state='normal')
+                        # Obtenir le contenu actuel de la textbox
+                        current_text = free_text_textbox.get("1.0", "end-1c")
+
+                        if current_text == '*' * len(original_text):
+                            # Si la textbox contient uniquement des étoiles, afficher le texte original
+                            free_text_textbox.delete("1.0", "end")
+                            free_text_textbox.insert("1.0", original_text)
+                            free_text_textbox.configure(state='disabled')
+                            logger.log(SUCCESS, "Free text visibility toggled to visible")
+                        else:
+                            # Sinon, masquer le texte avec des étoiles
+                            free_text_textbox.delete("1.0", "end")
+                            free_text_textbox.insert("1.0", '*' * len(original_text))
+                            free_text_textbox.configure(state='disabled')
+                            logger.log(SUCCESS, "Free text visibility toggled to hidden")
+
+                    except Exception as e:
+                        logger.error(f"Error toggling Free text visibility: {e}", exc_info=True)
+                        raise UIElementError(f"Failed to toggle Free text visibility: {e}") from e
+
+                # Create action buttons
+                try:
+                    show_button = self._create_button(
+                        text="Show",
+                        command=lambda: _toggle_free_text_visibility(self.free_text_textbox, free_text)
+                    )
+                    show_button.place(relx=0.95, rely=0.65, anchor="se")
+
+                    delete_button = self._create_button(
+                        text="Delete secret",
+                        command=lambda: [
+                            self.show(
+                                "WARNING",
+                                "Are you sure to delete this secret ?!\n Click Yes for delete the secret or close popup",
+                                "Yes",
+                                lambda: [self.controller.cc.seedkeeper_reset_secret(secret_details['id']),
+                                         self.show_view_my_secrets()],
+                                './pictures_db/secrets_icon_popup.png'),
+                            self.show_view_my_secrets()
+                        ]
+                    )
+                    delete_button.place(relx=0.75, rely=0.98, anchor="se")
+                    logger.debug("Action buttons created")
+                except Exception as e:
+                    logger.error(f"Error creating action buttons: {e}", exc_info=True)
+                    raise UIElementError(f"Failed to create action buttons: {e}") from e
+
+                logger.log(SUCCESS, "Free text secret frame created successfully")
+            except Exception as e:
+                logger.error(f"Unexpected error in _create_free_text_secret_frame: {e}", exc_info=True)
+                raise ViewError(f"Failed to create free text secret frame: {e}") from e
+
+        @log_method
+        def _create_wallet_descriptor_secret_frame(secret_details):
+            try:
+                logger.info("Creating wallet descriptor secret frame to display secret details")
+
+                # Create field for label
+                label_label = self._create_label("Label:")
+                label_label.place(relx=0.045, rely=0.2)
+                self.label_entry = self._create_entry()
+                self.label_entry.insert(0, secret_details['label'])
+                self.label_entry.place(relx=0.045, rely=0.27)
+                self.label_entry.configure(state='disabled')
+                logger.debug("Label field created")
+
+                # Create field for wallet descriptor content
+                wallet_descriptor_label = self._create_label("Wallet Descriptor Content:")
+                wallet_descriptor_label.place(relx=0.045, rely=0.34)
+                self.wallet_descriptor_textbox = self._create_textbox()
+                self.wallet_descriptor_textbox.place(relx=0.045, rely=0.41, relheight=0.4, relwidth=0.7)
+                logger.debug("Wallet descriptor content field created")
+
+                # Decode secret
+                try:
+                    logger.debug("Decoding wallet descriptor to show")
+                    self.decoded_text = self.controller.decode_wallet_descriptor(secret_details)
+                    wallet_descriptor = self.decoded_text['descriptor']
+                    logger.log(SUCCESS, f"Wallet descriptor secret decoded successfully")
+                except ValueError as e:
+                    self.show("ERROR", f"Invalid secret format: {str(e)}", "Ok")
+                except ControllerError as e:
+                    self.show("ERROR", f"Failed to decode secret: {str(e)}", "Ok")
+
+                # Insert decoded text into textbox
+                self.wallet_descriptor_textbox.insert("1.0", '*' * len(self.decoded_text['descriptor']))
+                self.wallet_descriptor_textbox.configure(state='disabled')
+
+                # Function to toggle visibility of wallet descriptor
+                @log_method
+                def _toggle_wallet_descriptor_visibility(wallet_descriptor_textbox, original_text):
+                    try:
+                        logger.info("Toggling Wallet descriptor visibility")
+                        wallet_descriptor_textbox.configure(state='normal')
+                        # Obtenir le contenu actuel de la textbox
+                        current_text = wallet_descriptor_textbox.get("1.0", "end-1c")
+
+                        if current_text == '*' * len(original_text):
+                            # Si la textbox contient uniquement des étoiles, afficher le texte original
+                            wallet_descriptor_textbox.delete("1.0", "end")
+                            wallet_descriptor_textbox.insert("1.0", original_text)
+                            wallet_descriptor_textbox.configure(state='disabled')
+                            logger.log(SUCCESS, "Wallet descriptor visibility toggled to visible")
+                        else:
+                            # Sinon, masquer le texte avec des étoiles
+                            wallet_descriptor_textbox.delete("1.0", "end")
+                            wallet_descriptor_textbox.insert("1.0", '*' * len(original_text))
+                            wallet_descriptor_textbox.configure(state='disabled')
+                            logger.log(SUCCESS, "Wallet descriptor visibility toggled to hidden")
+
+                    except Exception as e:
+                        logger.error(f"Error toggling Wallet descriptor visibility: {e}", exc_info=True)
+                        raise UIElementError(f"Failed to toggle Wallet descriptor visibility: {e}") from e
+
+                # Create action buttons
+                try:
+                    show_button = self._create_button(text="Show",
+                                                      command=lambda: _toggle_wallet_descriptor_visibility(
+                                                          self.wallet_descriptor_textbox, wallet_descriptor))
+                    show_button.place(relx=0.95, rely=0.65, anchor="se")
+
+                    delete_button = self._create_button(
+                        text="Delete secret",
+                        command=lambda: [
+                            self.show(
+                                "WARNING",
+                                "Are you sure to delete this secret ?!\n Click Yes for delete the secret or close popup",
+                                "Yes",
+                                lambda: [self.controller.cc.seedkeeper_reset_secret(secret_details['id']),
+                                         self.show_view_my_secrets()],
+                                './pictures_db/secrets_icon_popup.png'),
+                            self.show_view_my_secrets()
+                        ]
+                    )
+                    delete_button.place(relx=0.75, rely=0.98, anchor="se")
+                    logger.debug("Action buttons created")
+                except Exception as e:
+                    logger.error(f"Error creating action buttons: {e}", exc_info=True)
+                    raise UIElementError(f"Failed to create action buttons: {e}") from e
+
+                logger.log(SUCCESS, "Wallet descriptor secret frame created successfully")
+            except Exception as e:
+                logger.error(f"Unexpected error in _create_wallet_descriptor_secret_frame: {e}", exc_info=True)
+                raise ViewError(f"Failed to create wallet descriptor secret frame: {e}") from e
+
+        def _load_view_my_secrets():
+            logger.info("Creating secrets frame")
+            _create_secrets_frame()
+            _create_secrets_header()
+            _create_secrets_table(secrets_data)
+            self.create_seedkeeper_menu()
+            logger.log(SUCCESS, "Secrets frame created successfully")
+
+        try:
+            _load_view_my_secrets()
+        except Exception as e:
+            error_msg = f"Failed to create secrets frame: {e}"
+            logger.error(error_msg, exc_info=True)
+            raise SecretFrameCreationError(error_msg) from e
 
 

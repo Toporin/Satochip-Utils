@@ -49,7 +49,8 @@ ICON_PATH = "./pictures_db/"
 class View(customtkinter.CTk):
     def __init__(self, loglevel=logging.INFO):
         try:
-            logger.setLevel(loglevel)
+            #logger.setLevel(loglevel)
+            logger.setLevel(logging.DEBUG)
             logger.debug("Log level set to INFO")
             logger.info("Starting View.__init__()")
             super().__init__()
@@ -88,6 +89,11 @@ class View(customtkinter.CTk):
             self.counter = None
             self.display_menu = False
             logger.debug("Widgets declared successfully")
+
+            # frames
+            self.welcome_frame = None
+            self.seedkeeper_menu_frame = None
+            self.settings_menu_frame = None
 
             # Application state attributes
             # Status de l'application et de certains widgets
@@ -324,9 +330,9 @@ class View(customtkinter.CTk):
         except Exception as e:
             logger.error(f"An unexpected error occurred in create_an_header: {e}", exc_info=True)
 
-    def create_an_header_for_welcome(self, title_text: str = None, icon_name: str = None, label_text: str = None):
+    def create_an_header_for_welcome(self):
         icon_path = f"./pictures_db/welcome_logo.png"
-        frame = customtkinter.CTkFrame(self.current_frame, width=380, height=178, bg_color='white')
+        frame = customtkinter.CTkFrame(self.welcome_frame, width=380, height=178, bg_color='white')
         frame.place(relx=0.1, rely=0.03, anchor='nw')
 
         logo_canvas = customtkinter.CTkCanvas(frame, width=400, height=400, bg='black')
@@ -475,32 +481,31 @@ class View(customtkinter.CTk):
 
     def create_label(self, text, bg_fg_color: str = "whitesmoke", frame=None) -> customtkinter.CTkLabel:
         # todo use frame
+        if frame is None:
+            frame = self.current_frame
+
         logger.debug("view.create_label start")
         label = customtkinter.CTkLabel(
-            self.current_frame,
+            frame,
             text=text,
             bg_color=bg_fg_color,
             fg_color=bg_fg_color,
-            font=customtkinter.CTkFont(family="Outfit", size=18,weight="normal")
+            font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal")
         )
         return label
 
-    def _create_label(self, text, bg_fg_color: str = "whitesmoke", frame=None) -> customtkinter.CTkLabel:
-        # todo use frame
-        logger.debug("view.create_label start")
-        label = customtkinter.CTkLabel(
-            self.current_frame,
-            text=text,
-            bg_color=bg_fg_color,
-            fg_color=bg_fg_color,
-            font=customtkinter.CTkFont(family="Outfit", size=18,weight="normal")
-        )
-        return label
-
-    def create_button(self, text: str = None, command=None, frame=None) -> customtkinter.CTkButton:
+    def create_button(
+            self,
+            text: str = None,
+            command=None,
+            frame=None
+    ) -> customtkinter.CTkButton:
         logger.debug("View.create_button() start")
+        if frame is None:
+            frame = self.current_frame
+
         button = customtkinter.CTkButton(
-            self.current_frame,
+            frame,
             text=text,
             width=120, height=35, corner_radius=100,
             font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal"),
@@ -509,24 +514,7 @@ class View(customtkinter.CTk):
             command=command)
         return button
 
-    def _create_button( # todo merge with create_button
-            self,
-            text: Optional[str] = None,
-            command: Optional[Callable] = None,
-            frame: Optional[customtkinter.CTkFrame] = None
-    ) -> customtkinter.CTkButton:
-        logger.info(f"_create_button with text: '{text}'")
-        button = customtkinter.CTkButton(
-            self.current_frame, text=text, corner_radius=100,
-            font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal"),
-            bg_color='white', fg_color=BG_MAIN_MENU,
-            hover_color=BG_HOVER_BUTTON, cursor="hand2", width=120, height=35,
-            command=command
-        )
-        return button
-
-
-    def create_button_for_main_menu_item(
+    def create_button_for_main_menu_item( # todo rename create_menu_button
             self,
             frame: customtkinter.CTkFrame,
             button_label: str,
@@ -616,7 +604,9 @@ class View(customtkinter.CTk):
     def create_canvas(self, frame=None) -> customtkinter.CTkCanvas:
         try:
             logger.debug("View.create_canvas() start")
-            canvas = customtkinter.CTkCanvas(self.current_frame, bg="whitesmoke", width=1000, height=599)# todo: 599 or 600?
+            if frame is None:
+                frame = self.current_frame
+            canvas = customtkinter.CTkCanvas(frame, bg="whitesmoke", width=1000, height=599)# todo: 599 or 600?
             return canvas
         except Exception as e:
             logger.error(f"An unexpected error occurred in create_canvas: {e}", exc_info=True)
@@ -697,12 +687,25 @@ class View(customtkinter.CTk):
     #################
     """ MAIN MENU """
 
-    def main_menu(self, state=None, frame=None):
-        logger.info("IN View.main_menu")
+    def show_settings_menu(self, state=None, frame=None):
+        self.hide_seedkeeper_menu()
+        if self.settings_menu_frame is None:
+            self.settings_menu_frame = self.create_settings_menu(state, frame)
+        self.settings_menu_frame.place()
+
+    def hide_settings_menu(self):
+        if self.settings_menu_frame is not None:
+            self.settings_menu_frame.place_forget()
+
+    def create_settings_menu(self, state=None, frame=None):
+        logger.info("IN View.create_settings_menu")
         try:
             if state is None:
                 state = "normal" if self.controller.cc.card_present else "disabled"
                 logger.info(f"Card {'detected' if state == 'normal' else 'undetected'}, setting state to {state}")
+
+            if frame is None:
+                frame = self.main_frame #self.current_frame #self.main_frame
 
             menu_frame = customtkinter.CTkFrame(
                 self.current_frame, width=250, height=600,
@@ -873,6 +876,8 @@ class View(customtkinter.CTk):
                 command=lambda: webbrowser.open("https://satochip.io/shop/", new=2), state='normal'
             )
 
+            menu_frame.place(relx=0.250, rely=0.5, anchor="e")
+
             logger.info("Main menu setup complete")
             return menu_frame
 
@@ -1022,65 +1027,62 @@ class View(customtkinter.CTk):
             frame_name = "welcome"
             button_label = "Let's go!"
 
-            if self.current_frame is not None:
-                logger.debug("Clearing current frame")
-                self.clear_current_frame()
-                logger.debug("Current frame cleared")
+            # if self.current_frame is not None:
+            #     logger.debug("Clearing current frame")
+            #     self.clear_current_frame()
+            #     logger.debug("Current frame cleared")
 
             logger.debug("Creating new frame and background")
-            self.current_frame = View.create_frame(self)
-            self.current_frame.place(relx=0.5, rely=0.5, anchor="center")
+            self.welcome_frame = View.create_frame(self)
+            self.welcome_frame.place(relx=0.5, rely=0.5, anchor="center")
             self.background_photo = View.create_background_photo(self, "./pictures_db/welcome_in_satochip_utils.png")
-            self.canvas = View.create_canvas(self)
+            self.canvas = self.create_canvas(frame= self.welcome_frame)
             self.canvas.place(relx=0.5, rely=0.5, anchor="center")
             self.canvas.create_image(0, 0, image=self.background_photo, anchor="nw")
             logger.debug("New frame and background created and placed")
 
-            # self.satochip_logo = View.create_background_photo(self, "./pictures_db/icon_logo.png")
-            # self.canvas_logo = View.create_canvas(self)
-            # self.canvas.place(relx=0.5, rely=0.5, anchor="center")
-            # self.canvas.create_image(0, 0, image=self.satochip_logo, anchor="nw")
-
-            logger.debug("Creating header for welcome")
-            self.create_an_header_for_welcome('SATOCHIP', 'welcome_logo.png', 'Secure the future.') # todo args not used remove
-            logger.debug("Header created and placed")
+            self.create_an_header_for_welcome()
 
             logger.debug("Setting up labels")
-            self.label = self.create_label('Satochip-Utils\n______________', MAIN_MENU_COLOR)
+            self.label = self.create_label('Satochip-Utils\n______________', MAIN_MENU_COLOR, frame=self.welcome_frame)
             self.label.configure(text_color='white')
             self.label.configure(font=self.make_text_size_at(18))
             self.label.place(relx=0.05, rely=0.4, anchor="w")
 
-            self.label = self.create_label('Your one stop shop to manage your Satochip cards,', MAIN_MENU_COLOR)
+            self.label = self.create_label(
+                'Your one stop shop to manage your Satochip cards,',
+                MAIN_MENU_COLOR,
+                frame=self.welcome_frame
+            )
             self.label.configure(text_color='white')
             self.label.configure(font=self.make_text_size_at(18))
             self.label.place(relx=0.05, rely=0.5, anchor="w")
 
-            self.label = self.create_label('including Satodime and Seedkeeper.', MAIN_MENU_COLOR)
+            self.label = self.create_label('including Satodime and Seedkeeper.', MAIN_MENU_COLOR, frame=self.welcome_frame)
             self.label.configure(text_color='white')
             self.label.configure(font=self.make_text_size_at(18))
             self.label.place(relx=0.05, rely=0.55, anchor="w")
 
-            self.label = self.create_label('Change your PIN code, reset your card, setup your', MAIN_MENU_COLOR)
+            self.label = self.create_label('Change your PIN code, reset your card, setup your', MAIN_MENU_COLOR, frame=self.welcome_frame)
             self.label.configure(text_color='white')
             self.label.configure(font=self.make_text_size_at(18))
             self.label.place(relx=0.05, rely=0.65, anchor="w")
 
-            self.label = self.create_label('hardware wallet and many more...', MAIN_MENU_COLOR)
+            self.label = self.create_label('hardware wallet and many more...', MAIN_MENU_COLOR, frame=self.welcome_frame)
             self.label.configure(text_color='white')
             self.label.configure(font=self.make_text_size_at(18))
             self.label.place(relx=0.05, rely=0.7, anchor="w")
             logger.debug("Labels created and placed")
 
             logger.debug("Creating and placing the button")
-            self.button = View.create_button(self, button_label, command=lambda: [self.start_setup()])
+            self.button = View.create_button(
+                self,
+                button_label,
+                command=lambda: [self.start_setup()],
+                frame=self.welcome_frame
+            )
             self.after(2500, self.button.place(relx=0.85, rely=0.93, anchor="center"))
             logger.debug("Button created and placed")
-
-            if self.controller.cc.card_present:
-                logger.info("Card present")
-            else:
-                logger.info("Card is not present, impossible to retrieve card status")
 
             logger.debug("Exiting welcome method successfully")
         except Exception as e:
@@ -1142,13 +1144,13 @@ class View(customtkinter.CTk):
 
             if self.controller.cc.card_type == "SeedKeeper":
                 logger.debug("Creating Seedkeeper menu")
-                menu = self.create_seedkeeper_menu()
-                menu.place(relx=0.250, rely=0.5, anchor="e")
+                self.show_seedkeeper_menu() #create_seedkeeper_menu()
                 logger.debug("Seedkeeper menu created and placed")
             else:
                 logger.debug("Creating main menu")
-                menu = self.main_menu()
-                menu.place(relx=0.250, rely=0.5, anchor="e")
+                self.show_settings_menu()
+                #menu = self.create_settings_menu()
+                #menu.place(relx=0.250, rely=0.5, anchor="e")
                 logger.debug("Main menu created and placed")
 
         except Exception as e:
@@ -1172,11 +1174,12 @@ class View(customtkinter.CTk):
             self.current_frame.place(relx=0.5, rely=0.5, anchor="center")
 
             # Creating main menu
-            if not self.controller.cc.setup_done:
-                menu = self.main_menu('disabled')
-            else:
-                menu = self.main_menu()
-            menu.place(relx=0.250, rely=0.5, anchor="e")
+            # if not self.controller.cc.setup_done:
+            #     menu = self.create_settings_menu('disabled')
+            # else:
+            #     menu = self.create_settings_menu()
+            self.show_settings_menu()# todo update setup status
+            #menu.place(relx=0.250, rely=0.5, anchor="e")
 
             # Creating header
             self.header = View.create_an_header(self, f"Setup my card",
@@ -1238,8 +1241,9 @@ class View(customtkinter.CTk):
             self.current_frame.place(relx=0.5, rely=0.5, anchor="center")
 
             # Creating main menu
-            menu = self.main_menu(state='disabled')
-            menu.place(relx=0.250, rely=0.5, anchor="e")
+            self.show_settings_menu()
+            #menu = self.create_settings_menu(state='disabled')#todo
+            #menu.place(relx=0.250, rely=0.5, anchor="e")
 
             # Creating header
             self.header = View.create_an_header(self, "Seed My Card", "seed_popup.jpg")
@@ -1452,8 +1456,9 @@ class View(customtkinter.CTk):
             self.current_frame.place(relx=0.5, rely=0.5, anchor="center")
 
             # Creating main menu
-            menu = self.main_menu()
-            menu.place(relx=0.250, rely=0.5, anchor="e")
+            self.show_settings_menu()
+            #menu = self.create_settings_menu()
+            #menu.place(relx=0.250, rely=0.5, anchor="e")
             logger.debug("Main menu created and placed")
 
             # Creating header
@@ -1529,8 +1534,9 @@ class View(customtkinter.CTk):
             logger.debug("New frame created and placed")
 
             # Creating main menu
-            menu = self.main_menu()
-            menu.place(relx=0.250, rely=0.5, anchor="e")
+            self.show_settings_menu()
+            #menu = self.create_settings_menu()
+            #menu.place(relx=0.250, rely=0.5, anchor="e")
             logger.debug("Main menu created and placed")
 
             # Creating header
@@ -1710,8 +1716,9 @@ class View(customtkinter.CTk):
                     self.start_setup()
 
             # Creating and placing main menu
-            self.menu = self.main_menu()
-            self.menu.place(relx=0.250, rely=0.5, anchor="e")
+            self.show_settings_menu()
+            #self.menu = self.create_settings_menu()
+            #self.menu.place(relx=0.250, rely=0.5, anchor="e")
 
         except Exception as e:
             logger.error(f"An unexpected error occurred in check_authenticity: {e}", exc_info=True)
@@ -1832,8 +1839,9 @@ class View(customtkinter.CTk):
             self.reset_button = View.create_button(self,'Start',lambda: click_start_button())
             self.reset_button.place(relx=0.85, rely=0.9, anchor="w")
 
-            menu = self.main_menu()
-            menu.place(relx=0.250, rely=0.5, anchor="e")
+            self.show_settings_menu()
+            #menu = self.create_settings_menu()
+            #menu.place(relx=0.250, rely=0.5, anchor="e")
 
         except Exception as e:
             logger.error(f"An unexpected error occurred in reset_my_card_window: {e}", exc_info=True)
@@ -1857,8 +1865,9 @@ class View(customtkinter.CTk):
             self.current_frame.place(relx=0.5, rely=0.5, anchor="center")
 
             # Creating main menu
-            menu = self.main_menu()
-            menu.place(relx=0.250, rely=0.5, anchor="e")
+            self.show_settings_menu()
+            #menu = self.create_settings_menu()
+            #menu.place(relx=0.250, rely=0.5, anchor="e")
 
             # Creating header
             self.header = View.create_an_header(self,
@@ -1977,36 +1986,49 @@ class View(customtkinter.CTk):
     ################################
     """ SEEDKEEPER MENU """
 
-    def create_seedkeeper_menu(self): #todo merge with _seedkeeper_lateral_menu
-        try:
-            logger.info("create_seedkeeper_menu start")
-            menu = self._seedkeeper_lateral_menu()
-            return menu
-        except Exception as e:
-            logger.error(f"005 Error in create_seedkeeper_menu: {e}", exc_info=True)
-            raise MenuCreationError(f"006 Failed to create Seedkeeper menu: {e}") from e
+    # def create_seedkeeper_menu(self): #todo merge with _seedkeeper_lateral_menu
+    #     try:
+    #         logger.info("create_seedkeeper_menu start")
+    #         menu = self._seedkeeper_lateral_menu()
+    #         return menu
+    #     except Exception as e:
+    #         logger.error(f"005 Error in create_seedkeeper_menu: {e}", exc_info=True)
+    #         raise MenuCreationError(f"006 Failed to create Seedkeeper menu: {e}") from e
 
-    def _seedkeeper_lateral_menu(
+    def show_seedkeeper_menu(self, state=None, frame=None):
+        self.hide_settings_menu()
+        if self.seedkeeper_menu_frame is None:
+            self.seedkeeper_menu_frame = self.create_seedkeeper_menu(state, frame)
+        self.seedkeeper_menu_frame.place()
+
+    def hide_seedkeeper_menu(self):
+        if self.seedkeeper_menu_frame is not None:
+            self.seedkeeper_menu_frame.place_forget()
+
+    def create_seedkeeper_menu(
             self,
             state=None,
             frame=None
     ) -> customtkinter.CTkFrame:
         try:
             logger.info("001 Starting Seedkeeper lateral menu creation")
-            if self.menu:
-                self.menu.destroy()
+            if self.seedkeeper_menu_frame:
+                self.seedkeeper_menu_frame.destroy()
                 logger.debug("002 Existing menu destroyed")
 
-            if state is None:
+            if state is None: # todo: use boolean card_present
                 state = "normal" if self.controller.cc.card_present else "disabled"
                 logger.info(
                     f"003 Card {'detected' if state == 'normal' else 'undetected'}, setting state to {state}")
+
+            if frame is None:
+                frame = self.main_frame #self.current_frame #self.main_frame
 
             # menu_frame = customtkinter.CTkFrame(self.main_frame, width=250, height=600,
             #                                     bg_color=BG_MAIN_MENU,
             #                                     fg_color=BG_MAIN_MENU, corner_radius=0, border_color="black",
             #                                     border_width=0)
-            menu_frame = customtkinter.CTkFrame(self.current_frame, width=250, height=600,
+            menu_frame = customtkinter.CTkFrame(frame, width=250, height=600,
                                                 bg_color=BG_MAIN_MENU,
                                                 fg_color=BG_MAIN_MENU, corner_radius=0, border_color="black",
                                                 border_width=0)
@@ -2025,19 +2047,15 @@ class View(customtkinter.CTk):
             canvas.image = logo_photo  # conserver une référence
             logger.debug("005 Logo section created")
 
-            if self.controller.cc.card_present:
-                logger.log(SUCCESS, "006 Card Present")
-            else:
-                logger.error(f"007 Card not present")
-
             # Menu items
             self.create_button_for_main_menu_item(
                 menu_frame,
-                "My secrets" if self.controller.cc.card_present else "Insert card",
-                "secrets.png" if self.controller.cc.card_present else "insert_card.jpg",
+                "My secrets", #if self.controller.cc.card_present else "Insert card",
+                "secrets.png", #if self.controller.cc.card_present else "insert_card.jpg", # todo grey icon if no card
                 0.26, 0.585 if self.controller.cc.card_present else 0.578,
                 state=state,
-                command=self.show_view_my_secrets if self.controller.cc.card_present else None
+                command=self.show_view_my_secrets if self.controller.cc.card_present else None,
+                text_color="white" if self.controller.cc.card_present else "grey"
             )
             self.create_button_for_main_menu_item(
                 menu_frame, "Generate",
@@ -2077,6 +2095,9 @@ class View(customtkinter.CTk):
                 0.95, 0.82, state='normal',
                 command=lambda: webbrowser.open("https://satochip.io/shop/",new=2)
             )
+
+            menu_frame.place(relx=0.250, rely=0.5, anchor="e")
+
             return menu_frame
         except Exception as e:
             logger.error(f"010 Unexpected error in _seedkeeper_lateral_menu: {e}", exc_info=True)
@@ -2271,7 +2292,8 @@ class View(customtkinter.CTk):
                     self.header.place(relx=0.03, rely=0.08, anchor="nw")
 
                     # Calling the main menu for seedkeeper
-                    self.create_seedkeeper_menu()
+                    #self.create_seedkeeper_menu()
+                    self.show_seedkeeper_menu()
 
                     logger.debug("Starting to control the secret type to choose the corresponding frame to dsplay")
                     if secret['type'] == 'Password':
@@ -2311,7 +2333,7 @@ class View(customtkinter.CTk):
                         logger.warning(f"Unsupported secret type: {secret['type']}")
                         self.show("WARNING", f"Unsupported type:\n{secret['type']}", "Ok", None, "./pictures_db/secrets_icon_popup.png")
 
-                    back_button = self._create_button(text="Back", command=self.show_view_my_secrets)
+                    back_button = self.create_button(text="Back", command=self.show_view_my_secrets)
                     back_button.place(relx=0.95, rely=0.98, anchor="se")
 
                     logger.log(SUCCESS, f"012 Secret details displayed for ID: {secret['id']}")
@@ -2328,7 +2350,7 @@ class View(customtkinter.CTk):
                 }
 
                 # Introduce table
-                label_text = self._create_label(text="Click on a secret to manage it:")
+                label_text = self.create_label(text="Click on a secret to manage it:")
                 label_text.place(relx=0.05, rely=0.25, anchor="w")
 
                 # Define headers
@@ -2416,7 +2438,8 @@ class View(customtkinter.CTk):
             _create_secrets_frame()
             _create_secrets_header()
             _create_secrets_table(secrets_data)
-            self.create_seedkeeper_menu()
+            #self.create_seedkeeper_menu()
+            self.show_seedkeeper_menu()
             logger.log(SUCCESS, "Secrets frame created successfully")
         except Exception as e:
             error_msg = f"Failed to create secrets frame: {e}"
@@ -2430,26 +2453,26 @@ class View(customtkinter.CTk):
 
             # Create field for label login, url and password
             try:
-                label_label = self._create_label("Label:")
+                label_label = self.create_label("Label:")
                 label_label.place(relx=0.045, rely=0.2)
                 self.label_entry = self._create_entry()
                 self.label_entry.insert(0, secret_details['label'])
                 self.label_entry.place(relx=0.045, rely=0.27)
                 logger.debug("002 label fields created")
 
-                login_label = self._create_label("Login:")
+                login_label = self.create_label("Login:")
                 login_label.place(relx=0.045, rely=0.34)
                 self.login_entry = self._create_entry(show_option="*")
                 self.login_entry.place(relx=0.045, rely=0.41)
                 logger.debug("003 login fields created")
 
-                url_label = self._create_label("Url:")
+                url_label = self.create_label("Url:")
                 url_label.place(relx=0.045, rely=0.48)
                 self.url_entry = self._create_entry(show_option="*")
                 self.url_entry.place(relx=0.045, rely=0.55)
                 logger.debug("004 url fields created")
 
-                password_label = self._create_label("Password:")
+                password_label = self.create_label("Password:")
                 password_label.place(relx=0.045, rely=0.7, anchor="w")
                 self.password_entry = self._create_entry(show_option="*")
                 self.password_entry.configure(width=500)
@@ -2497,14 +2520,14 @@ class View(customtkinter.CTk):
 
             # Create action buttons
             try:
-                show_button = self._create_button(
+                show_button = self.create_button(
                     text="Show",
                     command=lambda: _toggle_password_visibility(
                         self.login_entry, self.url_entry, self.password_entry)
                 )
                 show_button.place(relx=0.9, rely=0.8, anchor="se")
 
-                delete_button = self._create_button(
+                delete_button = self.create_button(
                     text="Delete secret",
                     command=lambda: [
                         self.show(
@@ -2539,7 +2562,7 @@ class View(customtkinter.CTk):
 
             for i, label_text in enumerate(labels):
                 try:
-                    label = self._create_label(label_text)
+                    label = self.create_label(label_text)
                     label.place(relx=0.045, rely=0.2 + i * 0.15, anchor="w")
                     logger.debug(f"Created label: {label_text}")
 
@@ -2576,7 +2599,7 @@ class View(customtkinter.CTk):
 
             # Create mnemonic field
             try:
-                mnemonic_label = self._create_label("Mnemonic:")
+                mnemonic_label = self.create_label("Mnemonic:")
                 mnemonic_label.place(relx=0.045, rely=0.65, anchor="w")
 
                 mnemonic_textbox = self._create_textbox()
@@ -2615,7 +2638,7 @@ class View(customtkinter.CTk):
 
             # Create action buttons
             try:
-                delete_button = self._create_button(
+                delete_button = self.create_button(
                     text="Delete secret",
                     command=lambda: [
                         self.show(
@@ -2630,7 +2653,7 @@ class View(customtkinter.CTk):
                 )
                 delete_button.place(relx=0.75, rely=0.98, anchor="se")
 
-                show_button = self._create_button(text="Show",
+                show_button = self.create_button(text="Show",
                                                   command=lambda: [_toggle_mnemonic_visibility(mnemonic_textbox, mnemonic)])
                 show_button.place(relx=0.95, rely=0.8, anchor="e")
                 logger.debug("020 Action buttons created")
@@ -2655,7 +2678,7 @@ class View(customtkinter.CTk):
 
             for i, label_text in enumerate(labels):
                 try:
-                    label = self._create_label(label_text)
+                    label = self.create_label(label_text)
                     label.place(relx=0.045, rely=0.2 + i * 0.15, anchor="w")
                     logger.debug(f"Created label: {label_text}")
 
@@ -2685,14 +2708,14 @@ class View(customtkinter.CTk):
                 qr_xbm = qr.xbm(scale=3) if len(mnemonic.split()) <=12 else qr.xbm(scale=2)
                 # Convertir le code XBM en image Tkinter
                 qr_bmp = tkinter.BitmapImage(data=qr_xbm)
-                label = self._create_label("")
+                label = self.create_label("")
                 label.place(relx=0.8, rely=0.4)
                 label.configure(image=qr_bmp)
                 label.image = qr_bmp  # Prévenir le garbage collection
 
             # seed_qr button
             try:
-                seedqr_button = self._create_button(text="SeedQR",
+                seedqr_button = self.create_button(text="SeedQR",
                                                     command=lambda: show_seed_qr_code())
                 seedqr_button.place(relx=0.78, rely=0.51, anchor="se")
                 logger.debug("SeedQR buttons created")
@@ -2717,7 +2740,7 @@ class View(customtkinter.CTk):
 
             # Create passphrase field
             try:
-                passphrase_label = self._create_label("Passphrase:")
+                passphrase_label = self.create_label("Passphrase:")
                 passphrase_label.place(relx=0.045, rely=0.56, anchor="w")
 
                 passphrase_entry = self._create_entry()
@@ -2731,7 +2754,7 @@ class View(customtkinter.CTk):
 
             # Create mnemonic field
             try:
-                mnemonic_label = self._create_label("Mnemonic:")
+                mnemonic_label = self.create_label("Mnemonic:")
                 mnemonic_label.place(relx=0.045, rely=0.63, anchor="w")
 
                 self.seed_mnemonic_textbox = self._create_textbox()
@@ -2795,7 +2818,7 @@ class View(customtkinter.CTk):
 
             # Create action buttons
             try:
-                delete_button = self._create_button(
+                delete_button = self.create_button(
                     text="Delete secret",
                     command=lambda: [
                         self.show(
@@ -2809,7 +2832,7 @@ class View(customtkinter.CTk):
                 )
                 delete_button.place(relx=0.75, rely=0.95, anchor="e")
 
-                show_button = self._create_button(text="Show",
+                show_button = self.create_button(text="Show",
                                                   command=lambda: [_toggle_mnemonic_visibility(self.seed_mnemonic_textbox, mnemonic), _toggle_passphrase_visibility(passphrase_entry, passphrase)])
                 show_button.place(relx=0.95, rely=0.8, anchor="e")
                 logger.debug("020 Action buttons created")
@@ -2826,13 +2849,13 @@ class View(customtkinter.CTk):
     def _create_2FA_secret_frame(self, secret_details):
         try:
             logger.debug(f"2FA secret details: {secret_details}")
-            self.label_2FA = self._create_label('Label:')
+            self.label_2FA = self.create_label('Label:')
             self.label_2FA.place(relx=0.045, rely=0.2)
             self.label_2FA_entry = self._create_entry()
             self.label_2FA_entry.place(relx=0.045, rely=0.25)
             self.label_2FA_entry.insert(0, secret_details['label'])
 
-            self.secret_2FA_label = self._create_label('Secret:')
+            self.secret_2FA_label = self.create_label('Secret:')
             self.secret_2FA_label.place(relx=0.045, rely=0.32)
             self.secret_2FA_entry = self._create_entry(show_option="*")
             self.secret_2FA_entry.place(relx=0.045, rely=0.37)
@@ -2856,12 +2879,12 @@ class View(customtkinter.CTk):
 
             # Create action buttons
             try:
-                show_button = self._create_button(
+                show_button = self.create_button(
                     text="Show",
                     command=lambda: _toggle_2FA_visibility(self.secret_2FA_entry))
                 show_button.place(relx=0.9, rely=0.433, anchor="se")
 
-                delete_button = self._create_button(
+                delete_button = self.create_button(
                     text="Delete secret",
                     command=lambda: [
                         self.show(
@@ -2888,7 +2911,7 @@ class View(customtkinter.CTk):
     def _create_generic_secret_frame(self, secret_details):
         try:
             for key, value in secret_details.items():
-                label = self._create_label(f"{key}:")
+                label = self.create_label(f"{key}:")
                 label.place(relx=0.1, rely=0.2 + len(secret_details) * 0.05, anchor="w")
 
                 entry = self._create_entry(show_option="*" if key.lower() == "value" else None)
@@ -2907,7 +2930,7 @@ class View(customtkinter.CTk):
             logger.info("Creating free text secret frame to display secret details")
 
             # Create field for label
-            label_label = self._create_label("Label:")
+            label_label = self.create_label("Label:")
             label_label.place(relx=0.045, rely=0.2)
             self.label_entry = self._create_entry()
             self.label_entry.insert(0, secret_details['label'])
@@ -2916,7 +2939,7 @@ class View(customtkinter.CTk):
             logger.debug("Label field created")
 
             # Create field for free text content
-            free_text_label = self._create_label("Free Text Content:")
+            free_text_label = self.create_label("Free Text Content:")
             free_text_label.place(relx=0.045, rely=0.34)
             self.free_text_textbox = self._create_textbox()
             self.free_text_textbox.place(relx=0.045, rely=0.41, relheight=0.4, relwidth=0.7)
@@ -2965,13 +2988,13 @@ class View(customtkinter.CTk):
 
             # Create action buttons
             try:
-                show_button = self._create_button(
+                show_button = self.create_button(
                     text="Show",
                     command=lambda: _toggle_free_text_visibility(self.free_text_textbox, free_text)
                 )
                 show_button.place(relx=0.95, rely=0.65, anchor="se")
 
-                delete_button = self._create_button(
+                delete_button = self.create_button(
                     text="Delete secret",
                     command=lambda: [
                         self.show(
@@ -3001,7 +3024,7 @@ class View(customtkinter.CTk):
             logger.info("Creating wallet descriptor secret frame to display secret details")
 
             # Create field for label
-            label_label = self._create_label("Label:")
+            label_label = self.create_label("Label:")
             label_label.place(relx=0.045, rely=0.2)
             self.label_entry = self._create_entry()
             self.label_entry.insert(0, secret_details['label'])
@@ -3010,7 +3033,7 @@ class View(customtkinter.CTk):
             logger.debug("Label field created")
 
             # Create field for wallet descriptor content
-            wallet_descriptor_label = self._create_label("Wallet Descriptor Content:")
+            wallet_descriptor_label = self.create_label("Wallet Descriptor Content:")
             wallet_descriptor_label.place(relx=0.045, rely=0.34)
             self.wallet_descriptor_textbox = self._create_textbox()
             self.wallet_descriptor_textbox.place(relx=0.045, rely=0.41, relheight=0.4, relwidth=0.7)
@@ -3059,12 +3082,12 @@ class View(customtkinter.CTk):
 
             # Create action buttons
             try:
-                show_button = self._create_button(text="Show",
+                show_button = self.create_button(text="Show",
                                                   command=lambda: _toggle_wallet_descriptor_visibility(
                                                       self.wallet_descriptor_textbox, wallet_descriptor))
                 show_button.place(relx=0.95, rely=0.65, anchor="se")
 
-                delete_button = self._create_button(
+                delete_button = self.create_button(
                     text="Delete secret",
                     command=lambda: [
                         self.show(

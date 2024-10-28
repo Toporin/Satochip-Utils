@@ -2276,37 +2276,37 @@ class View(customtkinter.CTk):
                     logger.debug("Starting to control the secret type to choose the corresponding frame to dsplay")
                     if secret['type'] == 'Password':
                         logger.debug(f"Secret: {secret}, with id {secret['id']} is a couple login password")
-                        _create_password_secret_frame(secret_details)
+                        self._create_password_secret_frame(secret_details)
                         logger.debug(f"Frame corresponding to {secret['type']} details called")
                     elif secret['type'] == 'Masterseed':
                         if secret_details['subtype'] > 0 or secret_details['subtype'] == '0x1':
                             logger.info(f"this is mnemonic, subtype: {secret['subtype']}")
                             logger.debug(f"Frame corresponding to {secret['type']} details called for subtype: {secret['subtype']}")
-                            _create_mnemonic_secret_frame(secret_details)
+                            self._create_mnemonic_secret_frame(secret_details)
                         else:
                             logger.info(f"this is masterseed, subtype: {secret['subtype']}")
-                            _create_masterseed_secret_frame(secret_details)
+                            self._create_masterseed_secret_frame(secret_details)
                             logger.debug(f"Frame corresponding to {secret['type']} details called for subtype: {secret['subtype']}")
                     elif secret['type'] == "BIP39 mnemonic":
                         logger.debug(f"Secret: {secret}, with id {secret['id']} is a {secret['type']}")
-                        _create_mnemonic_secret_frame(secret_details)
+                        self._create_mnemonic_secret_frame(secret_details)
                         logger.debug(f"Frame corresponding to {secret['type']}{secret['type']} details called")
                     elif secret['type'] == 'Electrum mnemonic':
                         logger.debug(f"Secret: {secret}, with id {secret['id']} is a {secret['type']}")
-                        _create_mnemonic_secret_frame(secret_details)
+                        self._create_mnemonic_secret_frame(secret_details)
                         logger.debug(f"Frame corresponding to {secret['type']} details called")
                     elif secret['type'] == '2FA secret':
                         logger.debug(f"Secret: {secret}, with id {secret['id']} is a {secret['type']}")
-                        _create_2FA_secret_frame(secret_details)
+                        self._create_2FA_secret_frame(secret_details)
                         logger.debug(f"Frame corresponding to {secret['type']} details called")
                     elif secret['type'] == 'Free text':
                         logger.info(f"this is mnemonic, subtype: {secret['subtype']}")
                         logger.debug(f"Frame corresponding to {secret['type']} details called for subtype: {secret['subtype']}")
-                        _create_free_text_secret_frame(secret_details)
+                        self._create_free_text_secret_frame(secret_details)
                     elif secret['type'] == 'Wallet descriptor':
                         logger.info(f"this is wallet descriptor, subtype: {secret['subtype']}")
                         logger.debug(f"Frame corresponding to {secret['type']} details called for subtype: {secret['subtype']}")
-                        _create_wallet_descriptor_secret_frame(secret_details)
+                        self._create_wallet_descriptor_secret_frame(secret_details)
                     else:
                         logger.warning(f"Unsupported secret type: {secret['type']}")
                         self.show("WARNING", f"Unsupported type:\n{secret['type']}", "Ok", None, "./pictures_db/secrets_icon_popup.png")
@@ -2402,684 +2402,692 @@ class View(customtkinter.CTk):
                 logger.error(f"020 Error in _create_secrets_table: {e}", exc_info=True)
                 raise UIElementError(f"021 Failed to create secrets table: {e}") from e
 
-        @log_method
-        def _create_password_secret_frame(secret_details):
-            try:
-                logger.info("_create_password_secret_frame start")
-
-                # Create field for label login, url and password
-                try:
-                    label_label = self._create_label("Label:")
-                    label_label.place(relx=0.045, rely=0.2)
-                    self.label_entry = self._create_entry()
-                    self.label_entry.insert(0, secret_details['label'])
-                    self.label_entry.place(relx=0.045, rely=0.27)
-                    logger.debug("002 label fields created")
-
-                    login_label = self._create_label("Login:")
-                    login_label.place(relx=0.045, rely=0.34)
-                    self.login_entry = self._create_entry(show_option="*")
-                    self.login_entry.place(relx=0.045, rely=0.41)
-                    logger.debug("003 login fields created")
-
-                    url_label = self._create_label("Url:")
-                    url_label.place(relx=0.045, rely=0.48)
-                    self.url_entry = self._create_entry(show_option="*")
-                    self.url_entry.place(relx=0.045, rely=0.55)
-                    logger.debug("004 url fields created")
-
-                    password_label = self._create_label("Password:")
-                    password_label.place(relx=0.045, rely=0.7, anchor="w")
-                    self.password_entry = self._create_entry(show_option="*")
-                    self.password_entry.configure(width=500)
-                    self.password_entry.place(relx=0.04, rely=0.77, anchor="w")
-                    logger.debug("005 password fields created")
-
-                    # Decode secret
-                    try:
-                        logger.debug("006 Decoding secret to show")
-                        self.decoded_login_password = self.controller.decode_password(secret_details, binascii.unhexlify(secret_details['secret']))
-                        logger.log(
-                            SUCCESS, f"login password secret decoded successfully: {self.decoded_login_password}"
-                        )
-                    except ValueError as e:
-                        self.show("ERROR", f"Invalid secret format: {str(e)}", "Ok")
-                    except ControllerError as e:
-                        self.show("ERROR", f"Failed to decode secret: {str(e)}", "Ok")
-
-                    self.login_entry.insert(0, self.decoded_login_password['login'])
-                    self.url_entry.insert(0, self.decoded_login_password['url'])
-                    self.password_entry.insert(0, self.decoded_login_password['password'][1:])
-
-                except Exception as e:
-                    logger.error(f"008 Error creating fields: {e}", exc_info=True)
-                    raise UIElementError(f"009 Failed to create fields: {e}") from e
-
-                def _toggle_password_visibility(login_entry, url_entry, password_entry):
-                    # todo: only hides secret, not login/url/... fields
-                    try:
-                        # login
-                        login_current_state = login_entry.cget("show")
-                        login_new_state = "" if login_current_state == "*" else "*"
-                        login_entry.configure(show=login_new_state)
-                        # url
-                        url_current_state =  url_entry.cget("show")
-                        url_new_state = "" if url_current_state == "*" else "*"
-                        url_entry.configure(show=url_new_state)
-                        # password
-                        password_current_state = password_entry.cget("show")
-                        password_new_state = "" if password_current_state == "*" else "*"
-                        password_entry.configure(show=password_new_state)
-                    except Exception as e:
-                        logger.error(f"018 Error toggling password visibility: {e}", exc_info=True)
-                        raise UIElementError(f"019 Failed to toggle password visibility: {e}") from e
-
-                # Create action buttons
-                try:
-                    show_button = self._create_button(
-                        text="Show",
-                        command=lambda: _toggle_password_visibility(
-                            self.login_entry, self.url_entry, self.password_entry)
-                    )
-                    show_button.place(relx=0.9, rely=0.8, anchor="se")
-
-                    delete_button = self._create_button(
-                        text="Delete secret",
-                        command=lambda: [
-                            self.show(
-                                "WARNING",
-                                "Are you sure to delete this secret ?!\n Click Yes for delete the secret or close popup",
-                                "Yes",
-                                lambda: [self.controller.cc.seedkeeper_reset_secret(secret_details['id']),
-                                         self.show_view_my_secrets()],
-                                './pictures_db/secrets_icon_popup.png'),
-                            self.show_view_my_secrets()
-                        ]
-                    )
-                    delete_button.place(relx=0.75, rely=0.98, anchor="se")
-                    logger.debug("010 Action buttons created")
-                except Exception as e:
-                    logger.error(f"011 Error creating action buttons: {e}", exc_info=True)
-                    raise UIElementError(f"012 Failed to create action buttons: {e}") from e
-
-                logger.log(SUCCESS, "013 Password secret frame created successfully")
-            except Exception as e:
-                logger.error(f"014 Unexpected error in _create_password_secret_frame: {e}", exc_info=True)
-                raise ViewError(f"015 Failed to create password secret frame: {e}") from e
-
-        @log_method
-        def _create_masterseed_secret_frame(secret_details):
-            try:
-                logger.debug(f"masterseed_secret_details: {secret_details}")
-                logger.info("001 Creating mnemonic secret frame")
-                # Create labels and entry fields
-                labels = ['Label:', 'Mnemonic type:']
-                entries = {}
-
-                for i, label_text in enumerate(labels):
-                    try:
-                        label = self._create_label(label_text)
-                        label.place(relx=0.045, rely=0.2 + i * 0.15, anchor="w")
-                        logger.debug(f"Created label: {label_text}")
-
-                        entry = self._create_entry()
-                        entry.place(relx=0.04, rely=0.27 + i * 0.15, anchor="w")
-                        entries[label_text.lower()[:-1]] = entry
-                        logger.debug(f"Created entry for: {label_text}")
-                    except Exception as e:
-                        logger.error(f"Error creating label or entry for {label_text}: {e}", exc_info=True)
-                        raise UIElementError(f"Failed to create label or entry for {label_text}: {e}") from e
-
-                # Set values to label and mnemonic type
-                entries['label'].insert(0, secret_details['label'])
-                entries['mnemonic type'].insert(0, secret_details['type'])
-
-                # lock possibilities to wright into entries
-                entries['label'].configure(state='disabled')
-                entries['mnemonic type'].configure(state='disabled')
-                logger.debug("Entry values set")
-
-                if secret_details['secret'] != "Export failed: export not allowed by SeedKeeper policy.":
-                    # Decode seed to mnemonic
-                    try:
-                        logger.debug("Decoding seed to mnemonic words")
-                        secret = self.controller.decode_masterseed(secret_details)
-                        mnemonic = secret['mnemonic']
-                        passphrase = secret['passphrase']
-                    except Exception as e:
-                        logger.error(f"Error decoding Masterseed: {e}", exc_info=True)
-                        raise ControllerError(f"015 Failed to decode Masterseed: {e}") from e
-                else:
-                    mnemonic = secret_details['secret']
-                    passphrase = secret_details['secret']
-
-                # Create mnemonic field
-                try:
-                    mnemonic_label = self._create_label("Mnemonic:")
-                    mnemonic_label.place(relx=0.045, rely=0.65, anchor="w")
-
-                    mnemonic_textbox = self._create_textbox()
-                    mnemonic_textbox.place(relx=0.04, rely=0.8, relheight=0.23, anchor="w")
-                    mnemonic_textbox.insert("1.0", '*' * len(mnemonic))
-                    logger.debug("013 Mnemonic field created")
-                except Exception as e:
-                    logger.error(f"014 Error creating mnemonic field: {e}", exc_info=True)
-                    raise UIElementError(f"015 Failed to create mnemonic field: {e}") from e
-
-                # Function to toggle visibility of mnemonic
-                @log_method
-                def _toggle_mnemonic_visibility(textbox, original_text):
-                    try:
-                        logger.info("016 Toggling mnemonic visibility")
-                        textbox.configure(state='normal')
-                        # Obtenir le contenu actuel de la textbox
-                        current_text = textbox.get("1.0", "end-1c")
-
-                        if current_text == '*' * len(original_text):
-                            # Si la textbox contient uniquement des étoiles, afficher le texte original
-                            textbox.delete("1.0", "end")
-                            textbox.insert("1.0", original_text)
-                            textbox.configure(state='disabled')
-                            logger.log(SUCCESS, "017 Mnemonic visibility toggled to visible")
-                        else:
-                            # Sinon, masquer le texte avec des étoiles
-                            textbox.delete("1.0", "end")
-                            textbox.insert("1.0", '*' * len(original_text))
-                            textbox.configure(state='disabled')
-                            logger.log(SUCCESS, "017 Mnemonic visibility toggled to hidden")
-
-                    except Exception as e:
-                        logger.error(f"018 Error toggling mnemonic visibility: {e}", exc_info=True)
-                        raise UIElementError(f"019 Failed to toggle mnemonic visibility: {e}") from e
-
-                # Create action buttons
-                try:
-                    delete_button = self._create_button(
-                        text="Delete secret",
-                        command=lambda: [
-                            self.show(
-                                "WARNING",
-                                "Are you sure to delete this secret ?!\n Click Yes for delete the secret or close popup",
-                                "Yes",
-                                lambda: [self.controller.cc.seedkeeper_reset_secret(secret_details['id']),
-                                         self.show_view_my_secrets()],
-                                './pictures_db/secrets_icon_popup.png'),
-                            self.show_view_my_secrets()
-                        ]
-                    )
-                    delete_button.place(relx=0.75, rely=0.98, anchor="se")
-
-                    show_button = self._create_button(text="Show",
-                                                      command=lambda: [_toggle_mnemonic_visibility(mnemonic_textbox, mnemonic)])
-                    show_button.place(relx=0.95, rely=0.8, anchor="e")
-                    logger.debug("020 Action buttons created")
-                except Exception as e:
-                    logger.error(f"021 Error creating action buttons: {e}", exc_info=True)
-                    raise UIElementError(f"022 Failed to create action buttons: {e}") from e
-
-                logger.log(SUCCESS, "023 Mnemonic secret frame created successfully")
-            except Exception as e:
-                logger.error(f"024 Unexpected error in _create_mnemonic_secret_frame: {e}", exc_info=True)
-                raise ViewError(f"025 Failed to create mnemonic secret frame: {e}") from e
-
-        @log_method
-        def _create_mnemonic_secret_frame(secret_details):
-            try:
-
-                logger.debug(f"masterseed_secret_details: {secret_details}")
-                logger.info("001 Creating mnemonic secret frame")
-                # Create labels and entry fields
-                labels = ['Label:', 'Mnemonic type:']
-                entries = {}
-
-                for i, label_text in enumerate(labels):
-                    try:
-                        label = self._create_label(label_text)
-                        label.place(relx=0.045, rely=0.2 + i * 0.15, anchor="w")
-                        logger.debug(f"Created label: {label_text}")
-
-                        entry = self._create_entry()
-                        entry.place(relx=0.04, rely=0.255 + i * 0.15, anchor="w")
-                        entries[label_text.lower()[:-1]] = entry
-                        logger.debug(f"Created entry for: {label_text}")
-                    except Exception as e:
-                        logger.error(f"Error creating label or entry for {label_text}: {e}", exc_info=True)
-                        raise UIElementError(f"Failed to create label or entry for {label_text}: {e}") from e
-
-                # Set values to label and mnemonic type
-                entries['label'].insert(0, secret_details['label'])
-                entries['mnemonic type'].insert(0, 'Mnemonic seedphrase')
-
-
-                # lock possibilities to wright into entries
-                entries['label'].configure(state='disabled')
-                entries['mnemonic type'].configure(state='disabled')
-                logger.debug("Entry values set")
-
-                def show_seed_qr_code():
-                    import pyqrcode
-                    # Fonction pour générer et afficher le QR code
-                    qr_data = f'{mnemonic} {passphrase if passphrase else ""}'
-                    qr = pyqrcode.create(qr_data, error='L')
-                    qr_xbm = qr.xbm(scale=3) if len(mnemonic.split()) <=12 else qr.xbm(scale=2)
-                    # Convertir le code XBM en image Tkinter
-                    qr_bmp = tkinter.BitmapImage(data=qr_xbm)
-                    label = self._create_label("")
-                    label.place(relx=0.8, rely=0.4)
-                    label.configure(image=qr_bmp)
-                    label.image = qr_bmp  # Prévenir le garbage collection
-
-                # seed_qr button
-                try:
-                    seedqr_button = self._create_button(text="SeedQR",
-                                                        command=lambda: show_seed_qr_code())
-                    seedqr_button.place(relx=0.78, rely=0.51, anchor="se")
-                    logger.debug("SeedQR buttons created")
-                except Exception as e:
-                    logger.error(f"Error creating Xpub and SeedQR buttons: {e}", exc_info=True)
-                    raise UIElementError(f"Failed to create Xpub and SeedQR buttons: {e}") from e
-
-                if secret_details['secret'] != "Export failed: export not allowed by SeedKeeper policy.":
-                    # Decode seed to mnemonic
-                    try:
-                        logger.debug("Decoding seed to mnemonic words")
-                        secret = self.controller.decode_masterseed(secret_details)
-                        mnemonic = secret['mnemonic']
-                        passphrase = secret['passphrase']
-                        print(passphrase)
-                    except Exception as e:
-                        logger.error(f"Error decoding Masterseed: {e}", exc_info=True)
-                        raise ControllerError(f"015 Failed to decode Masterseed: {e}") from e
-                else:
-                    mnemonic = secret_details['secret']
-                    passphrase = secret_details['secret']
-
-                # Create passphrase field
-                try:
-                    passphrase_label = self._create_label("Passphrase:")
-                    passphrase_label.place(relx=0.045, rely=0.56, anchor="w")
-
-                    passphrase_entry = self._create_entry()
-                    passphrase_entry.place(relx=0.2, rely=0.56, anchor="w", relwidth=0.585)
-                    passphrase_entry.insert(0, '*' * len(
-                        passphrase) if passphrase != '' else 'None')  # Masque la passphrase
-                    logger.debug("010 Passphrase field created")
-                except Exception as e:
-                    logger.error(f"011 Error creating passphrase field: {e}", exc_info=True)
-                    raise UIElementError(f"012 Failed to create passphrase field: {e}") from e
-
-                # Create mnemonic field
-                try:
-                    mnemonic_label = self._create_label("Mnemonic:")
-                    mnemonic_label.place(relx=0.045, rely=0.63, anchor="w")
-
-                    self.seed_mnemonic_textbox = self._create_textbox()
-                    self.seed_mnemonic_textbox.place(relx=0.04, rely=0.77, relheight=0.23, anchor="w")
-                    self.seed_mnemonic_textbox.insert("1.0", '*' * len(mnemonic))
-                    logger.debug("013 Mnemonic field created")
-                except Exception as e:
-                    logger.error(f"014 Error creating mnemonic field: {e}", exc_info=True)
-                    raise UIElementError(f"015 Failed to create mnemonic field: {e}") from e
-
-                # Function to toggle visibility of passphrase
-                @log_method
-                def _toggle_passphrase_visibility(entry, original_text):
-                    try:
-                        entry.configure(state='normal')
-                        logger.info("020 Toggling passphrase visibility")
-                        # retrieve the content from actual entry
-                        current_text = entry.get()
-
-                        if current_text == '*' * len(original_text):
-                            # if entry contains only stars, logger.debug origina text
-                            entry.delete(0, "end")
-                            entry.insert(0, original_text)
-                            logger.log(SUCCESS, "021 Passphrase visibility toggled to visible")
-                            entry.configure(state='disabled')
-                        else:
-                            entry.delete(0, "end")
-                            entry.insert(0, '*' * len(original_text))
-                            entry.configure(state='disabled')
-                            logger.log(SUCCESS, "021 Passphrase visibility toggled to hidden")
-
-                    except Exception as e:
-                        logger.error(f"022 Error toggling passphrase visibility: {e}", exc_info=True)
-                        raise UIElementError(f"023 Failed to toggle passphrase visibility: {e}") from e
-
-                # Function to toggle visibility of mnemonic
-                @log_method
-                def _toggle_mnemonic_visibility(textbox, original_text):
-                    try:
-                        logger.info("016 Toggling mnemonic visibility")
-                        textbox.configure(state='normal')
-                        # Obtenir le contenu actuel de la textbox
-                        current_text = textbox.get("1.0", "end-1c")
-
-                        if current_text == '*' * len(original_text):
-                            # Si la textbox contient uniquement des étoiles, afficher le texte original
-                            textbox.delete("1.0", "end")
-                            textbox.insert("1.0", original_text)
-                            textbox.configure(state='disabled')
-                            logger.log(SUCCESS, "017 Mnemonic visibility toggled to visible")
-                        else:
-                            # Sinon, masquer le texte avec des étoiles
-                            textbox.delete("1.0", "end")
-                            textbox.insert("1.0", '*' * len(original_text))
-                            textbox.configure(state='disabled')
-                            logger.log(SUCCESS, "017 Mnemonic visibility toggled to hidden")
-
-                    except Exception as e:
-                        logger.error(f"018 Error toggling mnemonic visibility: {e}", exc_info=True)
-                        raise UIElementError(f"019 Failed to toggle mnemonic visibility: {e}") from e
-
-                # Create action buttons
-                try:
-                    delete_button = self._create_button(
-                        text="Delete secret",
-                        command=lambda: [
-                            self.show(
-                                "WARNING",
-                                "Are you sure to delete this secret ?!\n Click Yes for delete the secret or close popup",
-                                "Yes",
-                                lambda: [self.controller.cc.seedkeeper_reset_secret(secret_details['id']), self.show_view_my_secrets()],
-                                './pictures_db/secrets_icon_popup.png'),
-                            self.show_view_my_secrets()
-                        ]
-                    )
-                    delete_button.place(relx=0.75, rely=0.95, anchor="e")
-
-                    show_button = self._create_button(text="Show",
-                                                      command=lambda: [_toggle_mnemonic_visibility(self.seed_mnemonic_textbox, mnemonic), _toggle_passphrase_visibility(passphrase_entry, passphrase)])
-                    show_button.place(relx=0.95, rely=0.8, anchor="e")
-                    logger.debug("020 Action buttons created")
-                except Exception as e:
-                    logger.error(f"021 Error creating action buttons: {e}", exc_info=True)
-                    raise UIElementError(f"022 Failed to create action buttons: {e}") from e
-
-                logger.log(SUCCESS, "023 Mnemonic secret frame created successfully")
-            except Exception as e:
-                logger.error(f"024 Unexpected error in _create_mnemonic_secret_frame: {e}", exc_info=True)
-                raise ViewError(f"025 Failed to create mnemonic secret frame: {e}") from e
-
-        @log_method
-        def _create_2FA_secret_frame(secret_details):
-            try:
-                logger.debug(f"2FA secret details: {secret_details}")
-                self.label_2FA = self._create_label('Label:')
-                self.label_2FA.place(relx=0.045, rely=0.2)
-                self.label_2FA_entry = self._create_entry()
-                self.label_2FA_entry.place(relx=0.045, rely=0.25)
-                self.label_2FA_entry.insert(0, secret_details['label'])
-
-                self.secret_2FA_label = self._create_label('Secret:')
-                self.secret_2FA_label.place(relx=0.045, rely=0.32)
-                self.secret_2FA_entry = self._create_entry(show_option="*")
-                self.secret_2FA_entry.place(relx=0.045, rely=0.37)
-                self.secret_2FA_entry.configure(width=450)
-                self.secret_2FA_entry.insert(0, secret_details['secret'][2:])
-
-                def _toggle_2FA_visibility(secret_2FA_entry):
-                    try:
-                        # secret 2FA
-                        secret_2FA_current_state = secret_2FA_entry.cget("show")
-                        secret_2FA_new_state = "" if secret_2FA_current_state == "*" else "*"
-                        secret_2FA_entry.configure(show=secret_2FA_new_state)
-
-                        logger.log(
-                            SUCCESS,
-                            f"{'hidden' if (secret_2FA_new_state) == '*' else 'visible'}"
-                        )
-                    except Exception as e:
-                        logger.error(f"Error toggling password visibility: {e}", exc_info=True)
-                        raise UIElementError(f"Failed to toggle password visibility: {e}") from e
-
-                # Create action buttons
-                try:
-                    show_button = self._create_button(
-                        text="Show",
-                        command=lambda: _toggle_2FA_visibility(self.secret_2FA_entry))
-                    show_button.place(relx=0.9, rely=0.433, anchor="se")
-
-                    delete_button = self._create_button(
-                        text="Delete secret",
-                        command=lambda: [
-                            self.show(
-                                "WARNING",
-                                "Are you sure to delete this secret ?!\n Click Yes for delete the secret or close popup",
-                                "Yes",
-                                lambda: [self.controller.cc.seedkeeper_reset_secret(secret_details['id']),
-                                         self.show_view_my_secrets()],
-                                './pictures_db/secrets_icon_popup.png'),
-                            self.show_view_my_secrets()
-                        ]
-                    )
-                    delete_button.place(relx=0.75, rely=0.95, anchor="e")
-                    logger.debug("Action buttons created")
-                except Exception as e:
-                    logger.error(f"Error creating action buttons: {e}", exc_info=True)
-                    raise UIElementError(f"Failed to create action buttons: {e}") from e
-                logger.log(SUCCESS, "Generic secret frame created")
-            except Exception as e:
-                logger.error(f"Error creating generic secret frame: {e}", exc_info=True)
-                raise UIElementError(f"Failed to create generic secret frame: {e}")
-
-        @log_method
-        def _create_generic_secret_frame(secret_details):
-            try:
-                for key, value in secret_details.items():
-                    label = self._create_label(f"{key}:")
-                    label.place(relx=0.1, rely=0.2 + len(secret_details) * 0.05, anchor="w")
-
-                    entry = self._create_entry(show_option="*" if key.lower() == "value" else None)
-                    entry.insert(0, value)
-                    entry.configure(state="readonly")
-                    entry.place(relx=0.3, rely=0.2 + len(secret_details) * 0.05, anchor="w")
-
-                logger.log(SUCCESS, "Generic secret frame created")
-            except Exception as e:
-                logger.error(f"Error creating generic secret frame: {e}", exc_info=True)
-                raise UIElementError(f"Failed to create generic secret frame: {e}")
-
-        @log_method
-        def _create_free_text_secret_frame(secret_details):
-            try:
-                logger.info("Creating free text secret frame to display secret details")
-
-                # Create field for label
-                label_label = self._create_label("Label:")
-                label_label.place(relx=0.045, rely=0.2)
-                self.label_entry = self._create_entry()
-                self.label_entry.insert(0, secret_details['label'])
-                self.label_entry.place(relx=0.045, rely=0.27)
-                self.label_entry.configure(state='disabled')
-                logger.debug("Label field created")
-
-                # Create field for free text content
-                free_text_label = self._create_label("Free Text Content:")
-                free_text_label.place(relx=0.045, rely=0.34)
-                self.free_text_textbox = self._create_textbox()
-                self.free_text_textbox.place(relx=0.045, rely=0.41, relheight=0.4, relwidth=0.7)
-                logger.debug("Free text content field created")
-
-                # Decode secret
-                try:
-                    logger.debug("Decoding free text to show")
-                    self.decoded_text = self.controller.decode_free_text(secret_details)
-                    free_text = self.decoded_text['text']
-                    logger.log(SUCCESS, f"Free text secret decoded successfully")
-                except ValueError as e:
-                    self.show("ERROR", f"Invalid secret format: {str(e)}", "Ok")
-                except ControllerError as e:
-                    self.show("ERROR", f"Failed to decode secret: {str(e)}", "Ok")
-
-                # Insert decoded text into textbox
-                self.free_text_textbox.insert("1.0", '*' * len(self.decoded_text['text']))
-                self.free_text_textbox.configure(state='disabled')
-
-                # Function to toggle visibility of free text
-                @log_method
-                def _toggle_free_text_visibility(free_text_textbox, original_text):
-                    try:
-                        logger.info("Toggling Free text visibility")
-                        free_text_textbox.configure(state='normal')
-                        # Obtenir le contenu actuel de la textbox
-                        current_text = free_text_textbox.get("1.0", "end-1c")
-
-                        if current_text == '*' * len(original_text):
-                            # Si la textbox contient uniquement des étoiles, afficher le texte original
-                            free_text_textbox.delete("1.0", "end")
-                            free_text_textbox.insert("1.0", original_text)
-                            free_text_textbox.configure(state='disabled')
-                            logger.log(SUCCESS, "Free text visibility toggled to visible")
-                        else:
-                            # Sinon, masquer le texte avec des étoiles
-                            free_text_textbox.delete("1.0", "end")
-                            free_text_textbox.insert("1.0", '*' * len(original_text))
-                            free_text_textbox.configure(state='disabled')
-                            logger.log(SUCCESS, "Free text visibility toggled to hidden")
-
-                    except Exception as e:
-                        logger.error(f"Error toggling Free text visibility: {e}", exc_info=True)
-                        raise UIElementError(f"Failed to toggle Free text visibility: {e}") from e
-
-                # Create action buttons
-                try:
-                    show_button = self._create_button(
-                        text="Show",
-                        command=lambda: _toggle_free_text_visibility(self.free_text_textbox, free_text)
-                    )
-                    show_button.place(relx=0.95, rely=0.65, anchor="se")
-
-                    delete_button = self._create_button(
-                        text="Delete secret",
-                        command=lambda: [
-                            self.show(
-                                "WARNING",
-                                "Are you sure to delete this secret ?!\n Click Yes for delete the secret or close popup",
-                                "Yes",
-                                lambda: [self.controller.cc.seedkeeper_reset_secret(secret_details['id']),
-                                         self.show_view_my_secrets()],
-                                './pictures_db/secrets_icon_popup.png'),
-                            self.show_view_my_secrets()
-                        ]
-                    )
-                    delete_button.place(relx=0.75, rely=0.98, anchor="se")
-                    logger.debug("Action buttons created")
-                except Exception as e:
-                    logger.error(f"Error creating action buttons: {e}", exc_info=True)
-                    raise UIElementError(f"Failed to create action buttons: {e}") from e
-
-                logger.log(SUCCESS, "Free text secret frame created successfully")
-            except Exception as e:
-                logger.error(f"Unexpected error in _create_free_text_secret_frame: {e}", exc_info=True)
-                raise ViewError(f"Failed to create free text secret frame: {e}") from e
-
-        @log_method
-        def _create_wallet_descriptor_secret_frame(secret_details):
-            try:
-                logger.info("Creating wallet descriptor secret frame to display secret details")
-
-                # Create field for label
-                label_label = self._create_label("Label:")
-                label_label.place(relx=0.045, rely=0.2)
-                self.label_entry = self._create_entry()
-                self.label_entry.insert(0, secret_details['label'])
-                self.label_entry.place(relx=0.045, rely=0.27)
-                self.label_entry.configure(state='disabled')
-                logger.debug("Label field created")
-
-                # Create field for wallet descriptor content
-                wallet_descriptor_label = self._create_label("Wallet Descriptor Content:")
-                wallet_descriptor_label.place(relx=0.045, rely=0.34)
-                self.wallet_descriptor_textbox = self._create_textbox()
-                self.wallet_descriptor_textbox.place(relx=0.045, rely=0.41, relheight=0.4, relwidth=0.7)
-                logger.debug("Wallet descriptor content field created")
-
-                # Decode secret
-                try:
-                    logger.debug("Decoding wallet descriptor to show")
-                    self.decoded_text = self.controller.decode_wallet_descriptor(secret_details)
-                    wallet_descriptor = self.decoded_text['descriptor']
-                    logger.log(SUCCESS, f"Wallet descriptor secret decoded successfully")
-                except ValueError as e:
-                    self.show("ERROR", f"Invalid secret format: {str(e)}", "Ok")
-                except ControllerError as e:
-                    self.show("ERROR", f"Failed to decode secret: {str(e)}", "Ok")
-
-                # Insert decoded text into textbox
-                self.wallet_descriptor_textbox.insert("1.0", '*' * len(self.decoded_text['descriptor']))
-                self.wallet_descriptor_textbox.configure(state='disabled')
-
-                # Function to toggle visibility of wallet descriptor
-                @log_method
-                def _toggle_wallet_descriptor_visibility(wallet_descriptor_textbox, original_text):
-                    try:
-                        logger.info("Toggling Wallet descriptor visibility")
-                        wallet_descriptor_textbox.configure(state='normal')
-                        # Obtenir le contenu actuel de la textbox
-                        current_text = wallet_descriptor_textbox.get("1.0", "end-1c")
-
-                        if current_text == '*' * len(original_text):
-                            # Si la textbox contient uniquement des étoiles, afficher le texte original
-                            wallet_descriptor_textbox.delete("1.0", "end")
-                            wallet_descriptor_textbox.insert("1.0", original_text)
-                            wallet_descriptor_textbox.configure(state='disabled')
-                            logger.log(SUCCESS, "Wallet descriptor visibility toggled to visible")
-                        else:
-                            # Sinon, masquer le texte avec des étoiles
-                            wallet_descriptor_textbox.delete("1.0", "end")
-                            wallet_descriptor_textbox.insert("1.0", '*' * len(original_text))
-                            wallet_descriptor_textbox.configure(state='disabled')
-                            logger.log(SUCCESS, "Wallet descriptor visibility toggled to hidden")
-
-                    except Exception as e:
-                        logger.error(f"Error toggling Wallet descriptor visibility: {e}", exc_info=True)
-                        raise UIElementError(f"Failed to toggle Wallet descriptor visibility: {e}") from e
-
-                # Create action buttons
-                try:
-                    show_button = self._create_button(text="Show",
-                                                      command=lambda: _toggle_wallet_descriptor_visibility(
-                                                          self.wallet_descriptor_textbox, wallet_descriptor))
-                    show_button.place(relx=0.95, rely=0.65, anchor="se")
-
-                    delete_button = self._create_button(
-                        text="Delete secret",
-                        command=lambda: [
-                            self.show(
-                                "WARNING",
-                                "Are you sure to delete this secret ?!\n Click Yes for delete the secret or close popup",
-                                "Yes",
-                                lambda: [self.controller.cc.seedkeeper_reset_secret(secret_details['id']),
-                                         self.show_view_my_secrets()],
-                                './pictures_db/secrets_icon_popup.png'),
-                            self.show_view_my_secrets()
-                        ]
-                    )
-                    delete_button.place(relx=0.75, rely=0.98, anchor="se")
-                    logger.debug("Action buttons created")
-                except Exception as e:
-                    logger.error(f"Error creating action buttons: {e}", exc_info=True)
-                    raise UIElementError(f"Failed to create action buttons: {e}") from e
-
-                logger.log(SUCCESS, "Wallet descriptor secret frame created successfully")
-            except Exception as e:
-                logger.error(f"Unexpected error in _create_wallet_descriptor_secret_frame: {e}", exc_info=True)
-                raise ViewError(f"Failed to create wallet descriptor secret frame: {e}") from e
-
-        def _load_view_my_secrets():
-            logger.info("Creating secrets frame")
+        # def _load_view_my_secrets():
+        #     logger.info("Creating secrets frame")
+        #     _create_secrets_frame()
+        #     _create_secrets_header()
+        #     _create_secrets_table(secrets_data)
+        #     self.create_seedkeeper_menu()
+        #     logger.log(SUCCESS, "Secrets frame created successfully")
+
+        try:
+            #_load_view_my_secrets()
+            logger.info("view_my_secrets start")
             _create_secrets_frame()
             _create_secrets_header()
             _create_secrets_table(secrets_data)
             self.create_seedkeeper_menu()
             logger.log(SUCCESS, "Secrets frame created successfully")
-
-        try:
-            _load_view_my_secrets()
         except Exception as e:
             error_msg = f"Failed to create secrets frame: {e}"
             logger.error(error_msg, exc_info=True)
             raise SecretFrameCreationError(error_msg) from e
+
+    @log_method
+    def _create_password_secret_frame(self, secret_details):
+        try:
+            logger.info("_create_password_secret_frame start")
+
+            # Create field for label login, url and password
+            try:
+                label_label = self._create_label("Label:")
+                label_label.place(relx=0.045, rely=0.2)
+                self.label_entry = self._create_entry()
+                self.label_entry.insert(0, secret_details['label'])
+                self.label_entry.place(relx=0.045, rely=0.27)
+                logger.debug("002 label fields created")
+
+                login_label = self._create_label("Login:")
+                login_label.place(relx=0.045, rely=0.34)
+                self.login_entry = self._create_entry(show_option="*")
+                self.login_entry.place(relx=0.045, rely=0.41)
+                logger.debug("003 login fields created")
+
+                url_label = self._create_label("Url:")
+                url_label.place(relx=0.045, rely=0.48)
+                self.url_entry = self._create_entry(show_option="*")
+                self.url_entry.place(relx=0.045, rely=0.55)
+                logger.debug("004 url fields created")
+
+                password_label = self._create_label("Password:")
+                password_label.place(relx=0.045, rely=0.7, anchor="w")
+                self.password_entry = self._create_entry(show_option="*")
+                self.password_entry.configure(width=500)
+                self.password_entry.place(relx=0.04, rely=0.77, anchor="w")
+                logger.debug("005 password fields created")
+
+                # Decode secret
+                try:
+                    logger.debug("006 Decoding secret to show")
+                    self.decoded_login_password = self.controller.decode_password(secret_details, binascii.unhexlify(secret_details['secret']))
+                    logger.log(
+                        SUCCESS, f"login password secret decoded successfully: {self.decoded_login_password}"
+                    )
+                except ValueError as e:
+                    self.show("ERROR", f"Invalid secret format: {str(e)}", "Ok")
+                except ControllerError as e:
+                    self.show("ERROR", f"Failed to decode secret: {str(e)}", "Ok")
+
+                self.login_entry.insert(0, self.decoded_login_password['login'])
+                self.url_entry.insert(0, self.decoded_login_password['url'])
+                self.password_entry.insert(0, self.decoded_login_password['password'][1:])
+
+            except Exception as e:
+                logger.error(f"008 Error creating fields: {e}", exc_info=True)
+                raise UIElementError(f"009 Failed to create fields: {e}") from e
+
+            def _toggle_password_visibility(login_entry, url_entry, password_entry):
+                # todo: only hides secret, not login/url/... fields
+                try:
+                    # login
+                    login_current_state = login_entry.cget("show")
+                    login_new_state = "" if login_current_state == "*" else "*"
+                    login_entry.configure(show=login_new_state)
+                    # url
+                    url_current_state =  url_entry.cget("show")
+                    url_new_state = "" if url_current_state == "*" else "*"
+                    url_entry.configure(show=url_new_state)
+                    # password
+                    password_current_state = password_entry.cget("show")
+                    password_new_state = "" if password_current_state == "*" else "*"
+                    password_entry.configure(show=password_new_state)
+                except Exception as e:
+                    logger.error(f"018 Error toggling password visibility: {e}", exc_info=True)
+                    raise UIElementError(f"019 Failed to toggle password visibility: {e}") from e
+
+            # Create action buttons
+            try:
+                show_button = self._create_button(
+                    text="Show",
+                    command=lambda: _toggle_password_visibility(
+                        self.login_entry, self.url_entry, self.password_entry)
+                )
+                show_button.place(relx=0.9, rely=0.8, anchor="se")
+
+                delete_button = self._create_button(
+                    text="Delete secret",
+                    command=lambda: [
+                        self.show(
+                            "WARNING",
+                            "Are you sure to delete this secret ?!\n Click Yes for delete the secret or close popup",
+                            "Yes",
+                            lambda: [self.controller.cc.seedkeeper_reset_secret(secret_details['id']),
+                                     self.show_view_my_secrets()],
+                            './pictures_db/secrets_icon_popup.png'),
+                        self.show_view_my_secrets()
+                    ]
+                )
+                delete_button.place(relx=0.75, rely=0.98, anchor="se")
+                logger.debug("010 Action buttons created")
+            except Exception as e:
+                logger.error(f"011 Error creating action buttons: {e}", exc_info=True)
+                raise UIElementError(f"012 Failed to create action buttons: {e}") from e
+
+            logger.log(SUCCESS, "013 Password secret frame created successfully")
+        except Exception as e:
+            logger.error(f"014 Unexpected error in _create_password_secret_frame: {e}", exc_info=True)
+            raise ViewError(f"015 Failed to create password secret frame: {e}") from e
+
+    @log_method
+    def _create_masterseed_secret_frame(self, secret_details):
+        try:
+            logger.debug(f"masterseed_secret_details: {secret_details}")
+            logger.info("001 Creating mnemonic secret frame")
+            # Create labels and entry fields
+            labels = ['Label:', 'Mnemonic type:']
+            entries = {}
+
+            for i, label_text in enumerate(labels):
+                try:
+                    label = self._create_label(label_text)
+                    label.place(relx=0.045, rely=0.2 + i * 0.15, anchor="w")
+                    logger.debug(f"Created label: {label_text}")
+
+                    entry = self._create_entry()
+                    entry.place(relx=0.04, rely=0.27 + i * 0.15, anchor="w")
+                    entries[label_text.lower()[:-1]] = entry
+                    logger.debug(f"Created entry for: {label_text}")
+                except Exception as e:
+                    logger.error(f"Error creating label or entry for {label_text}: {e}", exc_info=True)
+                    raise UIElementError(f"Failed to create label or entry for {label_text}: {e}") from e
+
+            # Set values to label and mnemonic type
+            entries['label'].insert(0, secret_details['label'])
+            entries['mnemonic type'].insert(0, secret_details['type'])
+
+            # lock possibilities to wright into entries
+            entries['label'].configure(state='disabled')
+            entries['mnemonic type'].configure(state='disabled')
+            logger.debug("Entry values set")
+
+            if secret_details['secret'] != "Export failed: export not allowed by SeedKeeper policy.":
+                # Decode seed to mnemonic
+                try:
+                    logger.debug("Decoding seed to mnemonic words")
+                    secret = self.controller.decode_masterseed(secret_details)
+                    mnemonic = secret['mnemonic']
+                    passphrase = secret['passphrase']
+                except Exception as e:
+                    logger.error(f"Error decoding Masterseed: {e}", exc_info=True)
+                    raise ControllerError(f"015 Failed to decode Masterseed: {e}") from e
+            else:
+                mnemonic = secret_details['secret']
+                passphrase = secret_details['secret']
+
+            # Create mnemonic field
+            try:
+                mnemonic_label = self._create_label("Mnemonic:")
+                mnemonic_label.place(relx=0.045, rely=0.65, anchor="w")
+
+                mnemonic_textbox = self._create_textbox()
+                mnemonic_textbox.place(relx=0.04, rely=0.8, relheight=0.23, anchor="w")
+                mnemonic_textbox.insert("1.0", '*' * len(mnemonic))
+                logger.debug("013 Mnemonic field created")
+            except Exception as e:
+                logger.error(f"014 Error creating mnemonic field: {e}", exc_info=True)
+                raise UIElementError(f"015 Failed to create mnemonic field: {e}") from e
+
+            # Function to toggle visibility of mnemonic
+            @log_method
+            def _toggle_mnemonic_visibility(textbox, original_text):
+                try:
+                    logger.info("016 Toggling mnemonic visibility")
+                    textbox.configure(state='normal')
+                    # Obtenir le contenu actuel de la textbox
+                    current_text = textbox.get("1.0", "end-1c")
+
+                    if current_text == '*' * len(original_text):
+                        # Si la textbox contient uniquement des étoiles, afficher le texte original
+                        textbox.delete("1.0", "end")
+                        textbox.insert("1.0", original_text)
+                        textbox.configure(state='disabled')
+                        logger.log(SUCCESS, "017 Mnemonic visibility toggled to visible")
+                    else:
+                        # Sinon, masquer le texte avec des étoiles
+                        textbox.delete("1.0", "end")
+                        textbox.insert("1.0", '*' * len(original_text))
+                        textbox.configure(state='disabled')
+                        logger.log(SUCCESS, "017 Mnemonic visibility toggled to hidden")
+
+                except Exception as e:
+                    logger.error(f"018 Error toggling mnemonic visibility: {e}", exc_info=True)
+                    raise UIElementError(f"019 Failed to toggle mnemonic visibility: {e}") from e
+
+            # Create action buttons
+            try:
+                delete_button = self._create_button(
+                    text="Delete secret",
+                    command=lambda: [
+                        self.show(
+                            "WARNING",
+                            "Are you sure to delete this secret ?!\n Click Yes for delete the secret or close popup",
+                            "Yes",
+                            lambda: [self.controller.cc.seedkeeper_reset_secret(secret_details['id']),
+                                     self.show_view_my_secrets()],
+                            './pictures_db/secrets_icon_popup.png'),
+                        self.show_view_my_secrets()
+                    ]
+                )
+                delete_button.place(relx=0.75, rely=0.98, anchor="se")
+
+                show_button = self._create_button(text="Show",
+                                                  command=lambda: [_toggle_mnemonic_visibility(mnemonic_textbox, mnemonic)])
+                show_button.place(relx=0.95, rely=0.8, anchor="e")
+                logger.debug("020 Action buttons created")
+            except Exception as e:
+                logger.error(f"021 Error creating action buttons: {e}", exc_info=True)
+                raise UIElementError(f"022 Failed to create action buttons: {e}") from e
+
+            logger.log(SUCCESS, "023 Mnemonic secret frame created successfully")
+        except Exception as e:
+            logger.error(f"024 Unexpected error in _create_mnemonic_secret_frame: {e}", exc_info=True)
+            raise ViewError(f"025 Failed to create mnemonic secret frame: {e}") from e
+
+    @log_method
+    def _create_mnemonic_secret_frame(self, secret_details):
+        try:
+
+            logger.debug(f"masterseed_secret_details: {secret_details}")
+            logger.info("001 Creating mnemonic secret frame")
+            # Create labels and entry fields
+            labels = ['Label:', 'Mnemonic type:']
+            entries = {}
+
+            for i, label_text in enumerate(labels):
+                try:
+                    label = self._create_label(label_text)
+                    label.place(relx=0.045, rely=0.2 + i * 0.15, anchor="w")
+                    logger.debug(f"Created label: {label_text}")
+
+                    entry = self._create_entry()
+                    entry.place(relx=0.04, rely=0.255 + i * 0.15, anchor="w")
+                    entries[label_text.lower()[:-1]] = entry
+                    logger.debug(f"Created entry for: {label_text}")
+                except Exception as e:
+                    logger.error(f"Error creating label or entry for {label_text}: {e}", exc_info=True)
+                    raise UIElementError(f"Failed to create label or entry for {label_text}: {e}") from e
+
+            # Set values to label and mnemonic type
+            entries['label'].insert(0, secret_details['label'])
+            entries['mnemonic type'].insert(0, 'Mnemonic seedphrase')
+
+
+            # lock possibilities to wright into entries
+            entries['label'].configure(state='disabled')
+            entries['mnemonic type'].configure(state='disabled')
+            logger.debug("Entry values set")
+
+            def show_seed_qr_code():
+                import pyqrcode
+                # Fonction pour générer et afficher le QR code
+                qr_data = f'{mnemonic} {passphrase if passphrase else ""}'
+                qr = pyqrcode.create(qr_data, error='L')
+                qr_xbm = qr.xbm(scale=3) if len(mnemonic.split()) <=12 else qr.xbm(scale=2)
+                # Convertir le code XBM en image Tkinter
+                qr_bmp = tkinter.BitmapImage(data=qr_xbm)
+                label = self._create_label("")
+                label.place(relx=0.8, rely=0.4)
+                label.configure(image=qr_bmp)
+                label.image = qr_bmp  # Prévenir le garbage collection
+
+            # seed_qr button
+            try:
+                seedqr_button = self._create_button(text="SeedQR",
+                                                    command=lambda: show_seed_qr_code())
+                seedqr_button.place(relx=0.78, rely=0.51, anchor="se")
+                logger.debug("SeedQR buttons created")
+            except Exception as e:
+                logger.error(f"Error creating Xpub and SeedQR buttons: {e}", exc_info=True)
+                raise UIElementError(f"Failed to create Xpub and SeedQR buttons: {e}") from e
+
+            if secret_details['secret'] != "Export failed: export not allowed by SeedKeeper policy.":
+                # Decode seed to mnemonic
+                try:
+                    logger.debug("Decoding seed to mnemonic words")
+                    secret = self.controller.decode_masterseed(secret_details)
+                    mnemonic = secret['mnemonic']
+                    passphrase = secret['passphrase']
+                    print(passphrase)
+                except Exception as e:
+                    logger.error(f"Error decoding Masterseed: {e}", exc_info=True)
+                    raise ControllerError(f"015 Failed to decode Masterseed: {e}") from e
+            else:
+                mnemonic = secret_details['secret']
+                passphrase = secret_details['secret']
+
+            # Create passphrase field
+            try:
+                passphrase_label = self._create_label("Passphrase:")
+                passphrase_label.place(relx=0.045, rely=0.56, anchor="w")
+
+                passphrase_entry = self._create_entry()
+                passphrase_entry.place(relx=0.2, rely=0.56, anchor="w", relwidth=0.585)
+                passphrase_entry.insert(0, '*' * len(
+                    passphrase) if passphrase != '' else 'None')  # Masque la passphrase
+                logger.debug("010 Passphrase field created")
+            except Exception as e:
+                logger.error(f"011 Error creating passphrase field: {e}", exc_info=True)
+                raise UIElementError(f"012 Failed to create passphrase field: {e}") from e
+
+            # Create mnemonic field
+            try:
+                mnemonic_label = self._create_label("Mnemonic:")
+                mnemonic_label.place(relx=0.045, rely=0.63, anchor="w")
+
+                self.seed_mnemonic_textbox = self._create_textbox()
+                self.seed_mnemonic_textbox.place(relx=0.04, rely=0.77, relheight=0.23, anchor="w")
+                self.seed_mnemonic_textbox.insert("1.0", '*' * len(mnemonic))
+                logger.debug("013 Mnemonic field created")
+            except Exception as e:
+                logger.error(f"014 Error creating mnemonic field: {e}", exc_info=True)
+                raise UIElementError(f"015 Failed to create mnemonic field: {e}") from e
+
+            # Function to toggle visibility of passphrase
+            @log_method
+            def _toggle_passphrase_visibility(entry, original_text):
+                try:
+                    entry.configure(state='normal')
+                    logger.info("020 Toggling passphrase visibility")
+                    # retrieve the content from actual entry
+                    current_text = entry.get()
+
+                    if current_text == '*' * len(original_text):
+                        # if entry contains only stars, logger.debug origina text
+                        entry.delete(0, "end")
+                        entry.insert(0, original_text)
+                        logger.log(SUCCESS, "021 Passphrase visibility toggled to visible")
+                        entry.configure(state='disabled')
+                    else:
+                        entry.delete(0, "end")
+                        entry.insert(0, '*' * len(original_text))
+                        entry.configure(state='disabled')
+                        logger.log(SUCCESS, "021 Passphrase visibility toggled to hidden")
+
+                except Exception as e:
+                    logger.error(f"022 Error toggling passphrase visibility: {e}", exc_info=True)
+                    raise UIElementError(f"023 Failed to toggle passphrase visibility: {e}") from e
+
+            # Function to toggle visibility of mnemonic
+            @log_method
+            def _toggle_mnemonic_visibility(textbox, original_text):
+                try:
+                    logger.info("016 Toggling mnemonic visibility")
+                    textbox.configure(state='normal')
+                    # Obtenir le contenu actuel de la textbox
+                    current_text = textbox.get("1.0", "end-1c")
+
+                    if current_text == '*' * len(original_text):
+                        # Si la textbox contient uniquement des étoiles, afficher le texte original
+                        textbox.delete("1.0", "end")
+                        textbox.insert("1.0", original_text)
+                        textbox.configure(state='disabled')
+                        logger.log(SUCCESS, "017 Mnemonic visibility toggled to visible")
+                    else:
+                        # Sinon, masquer le texte avec des étoiles
+                        textbox.delete("1.0", "end")
+                        textbox.insert("1.0", '*' * len(original_text))
+                        textbox.configure(state='disabled')
+                        logger.log(SUCCESS, "017 Mnemonic visibility toggled to hidden")
+
+                except Exception as e:
+                    logger.error(f"018 Error toggling mnemonic visibility: {e}", exc_info=True)
+                    raise UIElementError(f"019 Failed to toggle mnemonic visibility: {e}") from e
+
+            # Create action buttons
+            try:
+                delete_button = self._create_button(
+                    text="Delete secret",
+                    command=lambda: [
+                        self.show(
+                            "WARNING",
+                            "Are you sure to delete this secret ?!\n Click Yes for delete the secret or close popup",
+                            "Yes",
+                            lambda: [self.controller.cc.seedkeeper_reset_secret(secret_details['id']), self.show_view_my_secrets()],
+                            './pictures_db/secrets_icon_popup.png'),
+                        self.show_view_my_secrets()
+                    ]
+                )
+                delete_button.place(relx=0.75, rely=0.95, anchor="e")
+
+                show_button = self._create_button(text="Show",
+                                                  command=lambda: [_toggle_mnemonic_visibility(self.seed_mnemonic_textbox, mnemonic), _toggle_passphrase_visibility(passphrase_entry, passphrase)])
+                show_button.place(relx=0.95, rely=0.8, anchor="e")
+                logger.debug("020 Action buttons created")
+            except Exception as e:
+                logger.error(f"021 Error creating action buttons: {e}", exc_info=True)
+                raise UIElementError(f"022 Failed to create action buttons: {e}") from e
+
+            logger.log(SUCCESS, "023 Mnemonic secret frame created successfully")
+        except Exception as e:
+            logger.error(f"024 Unexpected error in _create_mnemonic_secret_frame: {e}", exc_info=True)
+            raise ViewError(f"025 Failed to create mnemonic secret frame: {e}") from e
+
+    @log_method
+    def _create_2FA_secret_frame(self, secret_details):
+        try:
+            logger.debug(f"2FA secret details: {secret_details}")
+            self.label_2FA = self._create_label('Label:')
+            self.label_2FA.place(relx=0.045, rely=0.2)
+            self.label_2FA_entry = self._create_entry()
+            self.label_2FA_entry.place(relx=0.045, rely=0.25)
+            self.label_2FA_entry.insert(0, secret_details['label'])
+
+            self.secret_2FA_label = self._create_label('Secret:')
+            self.secret_2FA_label.place(relx=0.045, rely=0.32)
+            self.secret_2FA_entry = self._create_entry(show_option="*")
+            self.secret_2FA_entry.place(relx=0.045, rely=0.37)
+            self.secret_2FA_entry.configure(width=450)
+            self.secret_2FA_entry.insert(0, secret_details['secret'][2:])
+
+            def _toggle_2FA_visibility(secret_2FA_entry):
+                try:
+                    # secret 2FA
+                    secret_2FA_current_state = secret_2FA_entry.cget("show")
+                    secret_2FA_new_state = "" if secret_2FA_current_state == "*" else "*"
+                    secret_2FA_entry.configure(show=secret_2FA_new_state)
+
+                    logger.log(
+                        SUCCESS,
+                        f"{'hidden' if (secret_2FA_new_state) == '*' else 'visible'}"
+                    )
+                except Exception as e:
+                    logger.error(f"Error toggling password visibility: {e}", exc_info=True)
+                    raise UIElementError(f"Failed to toggle password visibility: {e}") from e
+
+            # Create action buttons
+            try:
+                show_button = self._create_button(
+                    text="Show",
+                    command=lambda: _toggle_2FA_visibility(self.secret_2FA_entry))
+                show_button.place(relx=0.9, rely=0.433, anchor="se")
+
+                delete_button = self._create_button(
+                    text="Delete secret",
+                    command=lambda: [
+                        self.show(
+                            "WARNING",
+                            "Are you sure to delete this secret ?!\n Click Yes for delete the secret or close popup",
+                            "Yes",
+                            lambda: [self.controller.cc.seedkeeper_reset_secret(secret_details['id']),
+                                     self.show_view_my_secrets()],
+                            './pictures_db/secrets_icon_popup.png'),
+                        self.show_view_my_secrets()
+                    ]
+                )
+                delete_button.place(relx=0.75, rely=0.95, anchor="e")
+                logger.debug("Action buttons created")
+            except Exception as e:
+                logger.error(f"Error creating action buttons: {e}", exc_info=True)
+                raise UIElementError(f"Failed to create action buttons: {e}") from e
+            logger.log(SUCCESS, "Generic secret frame created")
+        except Exception as e:
+            logger.error(f"Error creating generic secret frame: {e}", exc_info=True)
+            raise UIElementError(f"Failed to create generic secret frame: {e}")
+
+    @log_method
+    def _create_generic_secret_frame(self, secret_details):
+        try:
+            for key, value in secret_details.items():
+                label = self._create_label(f"{key}:")
+                label.place(relx=0.1, rely=0.2 + len(secret_details) * 0.05, anchor="w")
+
+                entry = self._create_entry(show_option="*" if key.lower() == "value" else None)
+                entry.insert(0, value)
+                entry.configure(state="readonly")
+                entry.place(relx=0.3, rely=0.2 + len(secret_details) * 0.05, anchor="w")
+
+            logger.log(SUCCESS, "Generic secret frame created")
+        except Exception as e:
+            logger.error(f"Error creating generic secret frame: {e}", exc_info=True)
+            raise UIElementError(f"Failed to create generic secret frame: {e}")
+
+    @log_method
+    def _create_free_text_secret_frame(self, secret_details):
+        try:
+            logger.info("Creating free text secret frame to display secret details")
+
+            # Create field for label
+            label_label = self._create_label("Label:")
+            label_label.place(relx=0.045, rely=0.2)
+            self.label_entry = self._create_entry()
+            self.label_entry.insert(0, secret_details['label'])
+            self.label_entry.place(relx=0.045, rely=0.27)
+            self.label_entry.configure(state='disabled')
+            logger.debug("Label field created")
+
+            # Create field for free text content
+            free_text_label = self._create_label("Free Text Content:")
+            free_text_label.place(relx=0.045, rely=0.34)
+            self.free_text_textbox = self._create_textbox()
+            self.free_text_textbox.place(relx=0.045, rely=0.41, relheight=0.4, relwidth=0.7)
+            logger.debug("Free text content field created")
+
+            # Decode secret
+            try:
+                logger.debug("Decoding free text to show")
+                self.decoded_text = self.controller.decode_free_text(secret_details)
+                free_text = self.decoded_text['text']
+                logger.log(SUCCESS, f"Free text secret decoded successfully")
+            except ValueError as e:
+                self.show("ERROR", f"Invalid secret format: {str(e)}", "Ok")
+            except ControllerError as e:
+                self.show("ERROR", f"Failed to decode secret: {str(e)}", "Ok")
+
+            # Insert decoded text into textbox
+            self.free_text_textbox.insert("1.0", '*' * len(self.decoded_text['text']))
+            self.free_text_textbox.configure(state='disabled')
+
+            # Function to toggle visibility of free text
+            @log_method
+            def _toggle_free_text_visibility(free_text_textbox, original_text):
+                try:
+                    logger.info("Toggling Free text visibility")
+                    free_text_textbox.configure(state='normal')
+                    # Obtenir le contenu actuel de la textbox
+                    current_text = free_text_textbox.get("1.0", "end-1c")
+
+                    if current_text == '*' * len(original_text):
+                        # Si la textbox contient uniquement des étoiles, afficher le texte original
+                        free_text_textbox.delete("1.0", "end")
+                        free_text_textbox.insert("1.0", original_text)
+                        free_text_textbox.configure(state='disabled')
+                        logger.log(SUCCESS, "Free text visibility toggled to visible")
+                    else:
+                        # Sinon, masquer le texte avec des étoiles
+                        free_text_textbox.delete("1.0", "end")
+                        free_text_textbox.insert("1.0", '*' * len(original_text))
+                        free_text_textbox.configure(state='disabled')
+                        logger.log(SUCCESS, "Free text visibility toggled to hidden")
+
+                except Exception as e:
+                    logger.error(f"Error toggling Free text visibility: {e}", exc_info=True)
+                    raise UIElementError(f"Failed to toggle Free text visibility: {e}") from e
+
+            # Create action buttons
+            try:
+                show_button = self._create_button(
+                    text="Show",
+                    command=lambda: _toggle_free_text_visibility(self.free_text_textbox, free_text)
+                )
+                show_button.place(relx=0.95, rely=0.65, anchor="se")
+
+                delete_button = self._create_button(
+                    text="Delete secret",
+                    command=lambda: [
+                        self.show(
+                            "WARNING",
+                            "Are you sure to delete this secret ?!\n Click Yes for delete the secret or close popup",
+                            "Yes",
+                            lambda: [self.controller.cc.seedkeeper_reset_secret(secret_details['id']),
+                                     self.show_view_my_secrets()],
+                            './pictures_db/secrets_icon_popup.png'),
+                        self.show_view_my_secrets()
+                    ]
+                )
+                delete_button.place(relx=0.75, rely=0.98, anchor="se")
+                logger.debug("Action buttons created")
+            except Exception as e:
+                logger.error(f"Error creating action buttons: {e}", exc_info=True)
+                raise UIElementError(f"Failed to create action buttons: {e}") from e
+
+            logger.log(SUCCESS, "Free text secret frame created successfully")
+        except Exception as e:
+            logger.error(f"Unexpected error in _create_free_text_secret_frame: {e}", exc_info=True)
+            raise ViewError(f"Failed to create free text secret frame: {e}") from e
+
+    @log_method
+    def _create_wallet_descriptor_secret_frame(self, secret_details):
+        try:
+            logger.info("Creating wallet descriptor secret frame to display secret details")
+
+            # Create field for label
+            label_label = self._create_label("Label:")
+            label_label.place(relx=0.045, rely=0.2)
+            self.label_entry = self._create_entry()
+            self.label_entry.insert(0, secret_details['label'])
+            self.label_entry.place(relx=0.045, rely=0.27)
+            self.label_entry.configure(state='disabled')
+            logger.debug("Label field created")
+
+            # Create field for wallet descriptor content
+            wallet_descriptor_label = self._create_label("Wallet Descriptor Content:")
+            wallet_descriptor_label.place(relx=0.045, rely=0.34)
+            self.wallet_descriptor_textbox = self._create_textbox()
+            self.wallet_descriptor_textbox.place(relx=0.045, rely=0.41, relheight=0.4, relwidth=0.7)
+            logger.debug("Wallet descriptor content field created")
+
+            # Decode secret
+            try:
+                logger.debug("Decoding wallet descriptor to show")
+                self.decoded_text = self.controller.decode_wallet_descriptor(secret_details)
+                wallet_descriptor = self.decoded_text['descriptor']
+                logger.log(SUCCESS, f"Wallet descriptor secret decoded successfully")
+            except ValueError as e:
+                self.show("ERROR", f"Invalid secret format: {str(e)}", "Ok")
+            except ControllerError as e:
+                self.show("ERROR", f"Failed to decode secret: {str(e)}", "Ok")
+
+            # Insert decoded text into textbox
+            self.wallet_descriptor_textbox.insert("1.0", '*' * len(self.decoded_text['descriptor']))
+            self.wallet_descriptor_textbox.configure(state='disabled')
+
+            # Function to toggle visibility of wallet descriptor
+            @log_method
+            def _toggle_wallet_descriptor_visibility(wallet_descriptor_textbox, original_text):
+                try:
+                    logger.info("Toggling Wallet descriptor visibility")
+                    wallet_descriptor_textbox.configure(state='normal')
+                    # Obtenir le contenu actuel de la textbox
+                    current_text = wallet_descriptor_textbox.get("1.0", "end-1c")
+
+                    if current_text == '*' * len(original_text):
+                        # Si la textbox contient uniquement des étoiles, afficher le texte original
+                        wallet_descriptor_textbox.delete("1.0", "end")
+                        wallet_descriptor_textbox.insert("1.0", original_text)
+                        wallet_descriptor_textbox.configure(state='disabled')
+                        logger.log(SUCCESS, "Wallet descriptor visibility toggled to visible")
+                    else:
+                        # Sinon, masquer le texte avec des étoiles
+                        wallet_descriptor_textbox.delete("1.0", "end")
+                        wallet_descriptor_textbox.insert("1.0", '*' * len(original_text))
+                        wallet_descriptor_textbox.configure(state='disabled')
+                        logger.log(SUCCESS, "Wallet descriptor visibility toggled to hidden")
+
+                except Exception as e:
+                    logger.error(f"Error toggling Wallet descriptor visibility: {e}", exc_info=True)
+                    raise UIElementError(f"Failed to toggle Wallet descriptor visibility: {e}") from e
+
+            # Create action buttons
+            try:
+                show_button = self._create_button(text="Show",
+                                                  command=lambda: _toggle_wallet_descriptor_visibility(
+                                                      self.wallet_descriptor_textbox, wallet_descriptor))
+                show_button.place(relx=0.95, rely=0.65, anchor="se")
+
+                delete_button = self._create_button(
+                    text="Delete secret",
+                    command=lambda: [
+                        self.show(
+                            "WARNING",
+                            "Are you sure to delete this secret ?!\n Click Yes for delete the secret or close popup",
+                            "Yes",
+                            lambda: [self.controller.cc.seedkeeper_reset_secret(secret_details['id']),
+                                     self.show_view_my_secrets()],
+                            './pictures_db/secrets_icon_popup.png'),
+                        self.show_view_my_secrets()
+                    ]
+                )
+                delete_button.place(relx=0.75, rely=0.98, anchor="se")
+                logger.debug("Action buttons created")
+            except Exception as e:
+                logger.error(f"Error creating action buttons: {e}", exc_info=True)
+                raise UIElementError(f"Failed to create action buttons: {e}") from e
+
+            logger.log(SUCCESS, "Wallet descriptor secret frame created successfully")
+        except Exception as e:
+            logger.error(f"Unexpected error in _create_wallet_descriptor_secret_frame: {e}", exc_info=True)
+            raise ViewError(f"Failed to create wallet descriptor secret frame: {e}") from e
+
+
 
 

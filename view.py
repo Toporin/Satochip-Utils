@@ -400,6 +400,7 @@ class View(customtkinter.CTk):
             fg_color=bg_fg_color)
         return frame
 
+
     def _create_frame(self):
         try:
             logger.info("_create_frame start")
@@ -605,12 +606,12 @@ class View(customtkinter.CTk):
             logger.error(f"An unexpected error occurred in create_background_photo: {e}", exc_info=True)
             return None
 
-    def create_canvas(self, frame=None) -> customtkinter.CTkCanvas:
+    def create_canvas(self, width=1000, height=600, frame=None) -> customtkinter.CTkCanvas:
         try:
             logger.debug("View.create_canvas() start")
             if frame is None:
                 frame = self.main_frame
-            canvas = customtkinter.CTkCanvas(frame, bg="whitesmoke", width=1000, height=599)# todo: 599 or 600?
+            canvas = customtkinter.CTkCanvas(frame, bg="whitesmoke", width=width, height=height)# todo: 599 or 600?
             return canvas
         except Exception as e:
             logger.error(f"An unexpected error occurred in create_canvas: {e}", exc_info=True)
@@ -1113,12 +1114,11 @@ class View(customtkinter.CTk):
             #     logger.debug("Current frame cleared")
 
             # Creating main frame
-            self.start_frame = View.create_frame(self)
-            self.start_frame.place(relx=0.5, rely=0.5, anchor="center")
+            #self.start_frame = View.create_frame(self)
+            #self.start_frame.place(relx=0.5, rely=0.5, anchor="center")
+            self.start_frame = View.create_frame(self, width=750, height=600)
+            self.start_frame.place(relx=1, rely=0.5, anchor="e")
 
-            #Creating header
-            self.header = View.create_an_header(self, "Welcome", "home_popup.jpg", frame = self.start_frame)
-            self.header.place(relx=0.32, rely=0.05, anchor="nw")  # todo: update rely to 0.05 instead of 0.08
 
             # Loading background photo
             if self.controller.cc.card_present:
@@ -1136,9 +1136,16 @@ class View(customtkinter.CTk):
                 self.background_photo = View.create_background_photo(self, "./pictures_db/insert_card.png")
                 logger.info("bg_photo = no card")
 
-            self.canvas = self.create_canvas(frame=self.start_frame)
-            self.canvas.place(relx=0.250, rely=0.501, anchor="w")
+            #self.canvas = self.create_canvas(frame=self.start_frame)
+            #self.canvas.place(relx=0.250, rely=0.501, anchor="w")
+            self.canvas = self.create_canvas(width=750, height=600, frame=self.start_frame)
+            self.canvas.place(relx=0.0, rely=0.5, anchor="w")
             self.canvas.create_image(0, 0, image=self.background_photo, anchor="nw")
+
+            # Creating header
+            self.header = View.create_an_header(self, "Welcome", "home_popup.jpg", frame=self.start_frame)
+            #self.header.place(relx=0.32, rely=0.05, anchor="nw")  # todo: update rely to 0.05 instead of 0.08
+            self.header.place(relx=0.05, rely=0.05, anchor="nw")
 
             # Setting up labels
             label1 = View.create_label(
@@ -1146,14 +1153,16 @@ class View(customtkinter.CTk):
                 "Please insert your card into your smart card" if not self.controller.cc.card_present else f"Your {self.controller.cc.card_type} is connected.",
                 frame=self.start_frame
             )
-            label1.place(relx=0.33, rely=0.27, anchor="w")
+            #label1.place(relx=0.33, rely=0.27, anchor="w")
+            label1.place(relx=0.05, rely=0.27, anchor="w")
 
             label2 = View.create_label(
                 self,
                 "reader, and select the action you wish to perform." if not self.controller.cc.card_present else "Select on the menu the action you wish to perform.",
                 frame=self.start_frame
             )
-            label2.place(relx=0.33, rely=0.32, anchor="w")
+            #label2.place(relx=0.33, rely=0.32, anchor="w")
+            label2.place(relx=0.05, rely=0.32, anchor="w")
 
             if self.controller.cc.card_type == "SeedKeeper":
                 self.show_seedkeeper_menu() #create_seedkeeper_menu()

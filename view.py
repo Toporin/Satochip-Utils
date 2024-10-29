@@ -92,6 +92,7 @@ class View(customtkinter.CTk):
 
             # frames
             self.welcome_frame = None
+            self.start_frame = None
             self.seedkeeper_menu_frame = None
             self.settings_menu_frame = None
 
@@ -293,12 +294,15 @@ class View(customtkinter.CTk):
         result = customtkinter.CTkFont(size=size)
         return result
 
-    def create_an_header(self, title_text: str = "", icon_name: str = None, fg_bg_color=None):
+    def create_an_header(self, title_text: str = "", icon_name: str = None, fg_bg_color=None, frame = None):
         try:
             logger.debug("create_an_header start")
 
+            if frame is None:
+                frame = self.main_frame
+
             # Créer le cadre de l'en-tête
-            header_frame = customtkinter.CTkFrame(self, fg_color="whitesmoke", bg_color="whitesmoke", width=750, height=40)
+            header_frame = customtkinter.CTkFrame(frame, fg_color="whitesmoke", bg_color="whitesmoke", width=750, height=40)
 
             # Creating header with title and icon
             title_text = f"   {title_text}"
@@ -605,7 +609,7 @@ class View(customtkinter.CTk):
         try:
             logger.debug("View.create_canvas() start")
             if frame is None:
-                frame = self.current_frame
+                frame = self.main_frame
             canvas = customtkinter.CTkCanvas(frame, bg="whitesmoke", width=1000, height=599)# todo: 599 or 600?
             return canvas
         except Exception as e:
@@ -922,14 +926,14 @@ class View(customtkinter.CTk):
                         self.controller.get_card_status()
 
                         if not self.welcome_in_display: # TODO?
-                            self.start_setup()
+                            self.show_start_frame()
                     except Exception as e:
                         logger.error(f"An error occurred while getting card status: {e}", exc_info=True)
 
                 elif isConnected is False:
                     try:
                         logger.info("Card disconnected, resetting status")
-                        self.start_setup()
+                        self.show_start_frame()
                     except Exception as e:
                         logger.error(f"An error occurred while resetting card status: {e}", exc_info=True)
                     logger.info("Exiting update_status method successfully")
@@ -1078,11 +1082,11 @@ class View(customtkinter.CTk):
             self.button = View.create_button(
                 self,
                 button_label,
-                command=lambda: [self.start_setup()],
+                command=lambda: [self.show_start_frame()],
                 frame=self.welcome_frame
             )
             self.after(2500, self.button.place(relx=0.85, rely=0.93, anchor="center"))
-            logger.debug("Button created and placed")
+            logger.debug("Button created and placed")# todo
 
             logger.debug("Exiting welcome method successfully")
         except Exception as e:
@@ -1090,28 +1094,33 @@ class View(customtkinter.CTk):
             logger.error(message, exc_info=True)
             raise Exception(message) from e
 
-    def start_setup(self):
-        logger.info("IN View.start_setup() | Entering start_setup method")
-        frame_name = "start_setup"
-        self.welcome_in_display = False
+    ##################
+    '''Start frame'''
+
+    def show_start_frame(self):
+        if self.start_frame is None:
+            self.create_start_frame()
+        self.start_frame.place()
+
+    def create_start_frame(self):
+        logger.info("IN View.create_start_frame() start")
+        self.welcome_in_display = False # todo?
 
         try:
-            if self.current_frame is not None:
-                logger.info("Clearing current frame")
-                self.clear_current_frame()
-                logger.debug("Current frame cleared")
+            # if self.current_frame is not None:
+            #     logger.info("Clearing current frame")
+            #     self.clear_current_frame()
+            #     logger.debug("Current frame cleared")
 
-            logger.debug("Creating header")
-            self.header = View.create_an_header(self, "Welcome", "home_popup.jpg")
-            self.header.place(relx=0.32, rely=0.08, anchor="nw") # todo: update rely to 0.05
-            logger.debug("Header created and placed")
+            # Creating main frame
+            self.start_frame = View.create_frame(self)
+            self.start_frame.place(relx=0.5, rely=0.5, anchor="center")
 
-            logger.debug("Creating main frame")
-            self.current_frame = View.create_frame(self)
-            self.current_frame.place(relx=0.5, rely=0.5, anchor="center")
-            logger.debug("Main frame created and placed")
+            #Creating header
+            self.header = View.create_an_header(self, "Welcome", "home_popup.jpg", frame = self.start_frame)
+            self.header.place(relx=0.32, rely=0.05, anchor="nw")  # todo: update rely to 0.05 instead of 0.08
 
-            logger.info("Loading background photo")
+            # Loading background photo
             if self.controller.cc.card_present:
                 logger.info(f"card type: {self.controller.cc.card_type}")
                 if self.controller.cc.card_type == "Satochip":
@@ -1127,34 +1136,34 @@ class View(customtkinter.CTk):
                 self.background_photo = View.create_background_photo(self, "./pictures_db/insert_card.png")
                 logger.info("bg_photo = no card")
 
-            self.canvas = View.create_canvas(self)
+            self.canvas = self.create_canvas(frame=self.start_frame)
             self.canvas.place(relx=0.250, rely=0.501, anchor="w")
             self.canvas.create_image(0, 0, image=self.background_photo, anchor="nw")
-            logger.debug("Background photo loaded and placed")
 
-            logger.debug("Setting up labels")
-            self.label = View.create_label(self,
-                                           "Please insert your card into your smart card" if not self.controller.cc.card_present else f"Your {self.controller.cc.card_type} is connected.")
-            self.label.place(relx=0.33, rely=0.27, anchor="w")
+            # Setting up labels
+            label1 = View.create_label(
+                self,
+                "Please insert your card into your smart card" if not self.controller.cc.card_present else f"Your {self.controller.cc.card_type} is connected.",
+                frame=self.start_frame
+            )
+            label1.place(relx=0.33, rely=0.27, anchor="w")
 
-            self.label = View.create_label(self,
-                                           "reader, and select the action you wish to perform." if not self.controller.cc.card_present else "Select on the menu the action you wish to perform.")
-            self.label.place(relx=0.33, rely=0.32, anchor="w")
-            logger.debug("Labels created and placed")
+            label2 = View.create_label(
+                self,
+                "reader, and select the action you wish to perform." if not self.controller.cc.card_present else "Select on the menu the action you wish to perform.",
+                frame=self.start_frame
+            )
+            label2.place(relx=0.33, rely=0.32, anchor="w")
 
             if self.controller.cc.card_type == "SeedKeeper":
-                logger.debug("Creating Seedkeeper menu")
                 self.show_seedkeeper_menu() #create_seedkeeper_menu()
-                logger.debug("Seedkeeper menu created and placed")
             else:
-                logger.debug("Creating main menu")
                 self.show_settings_menu()
                 #menu = self.create_settings_menu()
                 #menu.place(relx=0.250, rely=0.5, anchor="e")
-                logger.debug("Main menu created and placed")
 
         except Exception as e:
-            message = f"An unexpected error occurred in start_setup: {e}"
+            message = f"An unexpected error occurred in create_start_frame: {e}"
             logger.error(message, exc_info=True)
             raise Exception(message) from e
 
@@ -1218,7 +1227,7 @@ class View(customtkinter.CTk):
 
             # Creating cancel and finish buttons
             self.cancel_button = View.create_button(self, "Cancel",
-                                                    lambda: self.start_setup())
+                                                    lambda: self.show_start_frame())
             self.cancel_button.place(relx=0.7, rely=0.9, anchor="w")
 
             self.finish_button = View.create_button(self, "Save PIN",
@@ -1426,7 +1435,7 @@ class View(customtkinter.CTk):
 
             self.cancel_button = View.create_button(
                 self, "Back",
-                command=lambda: self.start_setup()
+                command=lambda: self.show_start_frame()
             )
             self.cancel_button.place(relx=0.85, rely=0.9, anchor="w")
 
@@ -1501,7 +1510,7 @@ class View(customtkinter.CTk):
             logger.debug("PIN entry fields created and placed")
 
             # Creating cancel and finish buttons
-            cancel_button = View.create_button(self, "Cancel", lambda: self.start_setup())
+            cancel_button = View.create_button(self, "Cancel", lambda: self.show_start_frame())
             cancel_button.place(relx=0.7, rely=0.9, anchor="w")
 
             finish_button = View.create_button(self, "Change it",
@@ -1567,7 +1576,7 @@ class View(customtkinter.CTk):
 
             # Creating cancel and finish buttons
             self.cancel_button = View.create_button(self, cancel_button,
-                                                    lambda: self.start_setup())
+                                                    lambda: self.show_start_frame())
 
             self.cancel_button.place(relx=0.7, rely=0.9, anchor="w")
 
@@ -1707,13 +1716,13 @@ class View(customtkinter.CTk):
                 font=customtkinter.CTkFont(family="Outfit", size=13, weight="normal")
             )
 
-            self.cancel_button = View.create_button(self, "Back", lambda: self.start_setup())
+            self.cancel_button = View.create_button(self, "Back", lambda: self.show_start_frame())
             self.cancel_button.place(relx=0.85, rely=0.9, anchor="w")
             if self.controller.cc.card_type != "Satodime":
                 try:
                     self.controller.cc.card_verify_PIN_simple()
                 except Exception as e:
-                    self.start_setup()
+                    self.show_start_frame()
 
             # Creating and placing main menu
             self.show_settings_menu()
@@ -1741,7 +1750,7 @@ class View(customtkinter.CTk):
                 logger.info("Factory reset aborted. The card must be removed after each reset.")
                 msg = 'RESET ABORTED!\n Remaining counter: MAX.'
                 self.show('ABORTED', msg, "Ok",
-                          lambda: [self.controller.cc.set_mode_factory_reset(False), self.start_setup()],
+                          lambda: [self.controller.cc.set_mode_factory_reset(False), self.show_start_frame()],
                           "./pictures_db/reset_popup.jpg")
                 logger.info("Reset aborted. Counter set to MAX.")
             elif sw1 == 0xFF and sw2 > 0x00:
@@ -1826,7 +1835,7 @@ class View(customtkinter.CTk):
                 logger.info("Executing quit button action")
                 self.controller.cc.set_mode_factory_reset(False)
                 time.sleep(0.5) # todo remove?
-                self.start_setup()
+                self.show_start_frame()
 
             def click_start_button():
                 msg = f"Please follow the instruction bellow."
@@ -1888,7 +1897,7 @@ class View(customtkinter.CTk):
                         try:
                             self.controller.PIN_dialog(f'Unlock your {self.controller.cc.card_type}')
                         except Exception as e:
-                            self.start_setup()
+                            self.show_start_frame()
                 self.update_status()
                 self.about()
 
@@ -1977,7 +1986,7 @@ class View(customtkinter.CTk):
             pysatochip_version.place(relx=0.33, rely=0.88)
             back_button = View.create_button(self,
                                                    'Back',
-                                                   lambda: self.start_setup())
+                                                   lambda: self.show_start_frame())
             back_button.place(relx=0.85, rely=0.9, anchor="w")
 
         except Exception as e:
@@ -2195,7 +2204,7 @@ class View(customtkinter.CTk):
             logger.info("001 Displaying settings")
             self._delete_seedkeeper_menu()
             logger.debug("002 Seedkeeper menu deleted")
-            self.view_start_setup()
+            self.view_show_start_frame()
             logger.debug("003 Setup started")
             self.create_satochip_utils_menu()
             logger.debug("004 Satochip utils menu created")

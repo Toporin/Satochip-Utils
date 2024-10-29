@@ -95,6 +95,7 @@ class View(customtkinter.CTk):
             self.start_frame = None
             self.seedkeeper_menu_frame = None
             self.settings_menu_frame = None
+            self.setup_card_frame = None
 
             # Application state attributes
             # Status de l'application et de certains widgets
@@ -559,10 +560,12 @@ class View(customtkinter.CTk):
 
         return button
 
-    def create_entry(self, show_option: str = "")-> customtkinter.CTkEntry:
+    def create_entry(self, show_option: str = "", frame=None)-> customtkinter.CTkEntry:
         logger.debug("create_entry start")
+        if frame is None:
+            frame = self.current_frame # todo
         entry = customtkinter.CTkEntry(
-            self.current_frame, width=555, height=37, corner_radius=10,
+            frame, width=555, height=37, corner_radius=10,
             bg_color='white', fg_color=BUTTON_COLOR, border_color=BUTTON_COLOR,
             show=show_option, text_color='grey'
         )
@@ -742,7 +745,9 @@ class View(customtkinter.CTk):
                         "Setup My Card",
                         "setup_my_card.png",
                         0.26, 0.60,
-                        command=lambda: self.setup_my_card_pin(), state='normal'
+                        #command=lambda: self.setup_my_card_pin(),
+                        command=lambda: self.show_setup_card_frame(),
+                        state='normal'
                     )
                 else:
                     if not self.controller.cc.is_seeded and self.controller.cc.card_type != "Satodime":
@@ -1175,7 +1180,82 @@ class View(customtkinter.CTk):
             logger.error(message, exc_info=True)
             raise Exception(message) from e
 
-    # for satochip and seedkeeper card
+    def show_setup_card_frame(self):
+        if self.setup_card_frame is None:
+            self.setup_card_frame = self.create_setup_card_frame()
+        self.setup_card_frame.place()
+
+    def create_setup_card_frame(self):
+        logger.info(f"IN View.create_setup_card_frame()")
+        frame_name = "setup_my_card_pin"
+        cancel_button = "Cancel"
+        finish_button = "Finish"
+
+        try:
+            # Creating new frame
+            setup_frame = self.create_frame(width=750, height=600, frame=main_frame)
+            setup_frame.place(relx=1, rely=0.5, anchor="e")
+
+            # Creating main menu
+            #self.show_settings_menu()# todo update setup status
+
+            # Creating header
+            header = self.create_an_header(f"Setup my card",
+                                                "change_pin_popup.jpg", frame=setup_frame)
+            self.header.place(relx=0.05, rely=0.05, anchor="nw")
+
+            # setup paragraph
+            text = self.create_label("Create your personal PIN code.", frame=setup_frame)
+            text.place(relx=0.05, rely=0.2, anchor="w")
+            text = View.create_label(self, "We strongly encourage you to set up a strong password between 4 and 16", frame = setup_frame)
+            text.place(relx=0.05, rely=0.25, anchor="w")
+            text = View.create_label(self, "characters. You can use symbols, lower and upper cases, letters and ", frame = setup_frame)
+            text.place(relx=0.05, rely=0.3, anchor="w")
+            text = View.create_label(self, "numbers.", frame=setup_frame)
+            text.place(relx=0.05, rely=0.35, anchor="w")
+
+            # edit PIN
+            edit_pin_label = View.create_label(self, "New PIN code :", frame=setup_frame)
+            edit_pin_label.configure(font=self.make_text_size_at(18))
+            edit_pin_label.place(relx=0.05, rely=0.45, anchor="w")
+            edit_pin_entry = View.create_entry(self, "*", frame=setup_frame)
+            self.after(100, edit_pin_entry.focus_force)
+            if self.controller.cc.card_type == "Satodime":
+                edit_pin_entry.configure(state='disabled')
+            edit_pin_entry.place(relx=0.05, rely=0.52, anchor="w")
+
+            # confirm PIN edition
+            edit_confirm_pin_label = View.create_label(self, "Repeat new PIN code :", frame=setup_frame)
+            edit_confirm_pin_label.configure(font=self.make_text_size_at(18))
+            edit_confirm_pin_label.place(relx=0.05, rely=0.65, anchor="w")
+            edit_confirm_pin_entry = View.create_entry(self, "*", frame=setup_frame)
+            if self.controller.cc.card_type == "Satodime":
+                edit_confirm_pin_entry.configure(state='disabled')
+            edit_confirm_pin_entry.place(relx=0.05, rely=0.72, anchor="w")
+
+            # Creating cancel and finish buttons
+            cancel_button = View.create_button(
+                self, "Cancel",
+                lambda: self.show_start_frame(),
+                frame=setup_frame
+            )
+            cancel_button.place(relx=0.6, rely=0.9, anchor="w")
+
+            # todo: check pin & pin_confirm match
+            finish_button = View.create_button(
+                self, "Save PIN",
+                lambda: self.controller.setup_card_pin(edit_pin_entry.get(), edit_confirm_pin_entry.get()),
+                frame = setup_frame
+            )
+            finish_button.place(relx=0.8, rely=0.9, anchor="w")
+            self.bind('<Return>', lambda event: self.controller.setup_card_pin(edit_pin_entry.get(), edit_confirm_pin_entry.get()))
+
+            return setup_frame
+        except Exception as e:
+            logger.error(f"An unexpected error occurred in setup_my_card_pin: {e}", exc_info=True)
+
+
+    # for satochip and seedkeeper card #todo remove
     def setup_my_card_pin(self):
         logger.info(f"IN View.setup_my_card_pin()")
         frame_name = "setup_my_card_pin"
@@ -1927,7 +2007,8 @@ class View(customtkinter.CTk):
             elif not self.controller.cc.setup_done:
                 watch_all = self.create_label("Card requires setup")
                 watch_all.place(relx=0.33, rely=0.17)
-                unlock_button = self.create_button("Setup card", lambda: self.setup_my_card_pin())
+                #unlock_button = self.create_button("Setup card", lambda: self.setup_my_card_pin())
+                unlock_button = self.create_button("Setup card", lambda: self.show_setup_card_frame())
                 unlock_button.configure(font=self.make_text_size_at(15))
                 unlock_button.place(relx= 0.55, rely=0.17)
                 card_label_named = self.create_label(f"Label: [UNKNOWN]")

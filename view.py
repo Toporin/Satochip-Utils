@@ -109,7 +109,7 @@ class View(customtkinter.CTk):
             self.password_text_box: Optional[customtkinter.CTkTextbox] = None
 
             # Launching initialization starting with welcome view
-            self.welcome()
+            self.welcome_frame = self.create_welcome_frame()
             self.protocol("WM_DELETE_WINDOW", lambda: [self.on_close()])
 
         except Exception as e:
@@ -334,12 +334,15 @@ class View(customtkinter.CTk):
         except Exception as e:
             logger.error(f"An unexpected error occurred in create_an_header: {e}", exc_info=True)
 
-    def create_an_header_for_welcome(self):
-        icon_path = f"./pictures_db/welcome_logo.png"
-        frame = customtkinter.CTkFrame(self.welcome_frame, width=380, height=178, bg_color='white')
-        frame.place(relx=0.1, rely=0.03, anchor='nw')
+    def create_an_header_for_welcome(self, frame=None):
+        if frame is None:
+            frame = self.welcome_frame
 
-        logo_canvas = customtkinter.CTkCanvas(frame, width=400, height=400, bg='black')
+        icon_path = f"./pictures_db/welcome_logo.png"
+        header = customtkinter.CTkFrame(frame, width=380, height=178, bg_color='white')
+        header.place(relx=0.1, rely=0.03, anchor='nw')
+
+        logo_canvas = customtkinter.CTkCanvas(header, width=400, height=400, bg='black')
         logo_canvas.place(relx=0.5, rely=0.5, anchor='center')
 
         image = Image.open(icon_path)
@@ -585,7 +588,7 @@ class View(customtkinter.CTk):
             logger.error(f"An unexpected error occurred in update_textbox: {e}", exc_info=True)
 
     @staticmethod
-    def create_background_photo(self, picture_path):
+    def create_background_photo(picture_path):
         try:
             logger.info(f"create_background_photo method with path: {picture_path}")
             if getattr(sys, 'frozen', False):
@@ -1025,71 +1028,66 @@ class View(customtkinter.CTk):
     #############
     """ VIEWS """
 
-    def welcome(self):
-        logger.info("IN View.welcome() | Entering in the method")
+    def create_welcome_frame(self):
+        logger.info("IN View.create_welcome_frame() start")
         try:
             logger.debug("Entering welcome method")
             frame_name = "welcome"
             button_label = "Let's go!"
 
-            # if self.current_frame is not None:
-            #     logger.debug("Clearing current frame")
-            #     self.clear_current_frame()
-            #     logger.debug("Current frame cleared")
+            # Creating new frame and background
+            welcome_frame = self.create_frame()
+            welcome_frame.place(relx=0.5, rely=0.5, anchor="center")
+            self.background_photo = View.create_background_photo("./pictures_db/welcome_in_satochip_utils.png")
+            canvas = self.create_canvas(frame=welcome_frame)
+            canvas.place(relx=0.5, rely=0.5, anchor="center")
+            canvas.create_image(0, 0, image=self.background_photo, anchor="nw")
 
-            logger.debug("Creating new frame and background")
-            self.welcome_frame = View.create_frame(self)
-            self.welcome_frame.place(relx=0.5, rely=0.5, anchor="center")
-            self.background_photo = View.create_background_photo(self, "./pictures_db/welcome_in_satochip_utils.png")
-            self.canvas = self.create_canvas(frame= self.welcome_frame)
-            self.canvas.place(relx=0.5, rely=0.5, anchor="center")
-            self.canvas.create_image(0, 0, image=self.background_photo, anchor="nw")
-            logger.debug("New frame and background created and placed")
+            self.create_an_header_for_welcome(frame=welcome_frame)
 
-            self.create_an_header_for_welcome()
+            #Setting up labels
+            label1 = self.create_label(
+                'Satochip-Utils\n______________',
+                MAIN_MENU_COLOR,
+                frame=welcome_frame
+            )
+            label1.configure(text_color='white')
+            label1.configure(font=self.make_text_size_at(18))
+            label1.place(relx=0.05, rely=0.4, anchor="w")
 
-            logger.debug("Setting up labels")
-            self.label = self.create_label('Satochip-Utils\n______________', MAIN_MENU_COLOR, frame=self.welcome_frame)
-            self.label.configure(text_color='white')
-            self.label.configure(font=self.make_text_size_at(18))
-            self.label.place(relx=0.05, rely=0.4, anchor="w")
-
-            self.label = self.create_label(
+            label2 = self.create_label(
                 'Your one stop shop to manage your Satochip cards,',
                 MAIN_MENU_COLOR,
-                frame=self.welcome_frame
+                frame=welcome_frame
             )
-            self.label.configure(text_color='white')
-            self.label.configure(font=self.make_text_size_at(18))
-            self.label.place(relx=0.05, rely=0.5, anchor="w")
+            label2.configure(text_color='white')
+            label2.configure(font=self.make_text_size_at(18))
+            label2.place(relx=0.05, rely=0.5, anchor="w")
 
-            self.label = self.create_label('including Satodime and Seedkeeper.', MAIN_MENU_COLOR, frame=self.welcome_frame)
-            self.label.configure(text_color='white')
-            self.label.configure(font=self.make_text_size_at(18))
-            self.label.place(relx=0.05, rely=0.55, anchor="w")
+            label3 = self.create_label('including Satodime and Seedkeeper.', MAIN_MENU_COLOR, frame=welcome_frame)
+            label3.configure(text_color='white')
+            label3.configure(font=self.make_text_size_at(18))
+            label3.place(relx=0.05, rely=0.55, anchor="w")
 
-            self.label = self.create_label('Change your PIN code, reset your card, setup your', MAIN_MENU_COLOR, frame=self.welcome_frame)
-            self.label.configure(text_color='white')
-            self.label.configure(font=self.make_text_size_at(18))
-            self.label.place(relx=0.05, rely=0.65, anchor="w")
+            label4 = self.create_label('Change your PIN code, reset your card, setup your', MAIN_MENU_COLOR, frame=welcome_frame)
+            label4.configure(text_color='white')
+            label4.configure(font=self.make_text_size_at(18))
+            label4.place(relx=0.05, rely=0.65, anchor="w")
 
-            self.label = self.create_label('hardware wallet and many more...', MAIN_MENU_COLOR, frame=self.welcome_frame)
-            self.label.configure(text_color='white')
-            self.label.configure(font=self.make_text_size_at(18))
-            self.label.place(relx=0.05, rely=0.7, anchor="w")
-            logger.debug("Labels created and placed")
+            label5 = self.create_label('hardware wallet and many more...', MAIN_MENU_COLOR, frame=welcome_frame)
+            label5.configure(text_color='white')
+            label5.configure(font=self.make_text_size_at(18))
+            label5.place(relx=0.05, rely=0.7, anchor="w")
 
-            logger.debug("Creating and placing the button")
-            self.button = View.create_button(
-                self,
+            # Creating and placing the button
+            button = self.create_button(
                 button_label,
                 command=lambda: [self.show_start_frame()],
-                frame=self.welcome_frame
+                frame=welcome_frame
             )
-            self.after(2500, self.button.place(relx=0.85, rely=0.93, anchor="center"))
-            logger.debug("Button created and placed")# todo
+            self.after(2500, button.place(relx=0.85, rely=0.93, anchor="center"))
 
-            logger.debug("Exiting welcome method successfully")
+            return welcome_frame
         except Exception as e:
             message = f"An unexpected error occurred in welcome method: {e}"
             logger.error(message, exc_info=True)
@@ -1099,6 +1097,7 @@ class View(customtkinter.CTk):
     '''Start frame'''
 
     def show_start_frame(self):
+        self.welcome_frame.place_forget()
         if self.start_frame is None:
             self.create_start_frame()
         self.start_frame.place()
@@ -1124,16 +1123,16 @@ class View(customtkinter.CTk):
             if self.controller.cc.card_present:
                 logger.info(f"card type: {self.controller.cc.card_type}")
                 if self.controller.cc.card_type == "Satochip":
-                    self.background_photo = View.create_background_photo(self, "./pictures_db/card_satochip.png")
+                    self.background_photo = View.create_background_photo("./pictures_db/card_satochip.png")
                     logger.info("bg_photo = satochip")
                 elif self.controller.cc.card_type == "SeedKeeper":
                     logger.info(f"card type is {self.controller.cc.card_type}")
-                    self.background_photo = View.create_background_photo(self, "./pictures_db/card_seedkeeper.png")
+                    self.background_photo = View.create_background_photo("./pictures_db/card_seedkeeper.png")
                     logger.info("bg_photo = seedkeeper")
                 elif self.controller.cc.card_type == "Satodime":
-                    self.background_photo = View.create_background_photo(self, "./pictures_db/card_satodime.png")
+                    self.background_photo = View.create_background_photo("./pictures_db/card_satodime.png")
             else:
-                self.background_photo = View.create_background_photo(self, "./pictures_db/insert_card.png")
+                self.background_photo = View.create_background_photo("./pictures_db/insert_card.png")
                 logger.info("bg_photo = no card")
 
             #self.canvas = self.create_canvas(frame=self.start_frame)
@@ -1798,7 +1797,7 @@ class View(customtkinter.CTk):
             self.current_frame.place(relx=0.5, rely=0.5, anchor="center")
 
             # Load background photo
-            self.background_photo = View.create_background_photo(self, "./pictures_db/reset_my_card.png")
+            self.background_photo = View.create_background_photo("./pictures_db/reset_my_card.png")
             self.canvas = View.create_canvas(self)
             self.canvas.place(relx=0.250, rely=0.501, anchor="w")
             self.canvas.create_image(0, 0, image=self.background_photo, anchor="nw")
@@ -1893,7 +1892,7 @@ class View(customtkinter.CTk):
                                                 "about_popup.jpg")
             self.header.place(relx=0.32, rely=0.05, anchor="nw")
 
-            self.background_photo = View.create_background_photo(self, "./pictures_db/about_background.png")
+            self.background_photo = View.create_background_photo("./pictures_db/about_background.png")
             self.canvas = View.create_canvas(self)
             self.canvas.place(relx=0.250, rely=0.501, anchor="w")
             self.canvas.create_image(0, 0, image=self.background_photo, anchor="nw")

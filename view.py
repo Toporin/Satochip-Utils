@@ -97,6 +97,7 @@ class View(customtkinter.CTk):
             self.settings_menu_frame = None
             self.setup_card_frame = None
             self.about_frame = None
+            self.authenticity_frame = None
 
             # Application state attributes
             # Status de l'application et de certains widgets
@@ -584,13 +585,23 @@ class View(customtkinter.CTk):
         )
         return entry
 
-    def update_textbox(self, text):
+    def update_textbox_old(self, text):
         try:
             logger.debug("update_textbox start")
             # Efface le contenu actuel
             self.text_box.delete(1.0, "end")
             # Inserting new text into the textbox
             self.text_box.insert("end", text)
+        except Exception as e:
+            logger.error(f"An unexpected error occurred in update_textbox: {e}", exc_info=True)
+
+    def update_textbox(self, text_box, text):
+        try:
+            logger.debug("update_textbox start")
+            # Efface le contenu actuel
+            text_box.delete(1.0, "end")
+            # Inserting new text into the textbox
+            text_box.insert("end", text)
         except Exception as e:
             logger.error(f"An unexpected error occurred in update_textbox: {e}", exc_info=True)
 
@@ -819,13 +830,13 @@ class View(customtkinter.CTk):
                     command=lambda: self.edit_label(), state='disabled'
                 )
 
-            def before_check_authenticity():
-                logger.info("IN View.main_menu() | Requesting card verification PIN")
-                if self.controller.cc.card_type != "Satodime":
-                    if self.controller.cc.is_pin_set():
-                        self.controller.cc.card_verify_PIN_simple()
-                    else:
-                        self.controller.PIN_dialog(f'Unlock your {self.controller.cc.card_type}')
+            # def before_check_authenticity():
+            #     logger.info("IN View.main_menu() | Requesting card verification PIN")
+            #     if self.controller.cc.card_type != "Satodime":
+            #         if self.controller.cc.is_pin_set():
+            #             self.controller.cc.card_verify_PIN_simple()
+            #         else:
+            #             self.controller.PIN_dialog(f'Unlock your {self.controller.cc.card_type}')
 
             if self.controller.cc.setup_done:
                 self.create_button_for_main_menu_item(
@@ -833,7 +844,7 @@ class View(customtkinter.CTk):
                     "Check Authenticity",
                     "auth.png",
                     0.47, 0.66,
-                    command=lambda: [before_check_authenticity(), self.check_authenticity()], state='normal'
+                    command=lambda: self.show_check_authenticity_frame(), state='normal'
                 )
             else:
                 self.create_button_for_main_menu_item(
@@ -1118,7 +1129,6 @@ class View(customtkinter.CTk):
             else:
                 self.show_settings_menu()
 
-
     def create_start_frame(self):
         logger.info("IN View.create_start_frame() start")
         self.welcome_in_display = False # todo?
@@ -1266,7 +1276,6 @@ class View(customtkinter.CTk):
         except Exception as e:
             logger.error(f"An unexpected error occurred in setup_my_card_pin: {e}", exc_info=True)
 
-
     # for satochip and seedkeeper card #todo remove
     def setup_my_card_pin(self):
         logger.info(f"IN View.setup_my_card_pin()")
@@ -1383,7 +1392,7 @@ class View(customtkinter.CTk):
                     mnemonic_length = 24
 
                 mnemonic = self.controller.generate_random_seed(mnemonic_length)
-                self.update_textbox(mnemonic)
+                self.update_textbox_old(mnemonic)
 
             def update_radio_selection():
                 nonlocal generate_with_passphrase
@@ -1698,7 +1707,173 @@ class View(customtkinter.CTk):
         except Exception as e:
             logger.error(f"An unexpected error occurred in edit_label: {e}", exc_info=True)
 
-    def check_authenticity(self):
+    def show_check_authenticity_frame(self):
+        # verify PIN
+        if self.controller.cc.card_type != "Satodime":
+            if self.controller.cc.is_pin_set():
+                self.controller.cc.card_verify_PIN_simple()
+            else:
+                self.controller.PIN_dialog(f'Unlock your {self.controller.cc.card_type}')
+
+        if self.authenticity_frame is None:
+            self.authenticity_frame = self.create_check_authenticity_frame()
+        else:
+            self.authenticity_frame.place()
+            self.authenticity_frame.tkraise()
+
+    def create_check_authenticity_frame(self):
+        if self.controller.cc.card_present: #todo move in show...
+            logger.info("Card detected: checking authenticity")
+            is_authentic, txt_ca, txt_subca, txt_device, txt_error = self.controller.cc.card_verify_authenticity()
+            if txt_error != "":
+                txt_device = txt_error + "\n------------------\n" + txt_device
+
+        try:
+            logger.info("View.check_authenticity start")
+
+            # Creating new frame
+            authenticity_frame = View.create_frame(self, width=750, height=600, frame=self.main_frame)
+            authenticity_frame.place(relx=1.0, rely=0.5, anchor="e")
+
+            header = self.create_an_header(
+                "Check authenticity",
+                "check_authenticity_popup.jpg",
+                frame=authenticity_frame
+            )
+            header.place(relx=0.05, rely=0.05, anchor="nw")
+
+            certificate_radio_value = customtkinter.StringVar(value="")
+
+            def update_radio_selection():
+                logger.info(f"Button clicked: {certificate_radio_value.get()}")
+                if certificate_radio_value.get() == 'root_ca_certificate':
+                    self.update_textbox(text_box, txt_ca)
+                    text_box.place(relx=0.05, rely=0.4, anchor="nw")
+                if certificate_radio_value.get() == 'sub_ca_certificate':
+                    self.update_textbox(text_box, txt_subca)
+                    text_box.place(relx=0.05, rely=0.4, anchor="nw")
+                if certificate_radio_value.get() == 'device_certificate':
+                    self.update_textbox(text_box, txt_device)
+                    text_box.place(relx=0.05, rely=0.4, anchor="nw")
+
+            #
+            text = self.create_label(
+                f"Check whether or not you have a genuine Satochip card.",
+                frame=authenticity_frame
+            )
+            text.place(relx=0.05, rely=0.17, anchor="w")
+
+            text = self.create_label(
+                f"Status:",
+                frame=authenticity_frame
+            )
+            text.configure(font=self.make_text_bold())
+            text.place(relx=0.05, rely=0.27, anchor="w")
+            if self.controller.cc.card_present:
+                if is_authentic:
+                    icon_image = Image.open("./pictures_db/genuine_card.jpg")
+                    icon = customtkinter.CTkImage(light_image=icon_image, size=(30, 30))
+                    icon_label = customtkinter.CTkLabel(
+                        authenticity_frame, image=icon,
+                        text=f"Your card is authentic. ",
+                        compound='right', bg_color="whitesmoke", fg_color="whitesmoke",
+                        font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal"),
+                        frame=authenticity_frame
+                    )
+                    icon_label.place(relx=0.2, rely=0.267, anchor="w")
+                else:
+                    icon_image = Image.open("./pictures_db/not_genuine_card.jpg")
+                    icon = customtkinter.CTkImage(light_image=icon_image, size=(30, 30))
+                    icon_label = customtkinter.CTkLabel( # todo: use create_label?
+                        authenticity_frame, image=icon,
+                        text=f"Your card is not authentic. ",
+                        compound='right', bg_color="whitesmoke", fg_color="whitesmoke",
+                        font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal"),
+                    )
+                    icon_label.place(relx=0.2, rely=0.267, anchor="w")
+
+                    text = View.create_label(self, f"Warning!", frame=authenticity_frame)
+                    text.configure(font=self.make_text_bold())
+                    text.place(relx=0.05, rely=0.7, anchor="w")
+                    text = View.create_label(
+                        self, f"We could not authenticate the issuer of this card.",
+                        frame=authenticity_frame
+                    )
+                    text.place(relx=0.05, rely=0.75, anchor="w")
+                    text = View.create_label(
+                        self,
+                        f"If you did not load the card applet by yourself, be extremely careful!",
+                        frame=authenticity_frame
+                    )
+                    text.place(relx=0.05, rely=0.8, anchor="w")
+                    text = View.create_label(
+                        self,
+                        f"Contact support@satochip.io to report any suspicious device.",
+                        frame= authenticity_frame
+                    )
+                    text.place(relx=0.05, rely=0.85, anchor="w")
+
+            # Setting up radio buttons
+            root_ca_certificate = customtkinter.CTkRadioButton(
+                authenticity_frame,
+                text="Root CA certificate",
+                variable=certificate_radio_value,
+                value="root_ca_certificate",
+                font=customtkinter.CTkFont(family="Outfit", size=14, weight="normal"),
+                bg_color="whitesmoke", fg_color="green", hover_color="green",
+                command=update_radio_selection
+            )
+            root_ca_certificate.place(relx=0.05, rely=0.35, anchor="w")
+
+            sub_ca_certificate = customtkinter.CTkRadioButton(
+                authenticity_frame,
+                text="Sub CA certificate",
+                variable=certificate_radio_value,
+                value="sub_ca_certificate",
+                font=customtkinter.CTkFont(family="Outfit", size=14, weight="normal"),
+                bg_color="whitesmoke", fg_color="green", hover_color="green",
+                command=update_radio_selection
+            )
+            sub_ca_certificate.place(relx=0.33, rely=0.35, anchor="w")
+
+            device_certificate = customtkinter.CTkRadioButton(
+                authenticity_frame,
+                text="Device certificate",
+                variable=certificate_radio_value,
+                value="device_certificate",
+                font=customtkinter.CTkFont(family="Outfit", size=14, weight="normal"),
+                bg_color="whitesmoke", fg_color="green", hover_color="green",
+                command=update_radio_selection
+            )
+            device_certificate.place(relx=0.56, rely=0.35, anchor="w")
+
+            # Setting up text box
+            text_box = customtkinter.CTkTextbox(
+                authenticity_frame, corner_radius=10,
+                bg_color='whitesmoke', fg_color=BUTTON_COLOR, border_color=BUTTON_COLOR,
+                border_width=0, width=581, text_color="grey",
+                height=228 if is_authentic else 150,
+                font=customtkinter.CTkFont(family="Outfit", size=13, weight="normal")
+            )
+
+            cancel_button = View.create_button(
+                self, "Back", lambda: self.show_start_frame(), frame=authenticity_frame)
+            cancel_button.place(relx=0.8, rely=0.9, anchor="w")
+            # if self.controller.cc.card_type != "Satodime":
+            #     try:
+            #         self.controller.cc.card_verify_PIN_simple()
+            #     except Exception as e:
+            #         self.show_start_frame()
+
+            # Creating and placing main menu
+            self.show_settings_menu()
+
+            return authenticity_frame
+
+        except Exception as e:
+            logger.error(f"An unexpected error occurred in check_authenticity: {e}", exc_info=True)
+
+    def check_authenticity_old(self):
         if self.controller.cc.card_present:
             logger.info("Card detected: checkin authenticity")
             is_authentic, txt_ca, txt_subca, txt_device, txt_error = self.controller.cc.card_verify_authenticity()
@@ -1723,13 +1898,13 @@ class View(customtkinter.CTk):
             def update_radio_selection():
                 logger.info(f"Button clicked: {certificate_radio_value.get()}")
                 if certificate_radio_value.get() == 'root_ca_certificate':
-                    self.update_textbox(txt_ca)
+                    self.update_textbox_old(txt_ca)
                     self.text_box.place(relx=0.33, rely=0.4, anchor="nw")
                 if certificate_radio_value.get() == 'sub_ca_certificate':
-                    self.update_textbox(txt_subca)
+                    self.update_textbox_old(txt_subca)
                     self.text_box.place(relx=0.33, rely=0.4, anchor="nw")
                 if certificate_radio_value.get() == 'device_certificate':
-                    self.update_textbox(txt_device)
+                    self.update_textbox_old(txt_device)
                     self.text_box.place(relx=0.33, rely=0.4, anchor="nw")
 
             #

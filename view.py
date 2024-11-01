@@ -96,6 +96,7 @@ class View(customtkinter.CTk):
             self.seedkeeper_menu_frame = None
             self.settings_menu_frame = None
             self.setup_card_frame = None
+            self.about_frame = None
 
             # Application state attributes
             # Status de l'application et de certains widgets
@@ -394,15 +395,18 @@ class View(customtkinter.CTk):
             logger.error(f"010 Unexpected error in _create_an_header: {e}", exc_info=True)
             raise HeaderCreationError(f"011 Failed to create header: {e}") from e
 
-    def create_frame(self, bg_fg_color: str = "whitesmoke", width: int = 1000, height: int = 600) -> customtkinter.CTkFrame:
+    def create_frame(self, bg_fg_color: str = "whitesmoke", width: int = 1000, height: int = 600, frame=None) -> customtkinter.CTkFrame:
         logger.debug("View.create_frame() start")
-        frame = customtkinter.CTkFrame(
-            self.main_frame,
+        if frame is None:
+            frame = self.main_frame
+
+        new_frame = customtkinter.CTkFrame(
+            frame,
             width=width,
             height=height,
             bg_color=bg_fg_color,
             fg_color=bg_fg_color)
-        return frame
+        return new_frame
 
 
     def _create_frame(self):
@@ -699,10 +703,9 @@ class View(customtkinter.CTk):
     """ MAIN MENU """
 
     def show_settings_menu(self, state=None, frame=None):
-        self.hide_seedkeeper_menu()
         if self.settings_menu_frame is None:
             self.settings_menu_frame = self.create_settings_menu(state, frame)
-        self.settings_menu_frame.place()
+        self.settings_menu_frame.tkraise()
 
     def hide_settings_menu(self):
         if self.settings_menu_frame is not None:
@@ -863,7 +866,8 @@ class View(customtkinter.CTk):
                     "About",
                     "about.jpg",
                     rel_y=0.73, rel_x=0.5052,
-                    command=lambda: self.about(), state='normal'
+                    command=lambda: self.show_about_frame(),
+                    state='normal'
                 )
             else:
                 self.create_button_for_main_menu_item(
@@ -878,7 +882,8 @@ class View(customtkinter.CTk):
                     "About",
                     "about_locked.jpg",
                     rel_y=0.73, rel_x=0.5052,
-                    command=lambda: self.about(), state='disabled'
+                    command=lambda: self.show_about_frame(),
+                    state='disabled'
                 )
 
             self.create_button_for_main_menu_item(
@@ -1105,7 +1110,14 @@ class View(customtkinter.CTk):
         self.welcome_frame.place_forget()
         if self.start_frame is None:
             self.create_start_frame()
-        self.start_frame.place()
+        else:
+            self.start_frame.tkraise()
+            # update
+            if self.controller.cc.card_type == "SeedKeeper":
+                self.show_seedkeeper_menu()
+            else:
+                self.show_settings_menu()
+
 
     def create_start_frame(self):
         logger.info("IN View.create_start_frame() start")
@@ -1183,7 +1195,7 @@ class View(customtkinter.CTk):
     def show_setup_card_frame(self):
         if self.setup_card_frame is None:
             self.setup_card_frame = self.create_setup_card_frame()
-        self.setup_card_frame.place()
+        self.setup_card_frame.tkraise()
 
     def create_setup_card_frame(self):
         logger.info(f"IN View.create_setup_card_frame()")
@@ -1193,7 +1205,7 @@ class View(customtkinter.CTk):
 
         try:
             # Creating new frame
-            setup_frame = self.create_frame(width=750, height=600, frame=main_frame)
+            setup_frame = self.create_frame(width=750, height=600, frame=self.main_frame)
             setup_frame.place(relx=1, rely=0.5, anchor="e")
 
             # Creating main menu
@@ -1943,7 +1955,170 @@ class View(customtkinter.CTk):
         except Exception as e:
             logger.error(f"An unexpected error occurred in reset_my_card_window: {e}", exc_info=True)
 
-    def about(self):
+    def show_about_frame(self):
+        logger.info("show_about_frame start")
+        if self.about_frame is None:
+            logger.info("show_about_frame self.about_frame is None")
+            self.about_frame = self.create_about_frame()
+        else:
+            logger.info("show_about_frame self.about_frame is not None, placing it...")
+            self.about_frame.tkraise()
+            self.seedkeeper_menu_frame.place_forget()
+            self.settings_menu_frame.tkraise()
+
+    def create_about_frame(self):
+        # TODO: add reset seed button (for satochip only)
+        # TODO: implement nfc enable/disable (depending on card & version)
+        # TODO: implement 2FA disable/enable (only satochip)
+
+        try:
+            logger.info("IN View.create_about_frame() start")
+            frame_name = "edit_label"
+            cancel_button = "Cancel"
+            finish_button = "Finish"
+
+            # Creating new frame
+            about_frame = View.create_frame(self, width=750, height=600, frame=self.main_frame)
+            about_frame.place(relx=1, rely=0.5, anchor="e")
+
+            # show settings menu on the left
+            self.show_settings_menu()
+
+            # Creating header
+            self.header = View.create_an_header(
+                self, "About", "about_popup.jpg", frame=about_frame
+            )
+            self.header.place(relx=0.05, rely=0.05, anchor="nw")
+
+            self.background_photo = View.create_background_photo("./pictures_db/about_background.png")
+            self.canvas = View.create_canvas(self, frame=about_frame)
+            self.canvas.place(relx=0.0, rely=0.501, anchor="w")
+            self.canvas.create_image(0, 0, image=self.background_photo, anchor="nw")
+
+            def unlock():
+                if self.controller.cc.card_type != "Satodime":
+                    if self.controller.cc.is_pin_set():
+                        self.controller.cc.card_verify_PIN_simple()
+                    else:
+                        try:
+                            self.controller.PIN_dialog(f'Unlock your {self.controller.cc.card_type}')
+                        except Exception as e:
+                            self.show_start_frame()
+                self.update_status()
+                self.show_about_frame()
+
+            # card infos
+            card_information = self.create_label("Card information", frame=about_frame)
+            card_information.place(relx=0.05, rely=0.25, anchor="w")
+            card_information.configure(font=self.make_text_bold())
+
+            applet_version = self.create_label(
+                f"Applet version: {self.controller.card_status['applet_full_version_string']}",
+                frame=about_frame
+            )
+            if self.controller.cc.card_type == "Satodime" or self.controller.cc.is_pin_set():
+                if self.controller.cc.card_type != "Satodime":
+                    self.controller.cc.card_verify_PIN_simple()
+                card_label_named = self.create_label(
+                    f"Label: [{self.controller.get_card_label_infos()}]",
+                    frame=about_frame
+                )
+                is_authentic, txt_ca, txt_subca, txt_device, txt_error = self.controller.cc.card_verify_authenticity()
+                card_genuine = self.create_label(
+                    f"Genuine: YES" if is_authentic else "Genuine: NO",
+                    frame=about_frame
+                )
+            elif not self.controller.cc.setup_done:
+                watch_all = self.create_label("Card requires setup", frame=about_frame)
+                watch_all.place(relx=0.05, rely=0.17)
+                unlock_button = self.create_button(
+                    "Setup card",
+                    lambda: self.show_setup_card_frame(),
+                    frame=about_frame
+                )
+                unlock_button.configure(font=self.make_text_size_at(15))
+                unlock_button.place(relx= 0.55, rely=0.17)
+                card_label_named = self.create_label(f"Label: [UNKNOWN]", frame=about_frame)
+                card_genuine = self.create_label(f"Genuine: [UNKNOWN]", frame=about_frame)
+            else:
+                watch_all = self.create_label("PIN required to look at complete information", frame=about_frame)
+                watch_all.place(relx=0.05, rely=0.17)
+                unlock_button = self.create_button("Unlock", lambda: [unlock()], frame=about_frame)
+                unlock_button.configure(font=self.make_text_size_at(15))
+                unlock_button.place(relx=0.66, rely=0.17)
+                card_label_named = self.create_label(f"Label: [UNKNOWN]", frame=about_frame)
+                card_genuine = self.create_label(f"Genuine: [UNKNOWN]", frame=about_frame)
+
+            card_label_named.place(relx=0.05, rely=0.28)
+            applet_version.place(relx=0.05, rely=0.33)
+            card_genuine.place(relx=0.05, rely=0.38)
+
+            # card configuration
+            card_configuration = self.create_label("Card configuration", frame=about_frame)
+            card_configuration.place(relx=0.05, rely=0.48, anchor="w")
+            card_configuration.configure(font=self.make_text_bold())
+            if self.controller.cc.card_type != "Satodime":
+                pin_information = self.create_label(
+                    f"PIN counter:[{self.controller.card_status['PIN0_remaining_tries']}] tries remaining",
+                    frame = about_frame
+                )
+                pin_information.place(relx=0.05, rely=0.52)
+            else:
+                pin_information = self.create_label("No PIN required", frame=about_frame)
+                pin_information.place(relx=0.05, rely=0.52)
+
+            # for a next implementation of 2FA functionality you have the code below
+            if self.controller.cc.card_type == "Satochip":
+                two_FA = self.create_label(
+                    f"2FA enabled" if self.controller.cc.needs_2FA else f"2FA disabled",
+                    frame = about_frame
+                )
+                two_FA.place(relx=0.05, rely=0.58)
+                # if self.controller.cc.needs_2FA:
+                #     self.button_2FA = self.create_button("Disable 2FA", None)
+                # else:
+                #     self.button_2FA = self.create_button("Enable 2FA")
+                # self.button_2FA.configure(font=self.make_text_size_at(15), state='disabled')
+                # self.button_2FA.place(relx=0.5, rely=0.58)
+
+            # card connectivity
+            card_connectivity = self.create_label("Card connectivity", frame=about_frame)
+            card_connectivity.place(relx=0.05, rely=0.68, anchor="w")
+            card_connectivity.configure(font=self.make_text_bold())
+
+            if self.controller.cc.nfc_policy == 0:
+                nfc = self.create_label(f"NFC enabled", frame=about_frame)
+                #self.button_nfc = self.create_button("Disable NFC")
+            elif self.controller.cc.nfc_policy == 1:
+                nfc = self.create_label(f"NFC disabled:", frame=about_frame)
+                #self.button_nfc = self.create_button("Enable NFC")
+            else:
+                nfc = self.create_label(f"NFC: [BLOCKED]", frame=about_frame)
+            nfc.place(relx=0.05, rely=0.715)
+            #self.button_nfc.configure(font=self.make_text_size_at(15), state='disabled')
+            #self.button_nfc.place(relx=0.5, rely=0.71)
+
+            # software information
+            software_information = self.create_label("Software information", frame=about_frame)
+            software_information.place(relx=0.05, rely=0.81, anchor="w")
+            software_information.configure(font=self.make_text_bold())
+            app_version = self.create_label(f"Satochip-utils version: {VERSION}", frame=about_frame)
+            app_version.place(relx=0.05, rely=0.83)
+            pysatochip_version = self.create_label(f"Pysatochip version: {PYSATOCHIP_VERSION}", frame=about_frame)
+            pysatochip_version.place(relx=0.05, rely=0.88)
+            back_button = View.create_button(
+                self,
+                'Back',
+                lambda: self.show_start_frame(),
+                frame = about_frame
+            )
+            back_button.place(relx=0.8, rely=0.9, anchor="w")
+
+            return about_frame
+        except Exception as e:
+            logger.error(f"An error occurred while creating header: {e}", exc_info=True)
+
+    def about_old(self):
         # TODO: add reset seed button (for satochip only)
         # TODO: implement nfc enable/disable (depending on card & version)
         # TODO: implement 2FA disable/enable (only satochip)
@@ -1987,7 +2162,7 @@ class View(customtkinter.CTk):
                         except Exception as e:
                             self.show_start_frame()
                 self.update_status()
-                self.about()
+                self.about_old()
 
             # card infos
             card_information = self.create_label("Card information")
@@ -2094,10 +2269,15 @@ class View(customtkinter.CTk):
     #         raise MenuCreationError(f"006 Failed to create Seedkeeper menu: {e}") from e
 
     def show_seedkeeper_menu(self, state=None, frame=None):
-        self.hide_settings_menu()
+        logger.info("show_seedkeeper_menu start")
         if self.seedkeeper_menu_frame is None:
             self.seedkeeper_menu_frame = self.create_seedkeeper_menu(state, frame)
-        self.seedkeeper_menu_frame.place()
+        else:
+            logger.info("show_seedkeeper_menu seedkeeper_menu_frame is not None, show it")
+            self.settings_menu_frame.place_forget()
+            self.seedkeeper_menu_frame.place()
+            self.seedkeeper_menu_frame.tkraise()
+
 
     def hide_seedkeeper_menu(self):
         if self.seedkeeper_menu_frame is not None:
@@ -2180,7 +2360,7 @@ class View(customtkinter.CTk):
                 menu_frame, "Settings",
                 "settings.png" if self.controller.cc.card_present else "settings_locked.png",
                 0.74, 0.546, state=state,
-                command=self.about if self.controller.cc.card_present else None,
+                command=self.show_about_frame if self.controller.cc.card_present else None,
                 text_color="white" if self.controller.cc.card_present else "grey"
             )
             self.create_button_for_main_menu_item(

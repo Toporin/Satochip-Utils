@@ -99,6 +99,7 @@ class View(customtkinter.CTk):
             self.about_frame = None
             self.authenticity_frame = None
             self.edit_label_frame = None
+            self.change_pin_frame = None
 
             # Application state attributes
             # Status de l'application et de certains widgets
@@ -800,7 +801,7 @@ class View(customtkinter.CTk):
                     "Change Pin",
                     "change_pin.png",
                     0.33, 0.57,
-                    command=lambda: self.change_pin(),
+                    command=lambda: self.show_change_pin_frame(),
                     state='normal'
                 )
             else:
@@ -810,7 +811,7 @@ class View(customtkinter.CTk):
                     "Change Pin",
                     "change_pin_locked.jpg",
                     0.33, 0.57,
-                    command=lambda: self.change_pin(),
+                    command=lambda: self.show_change_pin_frame(),
                     state='disabled'
                 )
 
@@ -1562,6 +1563,104 @@ class View(customtkinter.CTk):
 
         except Exception as e:
             logger.error(f"An unexpected error occurred in setup_my_card_seed: {e}", exc_info=True)
+
+    def show_change_pin_frame(self):
+        if self.change_pin_frame is None:
+            self.change_pin_frame = self.create_change_pin_frame()
+        self.change_pin_frame.place()
+        self.change_pin_frame.tkraise()
+
+    def create_change_pin_frame(self):
+        try:
+            logger.info("IN View.create_change_pin_frame() start")
+
+            # Creating new frame
+            change_pin_frame = View.create_frame(self, width=750, height=600, frame=self.main_frame)
+            change_pin_frame.place(relx=1.0, rely=0.5, anchor="e")
+
+            # Creating main menu # todo?
+            #self.show_settings_menu()
+            #menu = self.create_settings_menu()
+            #menu.place(relx=0.250, rely=0.5, anchor="e")
+
+            # Creating header
+            self.header = View.create_an_header(
+                self, "Change PIN ", "change_pin_popup.jpg",
+                frame=change_pin_frame
+            )
+            self.header.place(relx=0.05, rely=0.05, anchor="nw")
+
+            #setup paragraph
+            text = View.create_label(
+                self,
+                "Change your personal PIN code. ",
+                frame=change_pin_frame
+            )
+            text.place(relx=0.05, rely=0.17, anchor="w")
+            text = View.create_label(
+                self,
+                "A PIN code must be between 4 and 16 characters.",
+                frame=change_pin_frame
+            )
+            text.place(relx=0.05, rely=0.22, anchor="w")
+            text = View.create_label(
+                self,
+                "You can use symbols, lower and upper cases, letters and numbers.",
+                frame=change_pin_frame
+            )
+            text.place(relx=0.05, rely=0.27, anchor="w")
+
+            # Setting up PIN entry fields
+            # input current PIN
+            current_pin_label = View.create_label(self, "Current PIN:", frame=change_pin_frame)
+            current_pin_label.configure(font=self.make_text_size_at(18))
+            current_pin_label.place(relx=0.05, rely=0.40, anchor="w")
+            current_pin_entry = View.create_entry(self, "*", frame=change_pin_frame)
+            self.after(100, current_pin_entry.focus_force)
+            current_pin_entry.place(relx=0.05, rely=0.45, anchor="w")
+
+            # input new PIN
+            new_pin_label = View.create_label(self, "New PIN code:", frame=change_pin_frame)
+            new_pin_label.configure(font=self.make_text_size_at(18))
+            new_pin_label.place(relx=0.05, rely=0.55, anchor="w")
+            new_pin_entry = View.create_entry(self, "*", frame=change_pin_frame)
+            new_pin_entry.place(relx=0.05, rely=0.60, anchor="w")
+
+            # confirm new PIN
+            confirm_new_pin_label = View.create_label(self, "Repeat new PIN code:", frame=change_pin_frame)
+            confirm_new_pin_label.configure(font=self.make_text_size_at(18))
+            confirm_new_pin_label.place(relx=0.05, rely=0.70, anchor="w")
+            confirm_new_pin_entry = View.create_entry(self, "*", frame=change_pin_frame)
+            confirm_new_pin_entry.place(relx=0.05, rely=0.75, anchor="w")
+
+            # Creating cancel and finish buttons
+            cancel_button = View.create_button(
+                self, "Cancel",
+                lambda: self.show_start_frame(),
+                frame=change_pin_frame
+            )
+            cancel_button.place(relx=0.6, rely=0.9, anchor="w")
+
+            # todo: check PIN format, show error msg
+            finish_button = View.create_button(
+                self, "Change it",
+                lambda: self.controller.change_card_pin(
+                    current_pin_entry.get(), new_pin_entry.get(), confirm_new_pin_entry.get()
+                ),
+                frame=change_pin_frame
+            )
+            finish_button.place(relx=0.8, rely=0.9, anchor="w")
+            self.bind('<Return>', lambda event: self.controller.change_card_pin(
+                current_pin_entry.get(),
+                new_pin_entry.get(),
+                confirm_new_pin_entry.get())
+            )
+
+            return change_pin_frame
+
+        except Exception as e:
+            logger.error(f"An unexpected error occurred in change_pin: {e}", exc_info=True)
+
 
     def change_pin(self):
         try:

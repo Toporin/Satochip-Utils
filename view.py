@@ -98,6 +98,7 @@ class View(customtkinter.CTk):
             self.setup_card_frame = None
             self.about_frame = None
             self.authenticity_frame = None
+            self.edit_label_frame = None
 
             # Application state attributes
             # Status de l'application et de certains widgets
@@ -819,7 +820,7 @@ class View(customtkinter.CTk):
                     "Edit Label",
                     "edit_label.png",
                     0.40, 0.546,
-                    command=lambda: [self.edit_label()], state='normal'
+                    command=lambda: [self.show_edit_label_frame()], state='normal'
                 )
             else:
                 self.create_button_for_main_menu_item(
@@ -1635,6 +1636,89 @@ class View(customtkinter.CTk):
 
         except Exception as e:
             logger.error(f"An unexpected error occurred in change_pin: {e}", exc_info=True)
+
+    def show_edit_label_frame(self):
+        # verify PIN
+        if self.controller.cc.card_type != "Satodime":
+            if self.controller.cc.is_pin_set():
+                self.controller.cc.card_verify_PIN_simple()
+            else:
+                self.controller.PIN_dialog(f'Unlock your {self.controller.cc.card_type}')
+
+        if self.edit_label_frame is None:
+            self.edit_label_frame = self.create_edit_label_frame()
+
+        self.edit_label_frame.place()
+        self.edit_label_frame.tkraise()
+
+    def create_edit_label_frame(self):
+        try:
+            logger.info("View.create_edit_label_frame() start")
+
+            # Creating new frame
+            edit_label_frame = View.create_frame(self, width=750, height=600, frame=self.main_frame)
+            edit_label_frame.place(relx=1.0, rely=0.5, anchor="e")
+
+            # Creating main menu # todo?
+            #self.show_settings_menu()
+
+            # Creating header
+            header = View.create_an_header(
+                self,
+                "Edit Label",
+                "edit_label_popup.jpg",
+                frame=edit_label_frame
+            )
+            header.place(relx=0.05, rely=0.05, anchor="nw")
+
+            # setup paragraph
+            text = View.create_label(
+                self,
+                f"Edit the label of your {self.controller.cc.card_type}.",
+                frame=edit_label_frame
+            )
+            text.place(relx=0.05, rely=0.17, anchor="w")
+            text = View.create_label(
+                self,
+                "The label is a tag that identifies your card. It can be used to distinguish ",
+                frame=edit_label_frame
+            )
+            text.place(relx=0.05, rely=0.22, anchor="w")
+            text = View.create_label(
+                self,
+                "several cards, or to associate it with a person, a name or a story.",
+                frame=edit_label_frame
+            )
+            text.place(relx=0.05, rely=0.27, anchor="w")
+
+            # Setting up label entry fields
+            edit_card_label = View.create_label(self, "Label :", frame=edit_label_frame)
+            edit_card_label.place(relx=0.05, rely=0.4, anchor="w")
+            edit_card_entry = View.create_entry(self, frame=edit_label_frame)
+            self.after(100, edit_card_entry.focus_force)
+            edit_card_entry.place(relx=0.05, rely=0.45, anchor="w")
+
+            # Creating cancel and finish buttons
+            cancel_button = View.create_button(
+                self, "Cancel",
+                lambda: self.show_start_frame(),
+                frame=edit_label_frame
+            )
+            cancel_button.place(relx=0.6, rely=0.9, anchor="w")
+
+            finish_button = View.create_button(
+                self, "Change it",
+                lambda: self.controller.edit_label(edit_card_entry.get()),
+                frame=edit_label_frame
+            )
+            finish_button.place(relx=0.8, rely=0.9, anchor="w")
+            self.bind('<Return>', lambda event: self.controller.edit_label(edit_card_entry.get()))
+
+            return edit_label_frame
+
+        except Exception as e:
+            logger.error(f"An unexpected error occurred in edit_label: {e}", exc_info=True)
+
 
     def edit_label(self):
         try:

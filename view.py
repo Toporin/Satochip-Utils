@@ -561,10 +561,11 @@ class View(customtkinter.CTk):
             compound="left",
             cursor="hand2",
             command=command,
-            state=state
+            state=state,
+            anchor="w"
         )
         #button.image = photo_image  # keep a reference!
-        button.place(rely=rel_y, relx=rel_x, anchor="e") # todo use w anchor and revise relatives coordinates
+        button.place(rely=rel_y, relx=rel_x, anchor="w")
 
         return button
 
@@ -763,9 +764,9 @@ class View(customtkinter.CTk):
                     logger.info("Setup not done, enabling 'Setup My Card' button")
                     self.create_button_for_main_menu_item(
                         menu_frame,
-                        "Setup My Card",
+                        "Setup my card",
                         "setup_my_card.png",
-                        0.26, 0.60,
+                        0.26, 0.05,
                         #command=lambda: self.setup_my_card_pin(),
                         command=lambda: self.show_setup_card_frame(),
                         state='normal'
@@ -778,7 +779,7 @@ class View(customtkinter.CTk):
                             menu_frame,
                             "Setup Seed",
                             "seed.png",
-                            0.26, 0.575,
+                            0.26, 0.05,
                             command=lambda: self.show_seed_import_frame(), state='normal'
                         )
                     else:
@@ -787,7 +788,7 @@ class View(customtkinter.CTk):
                             menu_frame,
                             "Setup Done" if self.controller.cc.card_present else 'Insert Card',
                             "setup_done.jpg" if self.controller.cc.card_present else "insert_card.jpg",
-                            0.26, 0.575 if self.controller.cc.card_present else 0.595,
+                            0.26, 0.05,
                             command=lambda: None, state='disabled'
                         )
             else:
@@ -796,7 +797,7 @@ class View(customtkinter.CTk):
                     menu_frame,
                     "Insert a Card",
                     "insert_card.jpg",
-                    0.26, 0.585,
+                    0.26, 0.05,
                     command=lambda: None, state='normal'
                 )
 
@@ -806,7 +807,7 @@ class View(customtkinter.CTk):
                     menu_frame,
                     "Change Pin",
                     "change_pin.png",
-                    0.33, 0.57,
+                    0.33, 0.05,
                     command=lambda: self.show_change_pin_frame(),
                     state='normal'
                 )
@@ -816,7 +817,7 @@ class View(customtkinter.CTk):
                     menu_frame,
                     "Change Pin",
                     "change_pin_locked.jpg",
-                    0.33, 0.57,
+                    0.33, 0.05,
                     command=lambda: self.show_change_pin_frame(),
                     state='disabled'
                 )
@@ -826,7 +827,7 @@ class View(customtkinter.CTk):
                     menu_frame,
                     "Edit Label",
                     "edit_label.png",
-                    0.40, 0.546,
+                    0.40, 0.05,
                     command=lambda: [self.show_edit_label_frame()], state='normal'
                 )
             else:
@@ -834,7 +835,7 @@ class View(customtkinter.CTk):
                     menu_frame,
                     "Edit Label",
                     "edit_label_locked.jpg",
-                    0.40, 0.546,
+                    0.40, 0.05,
                     command=lambda: self.edit_label(), state='disabled'
                 )
 
@@ -851,7 +852,7 @@ class View(customtkinter.CTk):
                     menu_frame,
                     "Check Authenticity",
                     "auth.png",
-                    0.47, 0.66,
+                    0.47, 0.05,
                     command=lambda: self.show_check_authenticity_frame(), state='normal'
                 )
             else:
@@ -859,7 +860,7 @@ class View(customtkinter.CTk):
                     menu_frame,
                     "Check Authenticity",
                     "check_authenticity_locked.jpg",
-                    0.47, 0.66,
+                    0.47, 0.05,
                     command=lambda: self.check_authenticity(), state='disabled'
                 )
             if self.controller.cc.card_present:
@@ -868,7 +869,7 @@ class View(customtkinter.CTk):
                         menu_frame,
                         "Reset my Card",
                         "reset.png",
-                        0.54, 0.595,
+                        0.54, 0.05,
                         command=lambda: self.reset_my_card_window(), state='normal'
                     )
                 else:
@@ -877,14 +878,15 @@ class View(customtkinter.CTk):
                         menu_frame,
                         "Reset my Card",
                         "reset_locked.jpg",
-                        0.54, 0.595,
+                        0.54, 0.05,
                         command=lambda: None, state='disabled'
                     )
+
                 self.create_button_for_main_menu_item(
                     menu_frame,
                     "About",
                     "about.jpg",
-                    rel_y=0.73, rel_x=0.5052,
+                    0.73, 0.05,
                     command=lambda: self.show_about_frame(),
                     state='normal'
                 )
@@ -893,14 +895,14 @@ class View(customtkinter.CTk):
                     menu_frame,
                     "Reset my Card",
                     "reset_locked.jpg",
-                    0.54, 0.595,
+                    0.54, 0.05,
                     command=lambda: None, state='disabled'
                 )
                 self.create_button_for_main_menu_item(
                     menu_frame,
                     "About",
                     "about_locked.jpg",
-                    rel_y=0.73, rel_x=0.5052,
+                    0.73, 0.05,
                     command=lambda: self.show_about_frame(),
                     state='disabled'
                 )
@@ -909,7 +911,7 @@ class View(customtkinter.CTk):
                 menu_frame,
                 "Go to the Webshop",
                 "webshop.png",
-                0.95, 0.67,
+                0.95, 0.05,
                 command=lambda: webbrowser.open("https://satochip.io/shop/", new=2), state='normal'
             )
 
@@ -1118,7 +1120,7 @@ class View(customtkinter.CTk):
             # Creating and placing the button
             button = self.create_button(
                 button_label,
-                command=lambda: [self.show_start_frame()],
+                command=lambda: [welcome_frame.place_forget(), self.show_start_frame()],
                 frame=welcome_frame
             )
             self.after(2500, button.place(relx=0.85, rely=0.93, anchor="center"))
@@ -1133,7 +1135,7 @@ class View(customtkinter.CTk):
     '''Start frame'''
 
     def show_start_frame(self):
-        self.welcome_frame.place_forget()
+        #self.welcome_frame.place_forget()
         if self.start_frame is None:
             self.create_start_frame()
         else:
@@ -2571,9 +2573,6 @@ class View(customtkinter.CTk):
 
         try:
             logger.info("IN View.create_about_frame() start")
-            frame_name = "edit_label"
-            cancel_button = "Cancel"
-            finish_button = "Finish"
 
             # Creating new frame
             about_frame = View.create_frame(self, width=750, height=600, frame=self.main_frame)
@@ -2581,12 +2580,6 @@ class View(customtkinter.CTk):
 
             # show settings menu on the left
             self.show_settings_menu()
-
-            # Creating header
-            self.header = View.create_an_header(
-                self, "About", "about_popup.jpg", frame=about_frame
-            )
-            self.header.place(relx=0.05, rely=0.05, anchor="nw")
 
             self.background_photo = View.create_background_photo("./pictures_db/about_background.png")
             self.canvas = View.create_canvas(self, frame=about_frame)
@@ -2605,6 +2598,12 @@ class View(customtkinter.CTk):
                 self.update_verify_pin()
                 self.update_status()
                 self.show_about_frame()
+
+            # Creating header
+            header = View.create_an_header(
+                self, "About", "about_popup.jpg", frame=about_frame
+            )
+            header.place(relx=0.05, rely=0.05, anchor="nw")
 
             # card infos
             card_information = self.create_label("Card information", frame=about_frame)
@@ -2898,18 +2897,15 @@ class View(customtkinter.CTk):
                 logger.info(
                     f"003 Card {'detected' if state == 'normal' else 'undetected'}, setting state to {state}")
 
-            if frame is None:
-                frame = self.main_frame #self.current_frame #self.main_frame
-
             # menu_frame = customtkinter.CTkFrame(self.main_frame, width=250, height=600,
             #                                     bg_color=BG_MAIN_MENU,
             #                                     fg_color=BG_MAIN_MENU, corner_radius=0, border_color="black",
             #                                     border_width=0)
-            menu_frame = customtkinter.CTkFrame(frame, width=250, height=600,
+            menu_frame = customtkinter.CTkFrame(self.main_frame, width=250, height=600,
                                                 bg_color=BG_MAIN_MENU,
                                                 fg_color=BG_MAIN_MENU, corner_radius=0, border_color="black",
                                                 border_width=0)
-            logger.debug("004 Main menu frame created")
+            menu_frame.place(relx=0.250, rely=0.5, anchor="e")
 
             # Logo section
             image_frame = customtkinter.CTkFrame(menu_frame, bg_color=BG_MAIN_MENU, fg_color=BG_MAIN_MENU,
@@ -2922,58 +2918,61 @@ class View(customtkinter.CTk):
             canvas.pack(fill="both", expand=True)
             canvas.create_image(142, 63, image=logo_photo, anchor="center")
             canvas.image = logo_photo  # conserver une référence
-            logger.debug("005 Logo section created")
 
             # Menu items
             self.create_button_for_main_menu_item(
                 menu_frame,
                 "My secrets", #if self.controller.cc.card_present else "Insert card",
                 "secrets.png", #if self.controller.cc.card_present else "insert_card.jpg", # todo grey icon if no card
-                0.26, 0.585 if self.controller.cc.card_present else 0.578,
+                0.26, 0.05,
                 state=state,
                 command=self.show_view_my_secrets if self.controller.cc.card_present else None,
                 text_color="white" if self.controller.cc.card_present else "grey"
             )
+
             self.create_button_for_main_menu_item(
                 menu_frame, "Generate",
                 "generate.png" if self.controller.cc.card_present else "generate_locked.png",
-                0.33, 0.56, state=state,
+                0.33, 0.05, state=state,
                 command=self.show_view_generate_secret if self.controller.cc.card_present else None,
                 text_color="white" if self.controller.cc.card_present else "grey"
             )
+
             self.create_button_for_main_menu_item(
                 menu_frame, "Import",
                 "import.png" if self.controller.cc.card_present else "import_locked.png",
-                0.40, 0.51, state=state,
+                0.40, 0.05, state=state,
                 command=self.show_view_import_secret if self.controller.cc.card_present else None,
                 text_color="white" if self.controller.cc.card_present else "grey"
             )
+
             self.create_button_for_main_menu_item(
                 menu_frame, "Logs",
                 "logs.png" if self.controller.cc.card_present else "settings_locked.png", # todo icon when locked
-                0.47, 0.49, state=state,
+                0.47, 0.05, state=state,
                 command=self.show_view_logs if self.controller.cc.card_present else None,
                 text_color="white" if self.controller.cc.card_present else "grey"
             )
+
             self.create_button_for_main_menu_item(
                 menu_frame, "Settings",
                 "settings.png" if self.controller.cc.card_present else "settings_locked.png",
-                0.74, 0.546, state=state,
+                0.74, 0.05, state=state,
                 command=self.show_about_frame if self.controller.cc.card_present else None,
                 text_color="white" if self.controller.cc.card_present else "grey"
             )
+
             self.create_button_for_main_menu_item(
                 menu_frame, "Help", "help.png",
-                0.81, 0.49, state='normal',
+                0.81, 0.05, state='normal',
                 command=self.show_view_help, text_color="white"
             )
+
             self.create_button_for_main_menu_item(
                 menu_frame, "Go to the webshop", "webshop.png",
-                0.95, 0.82, state='normal',
+                0.95, 0.05, state='normal',
                 command=lambda: webbrowser.open("https://satochip.io/shop/",new=2)
             )
-
-            menu_frame.place(relx=0.250, rely=0.5, anchor="e")
 
             return menu_frame
         except Exception as e:

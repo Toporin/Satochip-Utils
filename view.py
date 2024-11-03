@@ -100,6 +100,7 @@ class View(customtkinter.CTk):
             self.authenticity_frame = None
             self.edit_label_frame = None
             self.change_pin_frame = None
+            self.seed_import_frame = None
 
             # Application state attributes
             # Status de l'application et de certains widgets
@@ -735,19 +736,23 @@ class View(customtkinter.CTk):
                 frame = self.main_frame #self.current_frame #self.main_frame
 
             menu_frame = customtkinter.CTkFrame(
-                self.current_frame, width=250, height=600,
+                self.main_frame, width=250, height=600,
                 bg_color=MAIN_MENU_COLOR, fg_color=MAIN_MENU_COLOR,
                 corner_radius=0, border_color="black", border_width=0
             )
 
             # Logo section
-            image_frame = customtkinter.CTkFrame(menu_frame, bg_color=MAIN_MENU_COLOR, fg_color=MAIN_MENU_COLOR,
-                                                 width=284, height=126)
+            image_frame = customtkinter.CTkFrame(
+                menu_frame, bg_color=MAIN_MENU_COLOR, fg_color=MAIN_MENU_COLOR,
+                width=284, height=126
+            )
             image_frame.place(rely=0, relx=0.5, anchor="n")
             logo_image = Image.open("./pictures_db/logo.png")
             logo_photo = ImageTk.PhotoImage(logo_image)
-            canvas = customtkinter.CTkCanvas(image_frame, width=284, height=127, bg=MAIN_MENU_COLOR,
-                                             highlightthickness=0)
+            canvas = customtkinter.CTkCanvas(
+                image_frame, width=284, height=127, bg=MAIN_MENU_COLOR,
+                highlightthickness=0
+            )
             canvas.pack(fill="both", expand=True)
             canvas.create_image(142, 63, image=logo_photo, anchor="center")
             canvas.image = logo_photo  # conserver une référence
@@ -766,14 +771,15 @@ class View(customtkinter.CTk):
                         state='normal'
                     )
                 else:
-                    if not self.controller.cc.is_seeded and self.controller.cc.card_type != "Satodime":
+                    if self.controller.cc.card_type == "Satochip" and not self.controller.cc.is_seeded:
+                    #if self.controller.cc.card_type == "Satochip": #DEBUG: should check is_seeded flag!!
                         logger.info("Card not seeded, enabling 'Setup Seed' button")
                         self.create_button_for_main_menu_item(
                             menu_frame,
                             "Setup Seed",
                             "seed.png",
                             0.26, 0.575,
-                            command=lambda: self.setup_my_card_seed(), state='normal'
+                            command=lambda: self.show_seed_import_frame(), state='normal'
                         )
                     else:
                         logger.info("Setup completed, disabling 'Setup Done' button")
@@ -971,7 +977,14 @@ class View(customtkinter.CTk):
         except Exception as e:
             logger.error(f"An unexpected error occurred in update_status method: {e}", exc_info=True)
 
-    def get_passphrase(self, msg):
+    def update_verify_pin(self):
+        if self.controller.cc.card_type != "Satodime":
+            if self.controller.cc.is_pin_set():
+                self.controller.cc.card_verify_PIN_simple()
+            else:
+                self.controller.PIN_dialog(f'Unlock your {self.controller.cc.card_type}')
+
+    def get_passphrase(self, msg): #todo rename
         try:
             logger.info("View.get_passphrase() start")
 
@@ -1349,7 +1362,242 @@ class View(customtkinter.CTk):
         except Exception as e:
             logger.error(f"An unexpected error occurred in setup_my_card_pin: {e}", exc_info=True)
 
-    # only for satochip card
+    def show_seed_import_frame(self):
+        if self.seed_import_frame is None:
+            self.seed_import_frame = self.create_seed_import_frame()
+        else:
+            self.seed_import_frame.place()
+            self.seed_import_frame.tkraise()
+
+    def create_seed_import_frame(self):
+        try:
+            # Creating new frame
+            seed_import_frame = View.create_frame(self, width=750, height=600, frame=self.main_frame)
+            seed_import_frame.place(relx=1.0, rely=0.5, anchor="e")
+
+            # Creating main menu # todo remove?
+            #self.show_settings_menu()
+
+            # Creating header
+            header = View.create_an_header(
+                self, "Seed My Card", "seed_popup.jpg",
+                frame=seed_import_frame
+            )
+            header.place(relx=0.05, rely=0.05, anchor="nw")
+
+            # setup paragraph
+            text = View.create_label(
+                self,
+                "Set up your Satochip hardware wallet as a new device to get started.",
+                frame=seed_import_frame
+            )
+            text.place(relx=0.05, rely=0.17, anchor="w")
+            text = View.create_label(
+                self,
+                "Import or generate a new mnemonic seedphrase and generate new",
+                frame=seed_import_frame
+            )
+            text.place(relx=0.05, rely=0.22, anchor="w")
+            text = View.create_label(
+                self,
+                "private keys that will be stored within the chip memory.",
+                frame=seed_import_frame
+            )
+            text.place(relx=0.05, rely=0.27, anchor="w")
+
+            radio_value = customtkinter.StringVar(value="")
+            value_checkbox_passphrase = customtkinter.StringVar(value="off")
+            radio_value_mnemonic = customtkinter.StringVar(value="")
+            generate_with_passphrase = False  # use a passphrase?
+            logger.debug(
+                f"Settings radio_value: {radio_value}, generate_with_passphrase: {generate_with_passphrase}")
+
+            def on_text_box_click(event):
+                if text_box.get("1.0", "end-1c") == "Type your existing seedphrase here":
+                    text_box.delete("1.0", "end")
+
+            def update_radio_mnemonic_length():
+                if radio_value_mnemonic.get() == "generate_12":
+                    mnemonic_length = 12
+                elif radio_value_mnemonic.get() == "generate_24":
+                    mnemonic_length = 24
+
+                mnemonic = self.controller.generate_random_seed(mnemonic_length)
+                self.update_textbox(text_box, mnemonic)
+                #self.update_textbox_old(mnemonic)
+
+            def update_radio_selection():
+                nonlocal generate_with_passphrase
+                self.import_seed = False # todo
+
+                if radio_value.get() == "import":
+                    self.import_seed = True
+                    logger.debug("Import seed")
+                    #self.cancel_button.place_forget()
+                    finish_button.place(relx=0.8, rely=0.9, anchor="w")
+                    cancel_button.place(relx=0.6, rely=0.9, anchor="w")
+                    radio_button_generate_seed.place_forget()
+                    radio_button_import_seed.place_forget()
+                    radio_button_generate_12_words.place_forget()
+                    radio_button_generate_24_words.place_forget()
+                    passphrase_entry.place_forget()
+                    text_box.place_forget()
+                    warning_label.place_forget()
+                    radio_button_import_seed.place(relx=0.05, rely=0.35, anchor="w")
+                    text_box.delete(1.0, "end")
+                    text_box.configure(width=550, height=80)
+                    text_box.insert(text="Type your existing seedphrase here", index=1.0)
+                    text_box.bind("<FocusIn>", on_text_box_click)
+                    text_box.place(relx=0.13, rely=0.45, anchor="w")
+                    checkbox_passphrase.place(relx=0.13, rely=0.58, anchor="w")
+                    radio_button_generate_seed.place(relx=0.05, rely=0.75, anchor="w")
+
+                elif radio_value.get() == "generate":
+                    self.import_seed = False
+                    logger.debug("Generate seed")
+                    cancel_button.place_forget()
+                    finish_button.place(relx=0.8, rely=0.9, anchor="w")
+                    cancel_button.place(relx=0.6, rely=0.9, anchor="w")
+                    radio_button_import_seed.place_forget()
+                    radio_button_generate_seed.place_forget()
+                    checkbox_passphrase.place_forget()
+                    passphrase_entry.place_forget()
+                    text_box.delete(1.0, "end")
+                    text_box.place_forget()
+                    warning_label.place_forget()
+                    radio_button_import_seed.place(relx=0.05, rely=0.35, anchor="w")
+                    radio_button_generate_seed.place(relx=0.05, rely=0.41, anchor="w")
+                    radio_button_generate_12_words.place(relx=0.17, rely=0.47, anchor="w")
+                    radio_button_generate_24_words.place(relx=0.37, rely=0.47, anchor="w")
+                    text_box.configure(width=550, height=80)
+                    text_box.place(relx=0.16, rely=0.56, anchor="w")
+                    warning_label.place(relx=0.36, rely=0.64, anchor="w")
+                    checkbox_passphrase.place(relx=0.17, rely=0.70, anchor="w")
+
+            def update_checkbox_passphrase():
+                nonlocal generate_with_passphrase
+                if radio_value.get() == "import":
+                    if value_checkbox_passphrase.get() == "on":
+                        logger.debug("Generate seed with passphrase")
+                        generate_with_passphrase = True
+                        passphrase_entry.place_forget()
+                        passphrase_entry.place(relx=0.13, rely=0.65, anchor="w")
+                        passphrase_entry.configure(placeholder_text="Type your passphrase here")
+                    else:
+                        generate_with_passphrase = False
+                        passphrase_entry.place_forget()
+
+                elif radio_value.get() == "generate":
+                    if value_checkbox_passphrase.get() == "on":
+                        logger.debug("Generate seed with passphrase")
+                        generate_with_passphrase = True
+                        passphrase_entry.place_forget()
+                        passphrase_entry.place(relx=0.16, rely=0.76, anchor="w")
+                        passphrase_entry.configure(placeholder_text="Type your passphrase here")
+                    else:
+                        generate_with_passphrase = False
+                        passphrase_entry.place_forget()
+
+            # def update_verify_pin(): # todo move one level up
+            #     if self.controller.cc.is_pin_set():
+            #         self.controller.cc.card_verify_PIN_simple()
+            #     else:
+            #         self.controller.PIN_dialog(f'Unlock your {self.controller.cc.card_type}')
+
+            # Setting up radio buttons and entry fields
+            radio_button_import_seed = customtkinter.CTkRadioButton(
+                seed_import_frame,
+                text="I already have a seedphrase",
+                variable=radio_value, value="import",
+                font=customtkinter.CTkFont(family="Outfit", size=14, weight="normal"),
+                bg_color="whitesmoke", fg_color="green", hover_color="green",
+                command=update_radio_selection
+            )
+            radio_button_import_seed.place(relx=0.05, rely=0.35, anchor="w")
+
+            radio_button_generate_seed = customtkinter.CTkRadioButton(
+                seed_import_frame,
+                text="I want to generate a new seedphrase",
+                variable=radio_value, value="generate",
+                font=customtkinter.CTkFont(family="Outfit", size=14, weight="normal"),
+                bg_color="whitesmoke", fg_color="green",
+                hover_color="green",
+                command=update_radio_selection,
+            )
+            radio_button_generate_seed.place(relx=0.05, rely=0.42, anchor="w")
+
+            radio_button_generate_12_words = customtkinter.CTkRadioButton(
+                seed_import_frame,
+                text="12 words",
+                variable=radio_value_mnemonic,
+                value="generate_12",
+                font=customtkinter.CTkFont(family="Outfit", size=14, weight="normal"),
+                bg_color="whitesmoke", fg_color="green",
+                hover_color="green",
+                command=update_radio_mnemonic_length
+            )
+            radio_button_generate_24_words = customtkinter.CTkRadioButton(
+                seed_import_frame,
+                text="24 words",
+                variable=radio_value_mnemonic,
+                value="generate_24",
+                font=customtkinter.CTkFont(family="Outfit", size=14, weight="normal"),
+                bg_color="whitesmoke", fg_color="green",
+                hover_color="green",
+                command=update_radio_mnemonic_length
+            )
+
+            checkbox_passphrase = customtkinter.CTkCheckBox(
+                seed_import_frame,
+                text="Use a passphrase (optional)",
+                command=update_checkbox_passphrase,
+                variable=value_checkbox_passphrase,
+                onvalue="on",
+                offvalue="off")
+
+            passphrase_entry = View.create_entry(self, frame=seed_import_frame)
+
+            text_box = customtkinter.CTkTextbox(
+                seed_import_frame, corner_radius=20,
+                bg_color="whitesmoke", fg_color=BUTTON_COLOR,
+                border_color=BUTTON_COLOR, border_width=1,
+                width=557, height=83,
+                text_color="grey",
+                font=customtkinter.CTkFont(family="Outfit", size=13,weight="normal")
+            )
+
+            warning_label = customtkinter.CTkLabel(
+                seed_import_frame,
+                text="Your mnemonic is important, be sure to save it in a safe place!",
+                text_color="red",
+                font=customtkinter.CTkFont(family="Outfit", size=12, weight="normal")
+            )
+
+            cancel_button = View.create_button(
+                self, "Back",
+                command=lambda: self.show_start_frame(),
+                frame=seed_import_frame
+            )
+            cancel_button.place(relx=0.8, rely=0.9, anchor="w")
+
+            finish_button = View.create_button(  # will be placed after mnemonic is generated
+                self, "Import",
+                command=lambda: [
+                    self.update_verify_pin(),
+                    self.controller.import_seed(
+                        text_box.get(1.0, "end-1c"),
+                        passphrase_entry.get() if generate_with_passphrase else None,
+                    )
+                ],
+                frame=seed_import_frame
+            )
+
+            return seed_import_frame
+
+        except Exception as e:
+            logger.error(f"An unexpected error occurred in create_seed_import_frame: {e}", exc_info=True)
+
+    # only for satochip card # todo remove
     def setup_my_card_seed(self):
         frame_name = "setup_my_card_seed"
         try:
@@ -1661,7 +1909,7 @@ class View(customtkinter.CTk):
         except Exception as e:
             logger.error(f"An unexpected error occurred in change_pin: {e}", exc_info=True)
 
-
+    #todo remove
     def change_pin(self):
         try:
             logger.info("IN View.change_pin() | Entering change_pin method")
@@ -1738,11 +1986,7 @@ class View(customtkinter.CTk):
 
     def show_edit_label_frame(self):
         # verify PIN
-        if self.controller.cc.card_type != "Satodime":
-            if self.controller.cc.is_pin_set():
-                self.controller.cc.card_verify_PIN_simple()
-            else:
-                self.controller.PIN_dialog(f'Unlock your {self.controller.cc.card_type}')
+        self.update_verify_pin()
 
         if self.edit_label_frame is None:
             self.edit_label_frame = self.create_edit_label_frame()
@@ -1818,7 +2062,7 @@ class View(customtkinter.CTk):
         except Exception as e:
             logger.error(f"An unexpected error occurred in edit_label: {e}", exc_info=True)
 
-
+    # todo remove
     def edit_label(self):
         try:
             logger.info("View.edit_label() start")
@@ -1892,11 +2136,7 @@ class View(customtkinter.CTk):
 
     def show_check_authenticity_frame(self):
         # verify PIN
-        if self.controller.cc.card_type != "Satodime":
-            if self.controller.cc.is_pin_set():
-                self.controller.cc.card_verify_PIN_simple()
-            else:
-                self.controller.PIN_dialog(f'Unlock your {self.controller.cc.card_type}')
+        self.update_verify_pin()
 
         if self.authenticity_frame is None:
             self.authenticity_frame = self.create_check_authenticity_frame()
@@ -2321,7 +2561,7 @@ class View(customtkinter.CTk):
         else:
             logger.info("show_about_frame self.about_frame is not None, placing it...")
             self.about_frame.tkraise()
-            self.seedkeeper_menu_frame.place_forget()
+            #self.seedkeeper_menu_frame.place_forget() # warn: seedkeeper_menu_frame may be None
             self.settings_menu_frame.tkraise()
 
     def create_about_frame(self):
@@ -2354,14 +2594,15 @@ class View(customtkinter.CTk):
             self.canvas.create_image(0, 0, image=self.background_photo, anchor="nw")
 
             def unlock():
-                if self.controller.cc.card_type != "Satodime":
-                    if self.controller.cc.is_pin_set():
-                        self.controller.cc.card_verify_PIN_simple()
-                    else:
-                        try:
-                            self.controller.PIN_dialog(f'Unlock your {self.controller.cc.card_type}')
-                        except Exception as e:
-                            self.show_start_frame()
+                # if self.controller.cc.card_type != "Satodime":
+                #     if self.controller.cc.is_pin_set():
+                #         self.controller.cc.card_verify_PIN_simple()
+                #     else:
+                #         try:
+                #             self.controller.PIN_dialog(f'Unlock your {self.controller.cc.card_type}')
+                #         except Exception as e:
+                #             self.show_start_frame()
+                self.update_verify_pin()
                 self.update_status()
                 self.show_about_frame()
 
@@ -2766,10 +3007,11 @@ class View(customtkinter.CTk):
             self._clear_current_frame()
 
             # verify PIN
-            if self.controller.cc.is_pin_set():
-                self.controller.cc.card_verify_PIN_simple()
-            else:
-                self.controller.PIN_dialog(f'Unlock your {self.controller.cc.card_type}')
+            self.update_verify_pin()
+            # if self.controller.cc.is_pin_set():
+            #     self.controller.cc.card_verify_PIN_simple()
+            # else:
+            #     self.controller.PIN_dialog(f'Unlock your {self.controller.cc.card_type}')
 
             secrets_data = self.controller.retrieve_secrets_stored_into_the_card()
             logger.debug(f"Fetched {len(secrets_data['headers'])} headers")

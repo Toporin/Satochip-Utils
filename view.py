@@ -16,6 +16,8 @@ from pysatochip.version import PYSATOCHIP_VERSION
 from controller import Controller
 from exceptions import MenuCreationError, MenuDeletionError, ViewError, ButtonCreationError, FrameClearingError, \
     FrameCreationError, HeaderCreationError, UIElementError, SecretFrameCreationError, ControllerError
+from frameMenuSettings import FrameMenuSettings
+from frameWelcome import FrameWelcome
 from log_config import SUCCESS, log_method
 from version import VERSION
 
@@ -123,7 +125,8 @@ class View(customtkinter.CTk):
             self.password_text_box: Optional[customtkinter.CTkTextbox] = None
 
             # Launching initialization starting with welcome view
-            self.welcome_frame = self.create_welcome_frame()
+            #self.welcome_frame = self.create_welcome_frame()
+            self.welcome_frame = FrameWelcome(self)
             self.protocol("WM_DELETE_WINDOW", lambda: [self.on_close()])
 
         except Exception as e:
@@ -296,6 +299,12 @@ class View(customtkinter.CTk):
             logger.error(f"Unexpected error in _clear_welcome_frame: {e}", exc_info=True)
             raise FrameClearingError(f"009 Unexpected error during welcome frame clearing: {e}") from e
 
+    def convert_icon_name_to_photo_image(self, filename):
+        icon_path = f"{ICON_PATH}{filename}"
+        image = Image.open(icon_path)
+        image = image.resize((25, 25), Image.LANCZOS)
+        photo_image = customtkinter.CTkImage(image)
+        return photo_image
 
     @staticmethod
     def make_text_bold(size=18):
@@ -721,8 +730,12 @@ class View(customtkinter.CTk):
     """ MAIN MENU """
 
     def show_settings_menu(self, state=None, frame=None):
+        # if self.settings_menu_frame is None:
+        #     self.settings_menu_frame = self.create_settings_menu(state, frame)
+        # self.settings_menu_frame.tkraise()
         if self.settings_menu_frame is None:
-            self.settings_menu_frame = self.create_settings_menu(state, frame)
+            self.settings_menu_frame = FrameMenuSettings(self)
+        self.settings_menu_frame.update()
         self.settings_menu_frame.tkraise()
 
     def hide_settings_menu(self):
@@ -978,6 +991,10 @@ class View(customtkinter.CTk):
 
                 else: # isConnected is None
                     pass
+
+            # update menu settings
+            if self.settings_menu_frame is not None:
+                self.settings_menu_frame.update()
 
         except Exception as e:
             logger.error(f"An unexpected error occurred in update_status method: {e}", exc_info=True)

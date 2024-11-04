@@ -106,6 +106,9 @@ class View(customtkinter.CTk):
             self.factory_reset_frame = None
             # seedkeeper frames
 
+            # widgets (todo: clean)
+            self.show_button = None
+
 
             # Application state attributes
             # Status de l'application et de certains widgets
@@ -701,19 +704,14 @@ class View(customtkinter.CTk):
                     popup.destroy()
 
             # Ajout d'un bouton pour fermer le popup
-            self.show_button = customtkinter.CTkButton(popup, text=button_txt, fg_color=MAIN_MENU_COLOR,
-                                                       hover_color=HOVER_COLOR,
-                                                       bg_color='whitesmoke',
-                                                       width=120, height=35, corner_radius=34,
-                                                       font=customtkinter.CTkFont(family="Outfit",
-                                                                                  size=18,
-                                                                                  weight="normal"),
-                                                       command=lambda: close_show())
+            self.show_button = customtkinter.CTkButton(
+                popup, text=button_txt, fg_color=MAIN_MENU_COLOR,
+                hover_color=HOVER_COLOR, bg_color='whitesmoke',
+                width=120, height=35, corner_radius=34,
+                font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal"),
+                command=lambda: close_show()
+            )
             self.show_button.pack(pady=20)
-
-            logger.debug("Button added to popup")
-
-            logger.debug("Exiting show method successfully")
 
         except Exception as e:
             logger.error(f"An error occurred in show: {e}", exc_info=True)
@@ -2439,6 +2437,7 @@ class View(customtkinter.CTk):
             logger.info(f"card_reset_factory response: {hex(256 * sw1 + sw2)}")
             if sw1 == 0xFF and sw2 == 0x00:
                 logger.info("Factory reset successful. Disconnecting the card.")
+                self.controller.cc.set_mode_factory_reset(False)
                 self.controller.cc.card_disconnect()
                 msg = 'The card has been reset to factory\nRemaining counter: 0'
                 self.show('SUCCESS', msg, "Ok", lambda: self.restart_app(),

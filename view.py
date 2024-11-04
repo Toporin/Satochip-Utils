@@ -1143,7 +1143,10 @@ class View(customtkinter.CTk):
             self.create_start_frame()
         else:
             self.start_frame.tkraise()
-            # update
+            # update frame
+
+
+            # update menu
             if self.controller.cc.card_type == "SeedKeeper":
                 self.show_seedkeeper_menu()
             else:
@@ -1165,7 +1168,6 @@ class View(customtkinter.CTk):
             self.start_frame = View.create_frame(self, width=750, height=600)
             self.start_frame.place(relx=1, rely=0.5, anchor="e")
 
-
             # Loading background photo
             if self.controller.cc.card_present:
                 logger.info(f"card type: {self.controller.cc.card_type}")
@@ -1184,14 +1186,13 @@ class View(customtkinter.CTk):
 
             #self.canvas = self.create_canvas(frame=self.start_frame)
             #self.canvas.place(relx=0.250, rely=0.501, anchor="w")
-            self.canvas = self.create_canvas(width=750, height=600, frame=self.start_frame)
-            self.canvas.place(relx=0.0, rely=0.5, anchor="w")
-            self.canvas.create_image(0, 0, image=self.background_photo, anchor="nw")
+            canvas = self.create_canvas(width=750, height=600, frame=self.start_frame)
+            canvas.place(relx=0.0, rely=0.5, anchor="w")
+            canvas.create_image(0, 0, image=self.background_photo, anchor="nw")
 
             # Creating header
-            self.header = View.create_an_header(self, "Welcome", "home_popup.jpg", frame=self.start_frame)
-            #self.header.place(relx=0.32, rely=0.05, anchor="nw")  # todo: update rely to 0.05 instead of 0.08
-            self.header.place(relx=0.05, rely=0.05, anchor="nw")
+            header = View.create_an_header(self, "Welcome", "home_popup.jpg", frame=self.start_frame)
+            header.place(relx=0.05, rely=0.05, anchor="nw")
 
             # Setting up labels
             label1 = View.create_label(
@@ -1199,7 +1200,6 @@ class View(customtkinter.CTk):
                 "Please insert your card into your smart card" if not self.controller.cc.card_present else f"Your {self.controller.cc.card_type} is connected.",
                 frame=self.start_frame
             )
-            #label1.place(relx=0.33, rely=0.27, anchor="w")
             label1.place(relx=0.05, rely=0.27, anchor="w")
 
             label2 = View.create_label(
@@ -1207,15 +1207,12 @@ class View(customtkinter.CTk):
                 "reader, and select the action you wish to perform." if not self.controller.cc.card_present else "Select on the menu the action you wish to perform.",
                 frame=self.start_frame
             )
-            #label2.place(relx=0.33, rely=0.32, anchor="w")
             label2.place(relx=0.05, rely=0.32, anchor="w")
 
             if self.controller.cc.card_type == "SeedKeeper":
-                self.show_seedkeeper_menu() #create_seedkeeper_menu()
+                self.show_seedkeeper_menu()
             else:
                 self.show_settings_menu()
-                #menu = self.create_settings_menu()
-                #menu.place(relx=0.250, rely=0.5, anchor="e")
 
         except Exception as e:
             message = f"An unexpected error occurred in create_start_frame: {e}"

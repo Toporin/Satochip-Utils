@@ -131,7 +131,7 @@ class Controller:
                         msg = "PIN changed successfully!"
                         self.view.show("SUCCESS", msg, 'Ok',
                                        None, "./pictures_db/change_pin_popup.jpg")
-                        self.view.start_setup()
+                        self.view.show_start_frame()
                     else:
                         logger.error(f"Failed to change PIN with error code: {hex(sw1)}{hex(sw2)}")
                         msg = f"Failed to change PIN with error code: {hex(sw1)}{hex(sw2)}"
@@ -195,7 +195,7 @@ class Controller:
                 logger.info(f"New label set successfully: {label}")
                 self.view.show("SUCCESS",
                                f"New label set successfully",
-                               "Ok", self.view.start_setup(),
+                               "Ok", self.view.show_start_frame(),
                                "./pictures_db/edit_label_popup.jpg")
             else:
                 logger.warning("Failed to set new label.")
@@ -230,7 +230,7 @@ class Controller:
             logger.info("Entering PIN_dialog method")
 
             def switch_unlock_to_false_and_quit():
-                self.view.start_setup()
+                self.view.show_start_frame()
                 self.view.update_status()
 
             while True:
@@ -310,7 +310,7 @@ class Controller:
                 logger.info("Applet setup successfully")
                 self.setup_done = True
                 self.view.update_status()
-                self.view.start_setup()
+                self.view.show_start_frame()
         except Exception as e:
             logger.error(f"An error occurred in card_setup_native_pin: {e}", exc_info=True)
 
@@ -331,7 +331,7 @@ class Controller:
                                lambda: None,
                                "./pictures_db/seed_popup.jpg")
                 self.view.update_status()
-                self.view.start_setup()
+                self.view.show_start_frame()
 
                 hex_authentikey = authentikey.get_public_key_hex()
                 logger.info(f"Authentikey={hex_authentikey}")

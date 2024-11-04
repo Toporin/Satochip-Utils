@@ -93,14 +93,19 @@ class View(customtkinter.CTk):
             # frames
             self.welcome_frame = None
             self.start_frame = None
+            # menu frames
             self.seedkeeper_menu_frame = None
             self.settings_menu_frame = None
+            # settings frames
             self.setup_card_frame = None
             self.about_frame = None
             self.authenticity_frame = None
             self.edit_label_frame = None
             self.change_pin_frame = None
             self.seed_import_frame = None
+            self.factory_reset_frame = None
+            # seedkeeper frames
+
 
             # Application state attributes
             # Status de l'application et de certains widgets
@@ -870,7 +875,7 @@ class View(customtkinter.CTk):
                         "Reset my Card",
                         "reset.png",
                         0.54, 0.05,
-                        command=lambda: self.reset_my_card_window(), state='normal'
+                        command=lambda: self.show_factory_reset_frame(), state='normal'
                     )
                 else:
                     # TODO: remove button?
@@ -1226,10 +1231,6 @@ class View(customtkinter.CTk):
 
     def create_setup_card_frame(self):
         logger.info(f"IN View.create_setup_card_frame()")
-        frame_name = "setup_my_card_pin"
-        cancel_button = "Cancel"
-        finish_button = "Finish"
-
         try:
             # Creating new frame
             setup_frame = self.create_frame(width=750, height=600, frame=self.main_frame)
@@ -1241,17 +1242,15 @@ class View(customtkinter.CTk):
             # Creating header
             header = self.create_an_header(f"Setup my card",
                                                 "change_pin_popup.jpg", frame=setup_frame)
-            self.header.place(relx=0.05, rely=0.05, anchor="nw")
+            header.place(relx=0.05, rely=0.05, anchor="nw")
 
             # setup paragraph
-            text = self.create_label("Create your personal PIN code.", frame=setup_frame)
+            text = self.create_label("Create your card PIN code.", frame=setup_frame)
             text.place(relx=0.05, rely=0.2, anchor="w")
-            text = View.create_label(self, "We strongly encourage you to set up a strong password between 4 and 16", frame = setup_frame)
+            text = View.create_label(self, "A PIN code must be between 4 and 16 characters.", frame = setup_frame)
             text.place(relx=0.05, rely=0.25, anchor="w")
-            text = View.create_label(self, "characters. You can use symbols, lower and upper cases, letters and ", frame = setup_frame)
+            text = View.create_label(self, "You can use symbols, lower and upper cases, letters and numbers.", frame = setup_frame)
             text.place(relx=0.05, rely=0.3, anchor="w")
-            text = View.create_label(self, "numbers.", frame=setup_frame)
-            text.place(relx=0.05, rely=0.35, anchor="w")
 
             # edit PIN
             edit_pin_label = View.create_label(self, "New PIN code :", frame=setup_frame)
@@ -2440,7 +2439,6 @@ class View(customtkinter.CTk):
             logger.info(f"card_reset_factory response: {hex(256 * sw1 + sw2)}")
             if sw1 == 0xFF and sw2 == 0x00:
                 logger.info("Factory reset successful. Disconnecting the card.")
-                #self.controller.cc.card_factory_disconnect()
                 self.controller.cc.card_disconnect()
                 msg = 'The card has been reset to factory\nRemaining counter: 0'
                 self.show('SUCCESS', msg, "Ok", lambda: self.restart_app(),
@@ -2475,10 +2473,135 @@ class View(customtkinter.CTk):
         except Exception as e:
             logger.error(f"An unexpected error occurred during the factory reset process: {e}", exc_info=True)
 
+    def show_factory_reset_frame(self):
+        if self.factory_reset_frame is None:
+            self.factory_reset_frame = self.create_factory_reset_frame()
+        else:
+            self.factory_reset_frame.place()
+            self.factory_reset_frame.tkraise()
+
+    def create_factory_reset_frame(self):
+
+        self.controller.cc.set_mode_factory_reset(True)
+
+        try:
+
+            # Creating new frame for reset card window
+            factory_reset_frame = View.create_frame(self, width=750, height=600, frame=self.main_frame)
+            factory_reset_frame.place(relx=1.0, rely=0.5, anchor="e")
+
+            # Load background photo
+            background_photo = View.create_background_photo("./pictures_db/reset_my_card.png")
+            canvas = View.create_canvas(self, frame=factory_reset_frame)
+            canvas.place(relx=0.0, rely=0.5, anchor="w")
+            canvas.create_image(0, 0, image=self.background_photo, anchor="nw")
+
+            # Creating header
+            header = View.create_an_header(
+                self,
+                f"Reset Your {self.controller.cc.card_type}",
+                "reset_popup.jpg",
+                frame=factory_reset_frame
+            )
+            header.place(relx=0.05, rely=0.05, anchor="nw")
+
+            # setup paragraph
+            text = View.create_label(
+                self,
+                f"Resetting your card to factory settings removes all private keys, saved ",
+                frame=factory_reset_frame
+            )
+            text.place(relx=0.05, rely=0.17, anchor="w")
+            text = View.create_label(
+                self,
+                "information, and settings (PIN code) from your device.",
+                frame=factory_reset_frame
+            )
+            text.place(relx=0.05, rely=0.22, anchor="w")
+
+            text = View.create_label(
+                self,
+                "Before your start: be sure to have a backup of its content; either the",
+                frame=factory_reset_frame
+            )
+            text.place(relx=0.05, rely=0.32, anchor="w")
+            text = View.create_label(
+                self,
+                f"seedphrase or any other passwords stored in it.",
+                frame=factory_reset_frame
+            )
+            text.place(relx=0.05, rely=0.37, anchor="w")
+
+            text = View.create_label(
+                self,
+                "The reset process is simple: click on “Reset”, follow the pop-up wizard and",
+                frame=factory_reset_frame
+            )
+            text.place(relx=0.05, rely=0.47, anchor="w")
+            text = View.create_label(
+                self,
+                "remove your card from the chip card reader, insert it again. And do that",
+                frame=factory_reset_frame
+            )
+            text.place(relx=0.05, rely=0.52, anchor="w")
+            text = View.create_label(
+                self,
+                "several times.",
+                frame=factory_reset_frame
+            )
+            text.place(relx=0.05, rely=0.57, anchor="w")
+
+            # Creating counter label
+            # self.counter_label = customtkinter.CTkLabel(
+            #     factory_reset_frame,
+            #     text="Card isn't reset actually",
+            #     bg_color='white', fg_color='white',
+            #     font=customtkinter.CTkFont(family="Outfit", size=30, weight="bold")
+            # )
+            # self.counter_label.place(relx=0.25, rely=0.53, anchor='w')
+
+            # Creating quit & start button
+            def click_cancel_button():
+                logger.info("Executing quit button action")
+                self.controller.cc.set_mode_factory_reset(False)
+                time.sleep(0.5)  # todo remove?
+                self.show_start_frame()
+
+            def click_start_button():
+                self.show(
+                    'IN PROGRESS',
+                    f"Please follow the instruction bellow.",
+                    "Remove card",
+                    lambda: self.click_reset_button(),
+                    "./pictures_db/reset_popup.jpg"
+                )
+                self.show_button.configure(state='disabled')
+
+            cancel_button = View.create_button(
+                self,
+                'Cancel',
+                lambda: click_cancel_button(),
+                frame=factory_reset_frame
+            )
+            cancel_button.place(relx=0.6, rely=0.9, anchor="w")
+
+            reset_button = View.create_button(
+                self,
+                'Start',
+                lambda: click_start_button(),
+                frame=factory_reset_frame
+            )
+            reset_button.place(relx=0.8, rely=0.9, anchor="w")
+
+            #self.show_settings_menu()
+
+            return factory_reset_frame
+
+        except Exception as e:
+            logger.error(f"An unexpected error occurred in reset_my_card_window: {e}", exc_info=True)
+
     def reset_my_card_window(self):
         self.controller.cc.set_mode_factory_reset(True)
-        self.in_reset_card = 'display'
-        logger.info(f'in reset card: {self.in_reset_card}')
 
         try:
             if self.current_frame is not None:

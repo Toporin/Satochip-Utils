@@ -18,7 +18,10 @@ from exceptions import MenuCreationError, MenuDeletionError, ViewError, ButtonCr
     FrameCreationError, HeaderCreationError, UIElementError, SecretFrameCreationError, ControllerError
 from frameCardAbout import FrameCardAbout
 from frameCardAuthenticity import FrameCardAuthenticity
+from frameCardChangePin import FrameCardChangePin
 from frameCardEditLabel import FrameCardEditLabel
+from frameCardImportSeed import FrameCardImportSeed
+from frameCardSetupPin import FrameCardSetupPin
 from frameMenuNoCard import FrameMenuNoCard
 from frameMenuSeedkeeper import FrameMenuSeedkeeper
 from frameMenuSettings import FrameMenuSettings
@@ -915,10 +918,10 @@ class View(customtkinter.CTk):
 
     def show_setup_card_frame(self):
         if self.setup_card_frame is None:
-            self.setup_card_frame = self.create_setup_card_frame()
+            self.setup_card_frame = FrameCardSetupPin(self) #self.create_setup_card_frame()
         self.setup_card_frame.tkraise()
 
-    def create_setup_card_frame(self):
+    def create_setup_card_frame(self):  #todo remove
         logger.info(f"IN View.create_setup_card_frame()")
         try:
             # Creating new frame
@@ -983,12 +986,10 @@ class View(customtkinter.CTk):
 
     def show_seed_import_frame(self):
         if self.seed_import_frame is None:
-            self.seed_import_frame = self.create_seed_import_frame()
-        else:
-            self.seed_import_frame.place()
-            self.seed_import_frame.tkraise()
+            self.seed_import_frame = FrameCardImportSeed(self) #self.create_seed_import_frame()
+        self.seed_import_frame.tkraise()
 
-    def create_seed_import_frame(self):
+    def create_seed_import_frame(self):  #todo remove
         try:
             # Creating new frame
             seed_import_frame = View.create_frame(self, width=750, height=600, frame=self.main_frame)
@@ -1218,11 +1219,10 @@ class View(customtkinter.CTk):
 
     def show_change_pin_frame(self):
         if self.change_pin_frame is None:
-            self.change_pin_frame = self.create_change_pin_frame()
-        self.change_pin_frame.place()
+            self.change_pin_frame = FrameCardChangePin(self) #self.create_change_pin_frame()
         self.change_pin_frame.tkraise()
 
-    def create_change_pin_frame(self):
+    def create_change_pin_frame(self):  #todo remove
         try:
             logger.info("IN View.create_change_pin_frame() start")
 

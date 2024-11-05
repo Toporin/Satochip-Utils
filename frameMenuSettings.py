@@ -132,7 +132,6 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                             command=lambda: None,
                             state='normal'
                         )
-
                     else: # import seed
                         photo_image = self.master.convert_icon_name_to_photo_image("seed.png")
                         self.button_status.configure(

@@ -9,7 +9,7 @@ class FrameCardEditLabel(customtkinter.CTkFrame):
     def __init__(self, master):
         super().__init__(master)
 
-        logger.debug("FrameStart init")
+        logger.debug("FrameCardEditLabel init")
 
         try:
             # Creating new frame

@@ -16,6 +16,7 @@ from pysatochip.version import PYSATOCHIP_VERSION
 from controller import Controller
 from exceptions import MenuCreationError, MenuDeletionError, ViewError, ButtonCreationError, FrameClearingError, \
     FrameCreationError, HeaderCreationError, UIElementError, SecretFrameCreationError, ControllerError
+from frameCardAbout import FrameCardAbout
 from frameCardAuthenticity import FrameCardAuthenticity
 from frameMenuNoCard import FrameMenuNoCard
 from frameMenuSeedkeeper import FrameMenuSeedkeeper
@@ -1794,12 +1795,10 @@ class View(customtkinter.CTk):
         logger.info("show_about_frame start")
         if self.about_frame is None:
             logger.info("show_about_frame self.about_frame is None")
-            self.about_frame = self.create_about_frame()
-        else:
-            logger.info("show_about_frame self.about_frame is not None, placing it...")
-            self.about_frame.tkraise()
-            #self.seedkeeper_menu_frame.place_forget() # warn: seedkeeper_menu_frame may be None
-            #self.settings_menu_frame.tkraise()
+            #self.about_frame = self.create_about_frame()
+            self.about_frame = FrameCardAbout(self)
+        self.about_frame.update()
+        self.about_frame.tkraise()
 
     def create_about_frame(self):
         # TODO: add reset seed button (for satochip only)

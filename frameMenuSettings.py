@@ -313,9 +313,16 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                     self.button_check_auth.configure(state="disabled")
                     self.button_about.configure(state="disabled")
 
-            if self.master.controller.cc.card_type == "Seedkeeper":
+            if self.master.controller.cc.card_type == "SeedKeeper":
                 self.button_factory_reset.configure(state="normal")
                 if self.master.controller.cc.setup_done:
+                    photo_image = self.master.convert_icon_name_to_photo_image("setup_done.jpg")
+                    self.button_status.configure(
+                        require_redraw,
+                        text="Setup Done", image=photo_image,
+                        command=lambda: None,
+                        state='normal'
+                    )
                     self.button_change_pin.configure(state="normal")
                     self.button_edit_label.configure(state="normal")
                     self.button_check_auth.configure(state="normal")

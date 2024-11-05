@@ -17,6 +17,7 @@ from controller import Controller
 from exceptions import MenuCreationError, MenuDeletionError, ViewError, ButtonCreationError, FrameClearingError, \
     FrameCreationError, HeaderCreationError, UIElementError, SecretFrameCreationError, ControllerError
 from frameMenuSettings import FrameMenuSettings
+from frameStart import FrameStart
 from frameWelcome import FrameWelcome
 from log_config import SUCCESS, log_method
 from version import VERSION
@@ -729,21 +730,31 @@ class View(customtkinter.CTk):
     #################
     """ MAIN MENU """
 
+    def show_menu_frame(self):
+        logger.info("IN View.show_menu_frame start")
+        if self.controller.cc.card_type == "SeedKeeper":
+            self.show_seedkeeper_menu()
+        else:
+            self.show_settings_menu()
+
     def show_settings_menu(self, state=None, frame=None):
+        logger.info("IN View.show_settings_menu start")
         # if self.settings_menu_frame is None:
         #     self.settings_menu_frame = self.create_settings_menu(state, frame)
         # self.settings_menu_frame.tkraise()
         if self.settings_menu_frame is None:
             self.settings_menu_frame = FrameMenuSettings(self)
         self.settings_menu_frame.update()
+        logger.info("IN View.show_settings_menu before tkraise")
         self.settings_menu_frame.tkraise()
+        logger.info("IN View.show_settings_menu after tkraise")
 
     def hide_settings_menu(self):
         if self.settings_menu_frame is not None:
             self.settings_menu_frame.place_forget()
 
     def create_settings_menu(self, state=None, frame=None):
-        logger.info("IN View.create_settings_menu")
+        logger.info("IN View.create_settings_menu start")
         try:
             if state is None:
                 state = "normal" if self.controller.cc.card_present else "disabled"
@@ -946,6 +957,79 @@ class View(customtkinter.CTk):
         try:
             if self.controller.cc.mode_factory_reset == True:
                 # we are in factory reset mode
+                #TODO: refactor?
+                if isConnected is True:
+                    logger.info(f"Card inserted for Reset Factory!")
+                    try:
+                        # Mettre à jour les labels et les boutons en fonction de l'insertion de la carte
+                        # self.reset_button.configure(text='Reset', state='normal')
+                        self.show_button.configure(text='Reset', state='normal')
+                        logger.debug("Labels and button updated for card insertion")
+                    except Exception as e:
+                        logger.error(f"An error occurred while updating labels and button for card insertion: {e}",
+                                     exc_info=True)
+
+                elif isConnected is False:
+                    logger.info(f"Card removed for Reset Factory!")
+                    try:
+                        # Mettre à jour les labels et les boutons en fonction du retrait de la carte
+                        self.show_button.configure(text='Insert card', state='disabled')
+                        logger.debug("Labels and button updated for card removal")
+                    except Exception as e:
+                        logger.error(f"An error occurred while updating labels and button for card removal: {e}",
+                                     exc_info=True)
+                else:  # None
+                    pass
+            else:
+                # normal mode
+                logger.info("View.update_status start (normal mode)")
+                if isConnected is True:
+                    try:
+                        #logger.info("Getting card status")
+                        #self.controller.get_card_status() # todo:neeeded?
+
+                        if self.start_frame is not None: # do not create frame now as it is not main thread
+                            self.show_start_frame()
+                            self.show_menu_frame()
+                        # if self.controller.cc.card_type == "SeedKeeper":
+                        #     if self.seedkeeper_menu_frame is not None:
+                        #         self.show_seedkeeper_menu()
+                        # else:
+                        #     if self.settings_menu_frame is not None:
+                        #         self.show_settings_menu()
+
+                    except Exception as e:
+                        logger.error(f"An error occurred while getting card status: {e}", exc_info=True)
+
+                elif isConnected is False:
+                    try:
+                        if self.start_frame is not None: # do not create frame now as it is not main thread
+                            self.show_start_frame()
+                        if self.settings_menu_frame is not None:
+                            logger.error(f"update_status() settings_menu_frame is none", exc_info=True)
+                            self.show_settings_menu()
+                        else:
+                            logger.error(f"update_status() settings_menu_frame is none", exc_info=True)
+
+                    except Exception as e:
+                        logger.error(f"An error occurred while resetting card status: {e}", exc_info=True)
+
+                else: # isConnected is None
+                    logger.error("View.update_status isConnected is None (should not happen!)", exc_info=True)
+
+            # update menu settings
+            # if self.settings_menu_frame is not None:
+            #     self.settings_menu_frame.update()
+            # if self.start_frame is not None:
+            #     self.start_frame.update()
+
+        except Exception as e:
+            logger.error(f"An unexpected error occurred in update_status method: {e}", exc_info=True)
+
+    def update_status_old(self, isConnected=None):
+        try:
+            if self.controller.cc.mode_factory_reset == True:
+                # we are in factory reset mode
                 if isConnected is True:
                     logger.info(f"Card inserted for Reset Factory!")
                     try:
@@ -995,6 +1079,8 @@ class View(customtkinter.CTk):
             # update menu settings
             if self.settings_menu_frame is not None:
                 self.settings_menu_frame.update()
+            if self.start_frame is not None:
+                self.start_frame.update()
 
         except Exception as e:
             logger.error(f"An unexpected error occurred in update_status method: {e}", exc_info=True)
@@ -1155,21 +1241,23 @@ class View(customtkinter.CTk):
     '''Start frame'''
 
     def show_start_frame(self):
-        #self.welcome_frame.place_forget()
+        logger.info("IN View.show_start_frame() start")
         if self.start_frame is None:
-            self.create_start_frame()
+            #self.create_start_frame()
+            self.start_frame = FrameStart(self)
         else:
+            self.start_frame.update()
             self.start_frame.tkraise()
-            # update frame
+            # # update menu
+            # logger.debug("IN View.show_start_frame() update menu...")
+            # if self.controller.cc.card_type == "SeedKeeper":
+            #     logger.debug("IN View.show_start_frame() update menu for Seedkeeper")
+            #     self.show_seedkeeper_menu()
+            # else:
+            #     logger.debug(f"IN View.show_start_frame() update menu for {self.controller.cc.card_type}")
+            #     self.show_settings_menu()
 
-
-            # update menu
-            if self.controller.cc.card_type == "SeedKeeper":
-                self.show_seedkeeper_menu()
-            else:
-                self.show_settings_menu()
-
-    def create_start_frame(self):
+    def create_start_frame(self): # todo deprecate
         logger.info("IN View.create_start_frame() start")
         self.welcome_in_display = False # todo?
 
@@ -1226,10 +1314,10 @@ class View(customtkinter.CTk):
             )
             label2.place(relx=0.05, rely=0.32, anchor="w")
 
-            if self.controller.cc.card_type == "SeedKeeper":
-                self.show_seedkeeper_menu()
-            else:
-                self.show_settings_menu()
+            # if self.controller.cc.card_type == "SeedKeeper":
+            #     self.show_seedkeeper_menu()
+            # else:
+            #     self.show_settings_menu()
 
         except Exception as e:
             message = f"An unexpected error occurred in create_start_frame: {e}"
@@ -1324,7 +1412,7 @@ class View(customtkinter.CTk):
             #     menu = self.create_settings_menu('disabled')
             # else:
             #     menu = self.create_settings_menu()
-            self.show_settings_menu()# todo update setup status
+            #self.show_settings_menu()# todo update setup status
             #menu.place(relx=0.250, rely=0.5, anchor="e")
 
             # Creating header
@@ -1622,7 +1710,7 @@ class View(customtkinter.CTk):
             self.current_frame.place(relx=0.5, rely=0.5, anchor="center")
 
             # Creating main menu
-            self.show_settings_menu()
+            #self.show_settings_menu()
             #menu = self.create_settings_menu(state='disabled')#todo
             #menu.place(relx=0.250, rely=0.5, anchor="e")
 
@@ -1935,7 +2023,7 @@ class View(customtkinter.CTk):
             self.current_frame.place(relx=0.5, rely=0.5, anchor="center")
 
             # Creating main menu
-            self.show_settings_menu()
+            #self.show_settings_menu()
             #menu = self.create_settings_menu()
             #menu.place(relx=0.250, rely=0.5, anchor="e")
             logger.debug("Main menu created and placed")
@@ -2092,7 +2180,7 @@ class View(customtkinter.CTk):
             logger.debug("New frame created and placed")
 
             # Creating main menu
-            self.show_settings_menu()
+            #self.show_settings_menu()
             #menu = self.create_settings_menu()
             #menu.place(relx=0.250, rely=0.5, anchor="e")
             logger.debug("Main menu created and placed")
@@ -2302,7 +2390,7 @@ class View(customtkinter.CTk):
             #         self.show_start_frame()
 
             # Creating and placing main menu
-            self.show_settings_menu()
+            #self.show_settings_menu()
 
             return authenticity_frame
 
@@ -2436,7 +2524,7 @@ class View(customtkinter.CTk):
                     self.show_start_frame()
 
             # Creating and placing main menu
-            self.show_settings_menu()
+            #self.show_settings_menu()
             #self.menu = self.create_settings_menu()
             #self.menu.place(relx=0.250, rely=0.5, anchor="e")
 
@@ -2684,7 +2772,7 @@ class View(customtkinter.CTk):
             self.reset_button = View.create_button(self,'Start',lambda: click_start_button())
             self.reset_button.place(relx=0.85, rely=0.9, anchor="w")
 
-            self.show_settings_menu()
+            #self.show_settings_menu()
             #menu = self.create_settings_menu()
             #menu.place(relx=0.250, rely=0.5, anchor="e")
 
@@ -2700,7 +2788,7 @@ class View(customtkinter.CTk):
             logger.info("show_about_frame self.about_frame is not None, placing it...")
             self.about_frame.tkraise()
             #self.seedkeeper_menu_frame.place_forget() # warn: seedkeeper_menu_frame may be None
-            self.settings_menu_frame.tkraise()
+            #self.settings_menu_frame.tkraise()
 
     def create_about_frame(self):
         # TODO: add reset seed button (for satochip only)
@@ -2715,7 +2803,7 @@ class View(customtkinter.CTk):
             about_frame.place(relx=1, rely=0.5, anchor="e")
 
             # show settings menu on the left
-            self.show_settings_menu()
+            #self.show_settings_menu()
 
             self.background_photo = View.create_background_photo("./pictures_db/about_background.png")
             self.canvas = View.create_canvas(self, frame=about_frame)

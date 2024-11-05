@@ -66,7 +66,7 @@ class FrameWelcome(customtkinter.CTkFrame):
         # Creating and placing the button
         button = master.create_button(
             "Let's go!",
-            command=lambda: [self.place_forget(), master.show_start_frame()],
+            command=lambda: [self.place_forget(), master.show_start_frame(), master.show_menu_frame()],
             frame=self
         )
         self.after(2500, button.place(relx=0.85, rely=0.93, anchor="center"))

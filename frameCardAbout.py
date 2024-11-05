@@ -113,8 +113,6 @@ class FrameCardAbout(customtkinter.CTkFrame):
 
     def unlock(self):
         self.master.update_verify_pin()
-        #master.update_status() #todo?
-        #master.show_about_frame()
         self.update()
 
     def update(self):

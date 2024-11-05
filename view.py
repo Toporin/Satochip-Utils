@@ -18,6 +18,7 @@ from exceptions import MenuCreationError, MenuDeletionError, ViewError, ButtonCr
     FrameCreationError, HeaderCreationError, UIElementError, SecretFrameCreationError, ControllerError
 from frameCardAbout import FrameCardAbout
 from frameCardAuthenticity import FrameCardAuthenticity
+from frameCardEditLabel import FrameCardEditLabel
 from frameMenuNoCard import FrameMenuNoCard
 from frameMenuSeedkeeper import FrameMenuSeedkeeper
 from frameMenuSettings import FrameMenuSettings
@@ -1308,16 +1309,11 @@ class View(customtkinter.CTk):
             logger.error(f"An unexpected error occurred in change_pin: {e}", exc_info=True)
 
     def show_edit_label_frame(self):
-        # verify PIN
-        self.update_verify_pin()
-
         if self.edit_label_frame is None:
-            self.edit_label_frame = self.create_edit_label_frame()
-
-        self.edit_label_frame.place()
+            self.edit_label_frame = FrameCardEditLabel(self)  #self.create_edit_label_frame()
         self.edit_label_frame.tkraise()
 
-    def create_edit_label_frame(self):
+    def create_edit_label_frame(self): #todo remove
         try:
             logger.info("View.create_edit_label_frame() start")
 
@@ -1717,7 +1713,7 @@ class View(customtkinter.CTk):
         except Exception as e:
             logger.error(f"An unexpected error occurred in reset_my_card_window: {e}", exc_info=True)
 
-    def reset_my_card_window(self):
+    def reset_my_card_window(self): # todo remove
         self.controller.cc.set_mode_factory_reset(True)
 
         try:
@@ -1795,12 +1791,11 @@ class View(customtkinter.CTk):
         logger.info("show_about_frame start")
         if self.about_frame is None:
             logger.info("show_about_frame self.about_frame is None")
-            #self.about_frame = self.create_about_frame()
             self.about_frame = FrameCardAbout(self)
         self.about_frame.update()
         self.about_frame.tkraise()
 
-    def create_about_frame(self):
+    def create_about_frame(self): #todo remove
         # TODO: add reset seed button (for satochip only)
         # TODO: implement nfc enable/disable (depending on card & version)
         # TODO: implement 2FA disable/enable (only satochip)

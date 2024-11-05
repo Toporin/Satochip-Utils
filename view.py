@@ -16,6 +16,7 @@ from pysatochip.version import PYSATOCHIP_VERSION
 from controller import Controller
 from exceptions import MenuCreationError, MenuDeletionError, ViewError, ButtonCreationError, FrameClearingError, \
     FrameCreationError, HeaderCreationError, UIElementError, SecretFrameCreationError, ControllerError
+from frameCardAuthenticity import FrameCardAuthenticity
 from frameMenuNoCard import FrameMenuNoCard
 from frameMenuSeedkeeper import FrameMenuSeedkeeper
 from frameMenuSettings import FrameMenuSettings
@@ -1388,12 +1389,12 @@ class View(customtkinter.CTk):
         self.update_verify_pin()
 
         if self.authenticity_frame is None:
-            self.authenticity_frame = self.create_check_authenticity_frame()
-        else:
-            self.authenticity_frame.place()
-            self.authenticity_frame.tkraise()
+            self.authenticity_frame = FrameCardAuthenticity(self)
+            #self.authenticity_frame = self.create_check_authenticity_frame()
+        self.authenticity_frame.place()
+        self.authenticity_frame.tkraise()
 
-    def create_check_authenticity_frame(self):
+    def create_check_authenticity_frame(self): #todo remove deprecated
         if self.controller.cc.card_present: #todo move in show...
             logger.info("Card detected: checking authenticity")
             is_authentic, txt_ca, txt_subca, txt_device, txt_error = self.controller.cc.card_verify_authenticity()

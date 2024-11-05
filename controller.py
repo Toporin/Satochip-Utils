@@ -58,7 +58,7 @@ class Controller:
         # card infos
         self.card_status = None
 
-    def get_card_status(self):
+    def get_card_status(self): #todo deprecate?
         if self.cc.card_present:
             logger.info("In get_card_status")
             try:

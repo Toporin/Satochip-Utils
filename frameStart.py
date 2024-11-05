@@ -22,21 +22,6 @@ class FrameStart(customtkinter.CTkFrame):
             self.canvas.place(relx=0.0, rely=0.5, anchor="w")
             self.canvas.create_image(0, 0, image=self.background_photo, anchor="nw")
 
-            # if self.controller.cc.card_present:
-            #     logger.info(f"card type: {self.controller.cc.card_type}")
-            #     if self.controller.cc.card_type == "Satochip":
-            #         self.background_photo = View.create_background_photo("./pictures_db/card_satochip.png")
-            #         logger.info("bg_photo = satochip")
-            #     elif self.controller.cc.card_type == "SeedKeeper":
-            #         logger.info(f"card type is {self.controller.cc.card_type}")
-            #         self.background_photo = View.create_background_photo("./pictures_db/card_seedkeeper.png")
-            #         logger.info("bg_photo = seedkeeper")
-            #     elif self.controller.cc.card_type == "Satodime":
-            #         self.background_photo = View.create_background_photo("./pictures_db/card_satodime.png")
-            # else:
-            #     self.background_photo = View.create_background_photo("./pictures_db/insert_card.png")
-            #     logger.info("bg_photo = no card")
-
             # Creating header
             self.header = master.create_an_header("Welcome", "home_popup.jpg", frame=self)
             self.header.place(relx=0.05, rely=0.05, anchor="nw")
@@ -59,7 +44,9 @@ class FrameStart(customtkinter.CTkFrame):
             # else:
             #     master.show_settings_menu()
 
+            self.update()
             self.place(relx=1, rely=0.5, anchor="e")
+
 
         except Exception as e:
             message = f"An unexpected error occurred in create_start_frame: {e}"

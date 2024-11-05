@@ -16,6 +16,8 @@ from pysatochip.version import PYSATOCHIP_VERSION
 from controller import Controller
 from exceptions import MenuCreationError, MenuDeletionError, ViewError, ButtonCreationError, FrameClearingError, \
     FrameCreationError, HeaderCreationError, UIElementError, SecretFrameCreationError, ControllerError
+from frameMenuNoCard import FrameMenuNoCard
+from frameMenuSeedkeeper import FrameMenuSeedkeeper
 from frameMenuSettings import FrameMenuSettings
 from frameStart import FrameStart
 from frameWelcome import FrameWelcome
@@ -127,6 +129,7 @@ class View(customtkinter.CTk):
 
             # Launching initialization starting with welcome view
             #self.welcome_frame = self.create_welcome_frame()
+            self.nocard_menu_frame = FrameMenuNoCard(self)
             self.welcome_frame = FrameWelcome(self)
             self.protocol("WM_DELETE_WINDOW", lambda: [self.on_close()])
 
@@ -732,10 +735,13 @@ class View(customtkinter.CTk):
 
     def show_menu_frame(self):
         logger.info("IN View.show_menu_frame start")
-        if self.controller.cc.card_type == "SeedKeeper":
-            self.show_seedkeeper_menu()
-        else:
-            self.show_settings_menu()
+        if self.controller.cc.card_present:
+            if self.controller.cc.card_type == "SeedKeeper":
+                self.show_seedkeeper_menu()
+            else:
+                self.show_settings_menu()
+        else: # no card
+            self.show_nocard_menu()
 
     def show_settings_menu(self, state=None, frame=None):
         logger.info("IN View.show_settings_menu start")
@@ -950,6 +956,11 @@ class View(customtkinter.CTk):
         except Exception as e:
             logger.error(f"An error occurred in main_menu: {e}", exc_info=True)
 
+    def show_nocard_menu(self):
+        logger.info("IN View.show_settings_menu start")
+        self.nocard_menu_frame.tkraise()
+
+
     ################################
     """ UTILS FOR CARD CONNECTOR """
 
@@ -1005,11 +1016,7 @@ class View(customtkinter.CTk):
                     try:
                         if self.start_frame is not None: # do not create frame now as it is not main thread
                             self.show_start_frame()
-                        if self.settings_menu_frame is not None:
-                            logger.error(f"update_status() settings_menu_frame is none", exc_info=True)
-                            self.show_settings_menu()
-                        else:
-                            logger.error(f"update_status() settings_menu_frame is none", exc_info=True)
+                            self.show_nocard_menu()
 
                     except Exception as e:
                         logger.error(f"An error occurred while resetting card status: {e}", exc_info=True)
@@ -3081,29 +3088,15 @@ class View(customtkinter.CTk):
     ################################
     """ SEEDKEEPER MENU """
 
-    # def create_seedkeeper_menu(self): #todo merge with _seedkeeper_lateral_menu
-    #     try:
-    #         logger.info("create_seedkeeper_menu start")
-    #         menu = self._seedkeeper_lateral_menu()
-    #         return menu
-    #     except Exception as e:
-    #         logger.error(f"005 Error in create_seedkeeper_menu: {e}", exc_info=True)
-    #         raise MenuCreationError(f"006 Failed to create Seedkeeper menu: {e}") from e
-
     def show_seedkeeper_menu(self, state=None, frame=None):
         logger.info("show_seedkeeper_menu start")
         if self.seedkeeper_menu_frame is None:
-            self.seedkeeper_menu_frame = self.create_seedkeeper_menu(state, frame)
+            self.seedkeeper_menu_frame = FrameMenuSeedkeeper(self) #self.create_seedkeeper_menu(state, frame)
         else:
             logger.info("show_seedkeeper_menu seedkeeper_menu_frame is not None, show it")
-            self.settings_menu_frame.place_forget()
-            self.seedkeeper_menu_frame.place()
+            #self.settings_menu_frame.place_forget()
+            #self.seedkeeper_menu_frame.place()
             self.seedkeeper_menu_frame.tkraise()
-
-
-    def hide_seedkeeper_menu(self):
-        if self.seedkeeper_menu_frame is not None:
-            self.seedkeeper_menu_frame.place_forget()
 
     def create_seedkeeper_menu(
             self,

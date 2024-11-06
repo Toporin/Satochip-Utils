@@ -3,9 +3,6 @@ import time
 
 import customtkinter
 import logging
-
-from constants import (DEFAULT_BG_COLOR, BG_MAIN_MENU, BG_HOVER_BUTTON,
-                       TEXT_COLOR, BUTTON_TEXT_COLOR, HIGHLIGHT_COLOR)
 from exceptions import ControllerError
 
 logger = logging.getLogger(__name__)
@@ -36,7 +33,6 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
             self.label_label = master.create_label("Label:", frame=self)
             self.label_label.place(relx=0.045, rely=0.2)
             self.label_entry = master.create_entry(frame=self)
-            #self.label_entry.insert(0, secret_details['label'])
             self.label_entry.place(relx=0.045, rely=0.27)
 
             # login
@@ -59,17 +55,7 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
             self.password_entry.place(relx=0.04, rely=0.77, anchor="w")
 
             def _toggle_password_visibility(password_entry):
-                # todo: only hides secret, not login/url/... fields
                 try:
-                    # login
-                    # login_current_state = login_entry.cget("show")
-                    # login_new_state = "" if login_current_state == "*" else "*"
-                    # login_entry.configure(show=login_new_state)
-                    # # url
-                    # url_current_state = url_entry.cget("show")
-                    # url_new_state = "" if url_current_state == "*" else "*"
-                    # url_entry.configure(show=url_new_state)
-                    # password
                     password_current_state = password_entry.cget("show")
                     password_new_state = "" if password_current_state == "*" else "*"
                     password_entry.configure(show=password_new_state)
@@ -86,17 +72,7 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
 
             self.delete_button = master.create_button(
                 text="Delete secret",
-                command=lambda: None,
-                # [
-                #     master.show(
-                #         "WARNING",
-                #         "Are you sure to delete this secret ?!\n Click Yes for delete the secret or close popup",
-                #         "Yes",
-                #         lambda: [master.controller.cc.seedkeeper_reset_secret(secret_details['id']),
-                #                  master.show_view_my_secrets()],
-                #         './pictures_db/secrets_icon_popup.png'),
-                #     master.show_view_my_secrets()
-                # ],
+                command=lambda: None,  # will be updated in update(secret)
                 frame=self
             )
             self.delete_button.place(relx=0.75, rely=0.98, anchor="se")

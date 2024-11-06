@@ -1074,7 +1074,7 @@ class View(customtkinter.CTk):
         self.view_logs_details(logs)
 
     @log_method
-    def show_view_help(self):
+    def show_view_help(self): # todo remove, use web link
         try:
             logger.info("001 Displaying help information")
             self.in_backup_process = False
@@ -1095,7 +1095,7 @@ class View(customtkinter.CTk):
     def view_my_secrets(
             self,
             secrets_data: Dict[str, Any]
-    ):
+    ): #todo remove unused
         """
             This method manages to:
                 - Show a list of all secrets stored on the card.

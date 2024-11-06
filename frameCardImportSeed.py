@@ -223,7 +223,7 @@ class FrameCardImportSeed(customtkinter.CTkFrame):
                     master.controller.import_seed(
                         self.text_box.get(1.0, "end-1c"),
                         self.passphrase_entry.get() if self.generate_with_passphrase else None,
-                    )
+                    ),
                 ],
                 frame=self
             )

@@ -88,7 +88,7 @@ class Controller:
 
     def setup_card_pin(self, pin, pin_confirm):
         if pin:
-            if len(pin) >= 4:
+            if 4 <= len(pin) <= 16:
                 if pin == pin_confirm:
                     logger.info("Setup my card PIN: PINs match and are valid.")
                     self.card_setup_native_pin(pin)
@@ -97,9 +97,9 @@ class Controller:
                     self.view.show('ERROR', "Pin and pin confirm do not match!", 'Ok',
                                    None, "./pictures_db/change_pin_popup.jpg")
             else:
-                logger.warning("Setup my card PIN: PIN is too short.")
+                logger.warning("Setup my card PIN: wrong PIN size.")
                 self.view.show("ERROR",
-                               "Pin must contain at least 4 characters",
+                               "Pin must contain between 4 and 16 characters",
                                'Ok', None,
                                "./pictures_db/change_pin_popup.jpg")
         else:
@@ -311,6 +311,12 @@ class Controller:
                 self.setup_done = True
                 self.view.update_status()
                 self.view.show_start_frame()
+                self.view.show_menu_frame()
+                self.view.show(
+                    'SUCCESS', 'Your card is now setup!', 'Ok',
+                    lambda: None,
+                    "./pictures_db/home_popup.jpg"
+                )
         except Exception as e:
             logger.error(f"An error occurred in card_setup_native_pin: {e}", exc_info=True)
 
@@ -332,6 +338,7 @@ class Controller:
                                "./pictures_db/seed_popup.jpg")
                 self.view.update_status()
                 self.view.show_start_frame()
+                self.view.show_menu_frame()
 
                 hex_authentikey = authentikey.get_public_key_hex()
                 logger.info(f"Authentikey={hex_authentikey}")

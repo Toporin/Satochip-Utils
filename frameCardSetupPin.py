@@ -73,16 +73,16 @@ class FrameCardSetupPin(customtkinter.CTkFrame):
             # todo: check PIN format, show error msg
             self.finish_button = master.create_button(
                 "Save PIN",
-                lambda: master.controller.setup_card_pin(
-                    self.new_pin_entry.get(), self.confirm_new_pin_entry.get()
-                ),
+                lambda: [
+                    master.controller.setup_card_pin(self.new_pin_entry.get(), self.confirm_new_pin_entry.get()),
+                ],
                 frame=self
             )
             self.finish_button.place(relx=0.8, rely=0.9, anchor="w")
-            self.bind('<Return>', lambda event: master.controller.setup_card_pin(
-                self.new_pin_entry.get(),
-                self.confirm_new_pin_entry.get())
-            )
+            # self.bind('<Return>', lambda event: master.controller.setup_card_pin(
+            #     self.new_pin_entry.get(),
+            #     self.confirm_new_pin_entry.get())
+            # )
 
             self.place(relx=1.0, rely=0.5, anchor="e")
 

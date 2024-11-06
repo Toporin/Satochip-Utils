@@ -144,7 +144,7 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                     photo_image = self.master.convert_icon_name_to_photo_image("setup_my_card.png")
                     self.button_status.configure(
                         require_redraw,
-                        text="Setup my card", image="setup_my_card.png",
+                        text="Setup my card", image=photo_image,
                         command=lambda: self.master.show_setup_card_frame(),
                         state='normal'
                     )

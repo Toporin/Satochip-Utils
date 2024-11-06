@@ -20,6 +20,7 @@ from frameCardAbout import FrameCardAbout
 from frameCardAuthenticity import FrameCardAuthenticity
 from frameCardChangePin import FrameCardChangePin
 from frameCardEditLabel import FrameCardEditLabel
+from frameCardFactoryReset import FrameCardFactoryReset
 from frameCardImportSeed import FrameCardImportSeed
 from frameCardSetupPin import FrameCardSetupPin
 from frameMenuNoCard import FrameMenuNoCard
@@ -1009,7 +1010,7 @@ class View(customtkinter.CTk):
         self.authenticity_frame.place()
         self.authenticity_frame.tkraise()
 
-    def click_reset_button(self): # todo implement reset factory v1 & v2
+    def click_reset_button(self): # todo remove todo implement reset factory v1 & v2
         try:
             logger.info("click_reset_button attempting to reset the card.")
 
@@ -1054,12 +1055,10 @@ class View(customtkinter.CTk):
 
     def show_factory_reset_frame(self):
         if self.factory_reset_frame is None:
-            self.factory_reset_frame = self.create_factory_reset_frame()
-        else:
-            self.factory_reset_frame.place()
-            self.factory_reset_frame.tkraise()
+            self.factory_reset_frame = FrameCardFactoryReset(self) #self.create_factory_reset_frame()
+        self.factory_reset_frame.tkraise()
 
-    def create_factory_reset_frame(self):
+    def create_factory_reset_frame(self): #todo remove
 
         self.controller.cc.set_mode_factory_reset(True)
 

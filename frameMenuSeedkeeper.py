@@ -46,7 +46,7 @@ class FrameMenuSeedkeeper(customtkinter.CTkFrame):
                 "secrets.png",
                 0.26, 0.05,
                 state="normal",
-                command=master.show_view_my_secrets,
+                command=lambda: master.show_view_my_secrets(),
             )
 
             self.button_generate = master.create_button_for_main_menu_item(
@@ -87,7 +87,7 @@ class FrameMenuSeedkeeper(customtkinter.CTkFrame):
                 self, "Help", "help.png",
                 0.81, 0.05,
                 state='normal',
-                command=master.show_view_help
+                command=master.show_view_help #todo open website
             )
 
             self.button_webshop = master.create_button_for_main_menu_item(

@@ -26,6 +26,8 @@ from frameCardSetupPin import FrameCardSetupPin
 from frameMenuNoCard import FrameMenuNoCard
 from frameMenuSeedkeeper import FrameMenuSeedkeeper
 from frameMenuSettings import FrameMenuSettings
+from frameSeedkeeperListSecrets import FrameSeedkeeperListSecrets
+from frameSeedkeeperShowPasswordSecret import FrameSeedkeeperShowPasswordSecret
 from frameStart import FrameStart
 from frameWelcome import FrameWelcome
 from log_config import SUCCESS, log_method
@@ -103,6 +105,7 @@ class View(customtkinter.CTk):
             logger.debug("Widgets declared successfully")
 
             # frames
+            # these will be created when needed using show_* methods
             self.welcome_frame = None
             self.start_frame = None
             # menu frames
@@ -117,6 +120,8 @@ class View(customtkinter.CTk):
             self.seed_import_frame = None
             self.factory_reset_frame = None
             # seedkeeper frames
+            self.list_secrets_frame = None
+            self.seedkeeper_show_password_frame = None
 
             # widgets (todo: clean)
             self.show_button = None
@@ -977,40 +982,62 @@ class View(customtkinter.CTk):
     """ METHODS TO DISPLAY A VIEW FROM SEEDKEEPER MENU SELECTION """
 
     # SEEDKEEPER MENU SELECTION
-    @log_method
-    def show_view_my_secrets(self):
+    #@log_method
+    def show_view_my_secrets(self):  #todo rename show_seedkeeper_list_secrets
         try:
             logger.debug("show_view_my_secrets start")
-            self.in_backup_process = False
-            self.welcome_in_display = False
-            self._clear_welcome_frame()
-            self._clear_current_frame()
+            # self.in_backup_process = False
+            # self.welcome_in_display = False
+            # self._clear_welcome_frame()
+            # self._clear_current_frame()
 
             # verify PIN
             self.update_verify_pin()
-            # if self.controller.cc.is_pin_set():
-            #     self.controller.cc.card_verify_PIN_simple()
-            # else:
-            #     self.controller.PIN_dialog(f'Unlock your {self.controller.cc.card_type}')
 
             secrets_data = self.controller.retrieve_secrets_stored_into_the_card()
             logger.debug(f"Fetched {len(secrets_data['headers'])} headers")
-            # for header in secrets_data['headers']:
-            #     logger.debug(f"Header: {header}")
 
-            # TODO why reset some pubkey??
-            # card_status = self.controller.get_card_status()
-            # if card_status['protocol_version'] > 1:
-            #     for secret in secrets_data['headers']:
-            #         if secret['type'] == "Public Key":
-            #             self.controller.cc.seedkeeper_reset_secret(secret['id'])
-            logger.debug("003 Secrets data retrieved from card")
+            #self.view_my_secrets(secrets_data)
+            if self.list_secrets_frame is None:
+                self.list_secrets_frame = FrameSeedkeeperListSecrets(self)
+            self.list_secrets_frame.update(secrets_data)
+            self.list_secrets_frame.tkraise()
 
-            self.view_my_secrets(secrets_data)
-            logger.log(SUCCESS, "004 Secrets displayed successfully")
         except Exception as e:
             logger.error(f"005 Error in show_secrets: {e}", exc_info=True)
-            raise ViewError(f"006 Failed to show secrets: {e}") from e
+
+
+    def show_view_secret(self, secret_header):
+        logger.log(SUCCESS, f"show_view_secret start")
+        # Managing export rights control
+        secret_details = {}
+        if secret_header['export_rights'] == '0x2':
+            secret_details['type'] = secret_header['type']
+            secret_details['label'] = secret_header['label']
+            secret_details['secret'] = 'Export failed: export not allowed by SeedKeeper policy.'
+            secret_details['subtype'] = 0x0 if secret_header['subtype'] == '0x0' else '0x1'
+            logger.debug(f"Export_rights: Not allowed for {secret_header} with id {secret_header['id']}")
+        else:
+            logger.debug(f"Export rights allowed for {secret_header} with id {secret_header['id']}")
+            secret_details = self.controller.retrieve_details_about_secret_selected(secret_header['id'])
+            secret_details['id'] = secret_header['id']
+            logger.debug(f"secret id details: {secret_details} for id: {secret_details['id']}")
+        logger.log(SUCCESS, f"Secret details retrieved: {secret_details}")
+
+        # show secret according to type
+        if secret_header['type'] == 'Password':
+            logger.debug(f"Secret: {secret_header}, with id {secret_header['id']} is a couple login password")
+            #self._create_password_secret_frame(secret_details)
+            self.show_password_secret(secret_details)
+            logger.debug(f"Frame corresponding to {secret_header['type']} details called")
+        else:
+            pass # TODO unsuported secret type
+
+    def show_password_secret(self, secret):
+        if self.seedkeeper_show_password_frame is None:
+            self.seedkeeper_show_password_frame = FrameSeedkeeperShowPasswordSecret(self)
+        self.seedkeeper_show_password_frame.update(secret)
+        self.seedkeeper_show_password_frame.tkraise()
 
     @log_method
     def show_view_generate_secret(self):

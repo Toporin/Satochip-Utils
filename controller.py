@@ -7,7 +7,7 @@ from typing import Dict, Any, List
 from mnemonic import Mnemonic
 from pysatochip.CardConnector import (CardConnector, UninitializedSeedError)
 
-from exceptions import ControllerError, SecretProcessingError, SecretRetrievalError
+from exceptions import ControllerError, SecretRetrievalError
 from log_config import log_method, SUCCESS
 
 seed = None
@@ -452,43 +452,43 @@ class Controller:
             result['url'] = ''
 
             # raw secret field
+            # [password_size(1b) | password_bytes | login_size(1b) | login_bytes | url_size(1b) | url_bytes ]
             secret_bytes= binascii.unhexlify(secret_dict['secret'])
+            offset = 0
+            password_size = secret_bytes[offset]
+            offset += 1
+            password_bytes = secret_bytes[offset:offset + password_size]
+            result['password_bytes'] = password_bytes
+            result['password'] = result['secret_decoded'] = password_bytes.decode('utf-8')
+            offset += password_size
 
-            # todo: refactor this part!!
-            # Décoder le contenu complet en UTF-8
-            full_content = secret_bytes.decode('utf-8')
-            logger.debug(f"Full decoded content: {full_content}")
+            # login
+            if offset < len(secret_bytes):
+                login_size = secret_bytes[offset]
+                offset += 1
+                if login_size > 0 and (offset + login_size) <= len(secret_bytes):
+                    login_bytes = secret_bytes[offset:offset + login_size]
+                    result['login'] = login_bytes.decode('utf-8')
+                    offset += login_size
 
-            # Séparer les parties
-            parts = full_content.split('login:')
-
-            if len(parts) > 1:
-                # Le mot de passe est la première partie
-                result['password'] = parts[0].strip()
-
-                # Traiter le reste
-                remaining = parts[1]
-                login_url_parts = remaining.split('url:')
-
-                if len(login_url_parts) > 1:
-                    result['login'] = login_url_parts[0].strip()
-                    result['url'] = login_url_parts[1].strip()
+            # url
+            if offset < len(secret_bytes):
+                url_size = secret_bytes[offset]
+                offset += 1
+                if url_size > 0 and (offset + url_size) <= len(secret_bytes):
+                    url_bytes = secret_bytes[offset:offset + url_size]
+                    result['url'] = url_bytes.decode('utf-8')
                 else:
-                    result['login'] = remaining.strip()
+                    result['url'] = ""
+                offset += url_size
             else:
-                # Si 'login:' n'est pas trouvé, tout est considéré comme mot de passe
-                result['password'] = full_content.strip()
-
-            # Remplacer 'None' par une chaîne vide
-            for key in result:
-                if result[key] == 'None':
-                    result[key] = ''
+                result['url'] = ""
 
             return result
+
         except Exception as e:
             error_msg=f"Error decoding password secret: {str(e)}"
             logger.error(error_msg)
-            result["password"] = error_msg
             return result
 
     def decode_mnemonic(self, secret_dict: Dict[str, Any]) -> Dict[str, Any]:
@@ -515,7 +515,6 @@ class Controller:
         except Exception as e:
             error_msg= f"Error decoding password secret: {str(e)}"
             logger.error(error_msg)
-            result['mnemonic'] = result['secret_decoded'] = error_msg
             return result
 
     def decode_masterseed_mnemonic(self, secret_dict: Dict[str, Any]) -> Dict[str, Any]:
@@ -581,7 +580,6 @@ class Controller:
         except Exception as e:
             error_msg=f"Error decoding password secret: {str(e)}"
             logger.error(error_msg)
-            result['mnemonic']=error_msg
             return result
 
     def decode_masterseed(self, secret_dict: Dict[str, Any]) -> Dict[str, Any]:

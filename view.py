@@ -22,8 +22,8 @@ from frameMenuSeedkeeper import FrameMenuSeedkeeper
 from frameMenuSettings import FrameMenuSettings
 from frameSeedkeeperListSecrets import FrameSeedkeeperListSecrets
 from frameSeedkeeperShowMnemonic import FrameSeedkeeperShowMnemonic
-from frameSeedkeeperShowPasswordSecret import FrameSeedkeeperShowPasswordSecret
-from frameSeedkeeperShowSecret import FrameSeedkeeperShowSecret
+from frameSeedkeeperShowPassword import FrameSeedkeeperShowPasswordSecret
+from frameSeedkeeperShowSimpleSecret import FrameSeedkeeperShowSecret
 from frameStart import FrameStart
 from frameWelcome import FrameWelcome
 from log_config import SUCCESS, log_method

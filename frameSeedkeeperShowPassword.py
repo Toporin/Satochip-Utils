@@ -1,9 +1,5 @@
-import binascii
-import time
-
 import customtkinter
 import logging
-from exceptions import ControllerError
 from utils import toggle_entry_visibility, show_qr_code
 
 logger = logging.getLogger(__name__)
@@ -31,33 +27,44 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
             )
             self.header.place(relx=0.05, rely=0.05, anchor="nw")
 
+            # y-offset
+            rely = 0.15
+
             # Create field for label login, url and password
             self.label_label = master.create_label("Label:", frame=self)
-            self.label_label.place(relx=0.05, rely=0.2)
+            self.label_label.place(relx=0.05, rely=rely, anchor="nw")
+            rely += 0.05
             self.label_entry = master.create_entry(frame=self)
-            self.label_entry.place(relx=0.05, rely=0.27)
+            self.label_entry.place(relx=0.05, rely=rely, anchor="nw")
+            rely += 0.08
 
             # login
             self.login_label = master.create_label("Login:", frame=self)
-            self.login_label.place(relx=0.05, rely=0.34)
+            self.login_label.place(relx=0.05, rely=rely, anchor="nw")
+            rely += 0.05
             self.login_entry = master.create_entry(frame=self)
-            self.login_entry.place(relx=0.05, rely=0.41)
+            self.login_entry.place(relx=0.05, rely=rely, anchor="nw")
+            rely += 0.08
 
             # url
             self.url_label = master.create_label("Url:", frame=self)
-            self.url_label.place(relx=0.05, rely=0.48)
+            self.url_label.place(relx=0.05, rely=rely, anchor="nw")
+            rely += 0.05
             self.url_entry = master.create_entry(frame=self)
-            self.url_entry.place(relx=0.05, rely=0.55)
+            self.url_entry.place(relx=0.05, rely=rely, anchor="nw")
+            rely += 0.08
 
             # password
             self.password_label = master.create_label("Password:", frame=self)
-            self.password_label.place(relx=0.05, rely=0.7, anchor="w")
+            self.password_label.place(relx=0.05, rely=rely, anchor="nw")
+            rely += 0.05
             self.password_entry = master.create_entry(show_option="*", frame=self)
-            self.password_entry.place(relx=0.05, rely=0.77, anchor="w")
+            self.password_entry.place(relx=0.05, rely=rely, anchor="nw")
 
             # qr label
             self.qr_label = master.create_label("", frame=self)
-            self.qr_label.place(relx=0.8, rely=0.7, anchor="w")
+            self.qr_label.place(relx=0.95, rely=rely, anchor="e")
+            rely += 0.08
 
             # Create action buttons
             # delete #todo in red?

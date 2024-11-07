@@ -443,11 +443,10 @@ class Controller:
             return self.decode_default(secret)
 
     def decode_password(self, secret_dict: Dict[str, Any]) -> Dict[str, Any]:
+        logger.info("Decoding password secret")
+        result = secret_dict
         try:
-            logger.info("Decoding password secret")
-
             # Initialiser les champs
-            result= secret_dict
             result['password'] = ''
             result['login'] = ''
             result['url'] = ''
@@ -487,58 +486,15 @@ class Controller:
 
             return result
         except Exception as e:
-            logger.error(f"Error decoding password secret: {str(e)}")
-
-    @log_method
-    def decode_password_old(self, result: Dict[str, Any], secret_bytes: bytes) -> Dict[str, Any]:
-        # todo clean args and remove secret bytes?
-        try:
-            logger.info("Decoding password secret")
-
-            # Initialiser les champs
-            result['password'] = ''
-            result['login'] = ''
-            result['url'] = ''
-
-            # Décoder le contenu complet en UTF-8
-            full_content = secret_bytes.decode('utf-8')
-            logger.debug(f"Full decoded content: {full_content}")
-
-            # Séparer les parties
-            parts = full_content.split('login:')
-
-            if len(parts) > 1:
-                # Le mot de passe est la première partie
-                result['password'] = parts[0].strip()
-
-                # Traiter le reste
-                remaining = parts[1]
-                login_url_parts = remaining.split('url:')
-
-                if len(login_url_parts) > 1:
-                    result['login'] = login_url_parts[0].strip()
-                    result['url'] = login_url_parts[1].strip()
-                else:
-                    result['login'] = remaining.strip()
-            else:
-                # Si 'login:' n'est pas trouvé, tout est considéré comme mot de passe
-                result['password'] = full_content.strip()
-
-            # Remplacer 'None' par une chaîne vide
-            for key in result:
-                if result[key] == 'None':
-                    result[key] = ''
-
-            logger.debug(f"Decoded password secret: {result}")
+            error_msg=f"Error decoding password secret: {str(e)}"
+            logger.error(error_msg)
+            result["password"] = error_msg
             return result
-        except Exception as e:
-            logger.error(f"Error decoding password secret: {str(e)}")
-            raise ValueError(f"Failed to decode password secret: {str(e)}") from e
 
     def decode_mnemonic(self, secret_dict: Dict[str, Any]) -> Dict[str, Any]:
+        logger.info("Decoding mnemonic secret")
+        result = secret_dict
         try:
-            logger.info("Decoding mnemonic secret")
-            result = secret_dict
             # Initialiser les champs
             secret_bytes = binascii.unhexlify(secret_dict['secret'])
             offset = 0
@@ -557,12 +513,15 @@ class Controller:
 
             return result
         except Exception as e:
-            logger.error(f"Error decoding password secret: {str(e)}")
+            error_msg= f"Error decoding password secret: {str(e)}"
+            logger.error(error_msg)
+            result['mnemonic'] = result['secret_decoded'] = error_msg
+            return result
 
     def decode_masterseed_mnemonic(self, secret_dict: Dict[str, Any]) -> Dict[str, Any]:
+        logger.info("Decoding masterseed mnemonic secret")
+        result = secret_dict
         try:
-            logger.info("Decoding masterseed mnemonic secret")
-            result = secret_dict
             # Initialiser les champs
             secret_bytes = binascii.unhexlify(secret_dict['secret'])
             offset = 0
@@ -620,127 +579,10 @@ class Controller:
 
             return result
         except Exception as e:
-            logger.error(f"Error decoding password secret: {str(e)}")
-
-    @log_method
-    def decode_masterseed_old(self, secret_dict: Dict[str, Any]) -> Dict[str, Any]:
-        try:
-            logger.info("Starting masterseed decoding process")
-            logger.debug(f"Secret dictionary provided: {secret_dict}")
-
-            # Mapping des types de secrets de chaîne à valeur hexadécimale
-            secret_type_mapping = {
-                "Masterseed": 0x10,
-                "BIP39 mnemonic": 0x30,
-                "Electrum mnemonic": 0x40
-            }
-
-            result = {
-                'type': secret_type_mapping.get(secret_dict['type']),
-                'subtype': secret_dict.get('subtype', 0x00),  # Default subtype if not provided
-                'masterseed': b'',
-                'mnemonic': '',
-                'passphrase': '',
-                'entropy': b'',
-                'wordlist_selector': None
-            }
-
-            if result['type'] is None:
-                raise ValueError(f"Unsupported secret type: {secret_dict['type']}")
-
-            logger.debug(f"Initial result dictionary: {result}")
-
-            # Convertir la chaîne hexadécimale du secret en bytes
-            try:
-                logger.debug(f"Secret_dict['secret'] before secret_bytes: {secret_dict['secret']}")
-                secret_bytes = binascii.unhexlify(secret_dict['secret'])
-                logger.debug(f"Secret bytes: {(secret_bytes)}")
-            except binascii.Error:
-                raise ValueError("Invalid hexadecimal string provided for secret")
-
-            offset = 0
-
-            if result['type'] == 0x10:  # SECRET_TYPE_MASTER_SEED
-                logger.debug(f"Decoding SECRET_TYPE_MASTER_SEED with subtype: {hex(result['subtype'])}")
-
-                if result['subtype'] in [0x00, 0x01]:  # DEFAULT or BIP39
-                    logger.debug(f"Subtype is default or BIP39: {hex(result['subtype'])}")
-                    masterseed_size = secret_bytes[offset]
-                    offset += 1
-                    result['masterseed'] = secret_bytes[offset:offset + masterseed_size]
-
-                    if result['subtype'] == 0x00:  # default masterseed:
-                        result['masterseed'] = secret_bytes[offset:].hex()
-
-                    logger.debug(
-                        f"The masterseed: {result['masterseed']} had been store into result_dict['masterseed']")
-                    offset += masterseed_size
-
-                    if result['subtype'] == 0x01:  # BIP39
-                        result['wordlist_selector'] = secret_bytes[offset]
-                        offset += 1
-
-                        entropy_size = secret_bytes[offset]
-                        offset += 1
-                        result['entropy'] = secret_bytes[offset:offset + entropy_size]
-                        offset += entropy_size
-
-                        # Génération de la mnemonic à partir de l'entropie
-                        # Mnemonic generation from entripy
-                        if result['entropy']:
-                            mnemonic_instance = Mnemonic(
-                                "english")  # Utiliser le sélecteur de liste pour d'autres langues si nécessaire
-                            result['mnemonic'] = mnemonic_instance.to_mnemonic(result['entropy'])
-                            result['masterseed'] = secret_bytes[1:offset - (entropy_size + 2)].hex()
-                            logger.debug(f"Generated Mnemonic: {result['mnemonic']} {result['masterseed']}")
-
-                        logger.debug(f"secret_bytes length: {len(secret_bytes)}")
-                        logger.debug(f"offset value: {offset}")
-                        logger.debug(f"secret_bytes content: {secret_bytes.hex()}")
-
-                        passphrase_size = secret_bytes[offset]
-                        offset += 1
-                        if passphrase_size > 0:
-                            result['passphrase'] = secret_bytes[offset:offset + passphrase_size].decode('utf-8')
-                else:
-                    raise ValueError(f"Unknown subtype for SECRET_TYPE_MASTER_SEED: {hex(result['subtype'])}")
-
-            elif result['type'] in [0x30, 0x40]:  # SECRET_TYPE_BIP39_MNEMONIC or SECRET_TYPE_ELECTRUM_MNEMONIC
-                logger.debug(f"Decoding {'BIP39_MNEMONIC' if result['type'] == 0x30 else 'ELECTRUM_MNEMONIC'}")
-
-                if result['subtype'] == 0x00:  # SECRET_SUBTYPE_DEFAULT
-                    mnemonic_size = secret_bytes[offset]
-                    offset += 1
-                    result['mnemonic'] = secret_bytes[offset:offset + mnemonic_size]
-                    offset += mnemonic_size
-
-                    passphrase_size = secret_bytes[offset] if offset < len(secret_bytes) else 0
-                    offset += 1
-                    if passphrase_size > 0 and offset < len(secret_bytes):
-                        result['passphrase'] = secret_bytes[offset:offset + passphrase_size]
-                else:
-                    raise ValueError(f"Unknown subtype for BIP39/ELECTRUM_MNEMONIC: {hex(result['subtype'])}")
-
-            else:
-                raise ValueError(f"Unsupported secret type for masterseed: {hex(result['type'])}")
-
-            # Vérification de la mnémonique
-            if result['mnemonic']:
-                mnemonic = result['mnemonic']
-                mnemonic_instance = Mnemonic("english")  # Nous supposons l'anglais par défaut
-                if not mnemonic_instance.check(mnemonic):
-                    logger.debug(f"Maybe mnemonic: {mnemonic} is electrum only")
-
-            logger.info("Masterseed successfully decoded")
-            logger.debug(f"Decoded: {result}")
+            error_msg=f"Error decoding password secret: {str(e)}"
+            logger.error(error_msg)
+            result['mnemonic']=error_msg
             return result
-
-        except ValueError as e:
-            logger.error(f"Validation error during masterseed decoding: {str(e)}")
-            raise
-        except Exception as e:
-            logger.error(f"Unexpected error during masterseed decoding: {str(e)}")
-            raise ControllerError(f"Failed to decode masterseed: {str(e)}") from e
 
     def decode_masterseed(self, secret_dict: Dict[str, Any]) -> Dict[str, Any]:
         result = self.decode_1byte_secret(secret_dict)
@@ -762,113 +604,16 @@ class Controller:
         result["data"] = result["secret_decoded"]
         return result
 
-    @log_method
-    def decode_free_text_old(self, secret_dict: Dict[str, Any]) -> Dict[str, Any]:
-        try:
-            logger.info("Starting free text decoding process")
-            logger.debug(f"Secret dictionary provided: {secret_dict}")
-
-            result = {
-                'type': secret_dict['type'],
-                'label': secret_dict['label'],
-                'text': ''
-            }
-
-            # Convert the hexadecimal string of the secret to bytes
-            try:
-                secret_bytes = binascii.unhexlify(secret_dict['secret'])
-                logger.debug(f"Secret bytes: {secret_bytes.hex()}")
-            except binascii.Error:
-                raise ValueError("Invalid hexadecimal string provided for secret")
-
-            # Extract the text size (first 2 bytes)
-            if len(secret_bytes) < 2:
-                raise ValueError("Secret is too short to contain size information")
-            text_size = int.from_bytes(secret_bytes[:2], byteorder='big')
-            logger.debug(f"Decoded text size: {text_size}")
-
-            # Extract and decode the raw text bytes
-            raw_text_bytes = secret_bytes[2:]
-            if len(raw_text_bytes) != text_size:
-                raise ValueError(
-                    f"Mismatch between declared text size ({text_size}) and actual data size ({len(raw_text_bytes)})")
-
-            try:
-                decoded_text = raw_text_bytes.decode('utf-8')
-                result['text'] = decoded_text
-                logger.debug(f"Decoded text: {decoded_text}")
-            except UnicodeDecodeError:
-                raise ValueError("Failed to decode text as UTF-8")
-
-            logger.log(SUCCESS, "Free text successfully decoded")
-            return result
-
-        except ValueError as e:
-            logger.error(f"Validation error during free text decoding: {str(e)}")
-            raise
-        except Exception as e:
-            logger.error(f"Unexpected error during free text decoding: {str(e)}")
-            raise ControllerError(f"Failed to decode free text: {str(e)}") from e
-
     def decode_descriptor(self, secret_dict: Dict[str, Any]) -> Dict[str, Any]:
         result = self.decode_2bytes_secret(secret_dict)
         result["descriptor"] = result["secret_decoded"]
         return result
-
-    @log_method
-    def decode_wallet_descriptor_old(self, secret_dict: Dict[str, Any]) -> Dict[str, Any]:
-        try:
-            logger.info("Starting wallet descriptor decoding process")
-            logger.debug(f"Secret dictionary provided: {secret_dict}")
-
-            result = {
-                'type': secret_dict['type'],
-                'label': secret_dict['label'],
-                'descriptor': ''
-            }
-
-            # Convert the hexadecimal string of the secret to bytes
-            try:
-                secret_bytes = binascii.unhexlify(secret_dict['secret'])
-                logger.debug(f"Secret bytes: {secret_bytes.hex()}")
-            except binascii.Error:
-                raise ValueError("Invalid hexadecimal string provided for secret")
-
-            # Extract the descriptor size (first 2 bytes)
-            if len(secret_bytes) < 2:
-                raise ValueError("Secret is too short to contain size information")
-            descriptor_size = int.from_bytes(secret_bytes[:2], byteorder='big')
-            logger.debug(f"Decoded descriptor size: {descriptor_size}")
-
-            # Extract and decode the raw descriptor bytes
-            raw_descriptor_bytes = secret_bytes[2:]
-            if len(raw_descriptor_bytes) != descriptor_size:
-                raise ValueError(
-                    f"Mismatch between declared descriptor size ({descriptor_size}) and actual data size ({len(raw_descriptor_bytes)})")
-
-            try:
-                decoded_descriptor = raw_descriptor_bytes.decode('utf-8')
-                result['descriptor'] = decoded_descriptor
-                logger.debug(f"Decoded descriptor: {decoded_descriptor}")
-            except UnicodeDecodeError:
-                raise ValueError("Failed to decode descriptor as UTF-8")
-
-            logger.log(SUCCESS, "Wallet descriptor successfully decoded")
-            return result
-
-        except ValueError as e:
-            logger.error(f"Validation error during wallet descriptor decoding: {str(e)}")
-            raise
-        except Exception as e:
-            logger.error(f"Unexpected error during wallet descriptor decoding: {str(e)}")
-            raise ControllerError(f"Failed to decode wallet descriptor: {str(e)}") from e
 
     "Decoding simple secrets with 1bytes size, like Pubkey, Masterseed & 2FA"
     def decode_1byte_secret(self, secret_dict: Dict[str, Any]) -> Dict[str, Any]:
         logger.info("decode_1byte_secret")
         result = secret_dict
         try:
-
             # Initialiser les champs
             secret_bytes = binascii.unhexlify(secret_dict['secret'])
             offset = 0

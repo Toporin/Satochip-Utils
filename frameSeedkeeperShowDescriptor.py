@@ -1,20 +1,23 @@
 import binascii
 import time
+import tkinter
 
+import pyqrcode
 import customtkinter
 import logging
+
 from exceptions import ControllerError
-from utils import toggle_entry_visibility, show_qr_code
+from utils import show_qr_code, toggle_entry_visibility, toggle_textbox_visibility
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
+class FrameSeedkeeperShowDescriptor(customtkinter.CTkFrame):
     def __init__(self, master):
         super().__init__(master)
 
-        logger.debug("FrameSeedkeeperShowSecret init")
+        logger.debug("FrameSeedkeeperShowDescriptor init")
 
         try:
             # Creating new frame
@@ -25,51 +28,47 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
 
             # Creating header
             self.header = master.create_an_header(
-                "Password details",
-                "secrets_icon_popup.png",
+                "Descriptor details",
+                "secrets_icon_popup.png", # todo use descriptor icon
                 frame=self
             )
             self.header.place(relx=0.05, rely=0.05, anchor="nw")
 
-            # Create field for label login, url and password
+            # y-offset
+            rely= 0.15
+
+            # Create field for label
             self.label_label = master.create_label("Label:", frame=self)
-            self.label_label.place(relx=0.05, rely=0.2)
+            self.label_label.place(relx=0.05, rely=rely, anchor="nw")
+            rely+=0.05
             self.label_entry = master.create_entry(frame=self)
-            self.label_entry.place(relx=0.05, rely=0.27)
+            self.label_entry.place(relx=0.05, rely=rely, anchor="nw")
+            rely += 0.1
 
-            # login
-            self.login_label = master.create_label("Login:", frame=self)
-            self.login_label.place(relx=0.05, rely=0.34)
-            self.login_entry = master.create_entry(frame=self)
-            self.login_entry.place(relx=0.05, rely=0.41)
-
-            # url
-            self.url_label = master.create_label("Url:", frame=self)
-            self.url_label.place(relx=0.05, rely=0.48)
-            self.url_entry = master.create_entry(frame=self)
-            self.url_entry.place(relx=0.05, rely=0.55)
-
-            # password
-            self.password_label = master.create_label("Password:", frame=self)
-            self.password_label.place(relx=0.05, rely=0.7, anchor="w")
-            self.password_entry = master.create_entry(show_option="*", frame=self)
-            self.password_entry.place(relx=0.05, rely=0.77, anchor="w")
+            # Create descriptor field
+            self.descriptor_label = master.create_label("Descriptor:", frame=self)
+            self.descriptor_label.place(relx=0.05, rely=rely, anchor="nw")
+            rely += 0.05
+            self.descriptor_textbox = master.create_textbox(frame=self)
+            self.descriptor_textbox.place(relx=0.05, rely=rely, relheight=0.23, anchor="nw")
 
             # qr label
             self.qr_label = master.create_label("", frame=self)
-            self.qr_label.place(relx=0.8, rely=0.7, anchor="w")
+            self.qr_label.place(relx=0.8, rely=rely)
+            rely+=0.1
 
             # Create action buttons
+
             # delete #todo in red?
             self.delete_button = master.create_button(
                 text="Delete secret",
-                command=lambda: None,  # will be updated in update
+                command=lambda: None, # will be updated in update
                 frame=self
             )
             self.delete_button.place(relx=0.55, rely=0.95, anchor="e")
-            # seed_qr button #todo use icons on the side?
+            # qr button #todo use icons on the side?
             self.qr_button = master.create_button(
-                text="QR code",
+                text="SeedQR",
                 command=lambda: None,  # will be updated in update()
                 frame=self
             )
@@ -77,33 +76,40 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
             # show
             self.show_button = master.create_button(
                 text="Show",
-                command=None,  # will be updated in update
+                command= None, # will be updated in update
                 frame=self
             )
             self.show_button.place(relx=0.95, rely=0.95, anchor="e")
 
+            # place frame
             self.place(relx=1.0, rely=0.5, anchor="e")
 
         except Exception as e:
             logger.error(f"init error: {e}", exc_info=True)
 
+
     def update(self, secret):
-        # Decode secret
-        secret = self.master.controller.decode_password(secret)
-        password = secret.get('password')[1:]
-        self.label_entry.insert(0, secret.get('label'))
-        self.login_entry.insert(0, secret.get('login'))
-        self.url_entry.insert(0, secret.get('url'))
-        self.password_entry.insert(0, password)
+        logger.debug(f"update() secret: {secret}")
+        self.label_entry.insert(0, secret['label'])
+
+        # Decode descriptor
+        descriptor = ""
+        try:
+            secret = self.master.controller.decode_wallet_descriptor(secret)
+            descriptor = secret['descriptor']
+        except Exception as e:
+            logger.error(f"Error decoding descriptor: {e}", exc_info=True)
+            mnemonic = f"Failed to parse secret: {e}"
+        self.descriptor_textbox.insert("1.0", '*' * len(descriptor)) # Masque la valeur
 
         # qr-code
         self.qr_button.configure(
-            command=lambda params=(password, self.qr_label): show_qr_code(params[0], params[1])
+            command=lambda params=(descriptor, self.qr_label): show_qr_code(params[0], params[1])
         )
 
         self.show_button.configure(
-            command=lambda txt=password: [
-                toggle_entry_visibility(self.password_entry),
+            command=lambda txt=descriptor: [
+                toggle_textbox_visibility(self.descriptor_textbox, txt),
             ]
         )
 

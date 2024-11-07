@@ -27,7 +27,14 @@ from frameMenuNoCard import FrameMenuNoCard
 from frameMenuSeedkeeper import FrameMenuSeedkeeper
 from frameMenuSettings import FrameMenuSettings
 from frameSeedkeeperListSecrets import FrameSeedkeeperListSecrets
+from frameSeedkeeperShow2fa import FrameSeedkeeperShow2fa
+from frameSeedkeeperShowData import FrameSeedkeeperShowData
+from frameSeedkeeperShowDescriptor import FrameSeedkeeperShowDescriptor
+from frameSeedkeeperShowMasterseed import FrameSeedkeeperShowMasterseed
+from frameSeedkeeperShowMnemonic import FrameSeedkeeperShowMnemonic
 from frameSeedkeeperShowPasswordSecret import FrameSeedkeeperShowPasswordSecret
+from frameSeedkeeperShowPubkey import FrameSeedkeeperShowPubkey
+from frameSeedkeeperShowSecret import FrameSeedkeeperShowSecret
 from frameStart import FrameStart
 from frameWelcome import FrameWelcome
 from log_config import SUCCESS, log_method
@@ -75,6 +82,32 @@ class View(customtkinter.CTk):
             # seedkeeper state
             self.in_backup_process = False
 
+            # frame declaration
+            # these frames will be created when needed using show_* methods
+            self.welcome_frame = None
+            self.start_frame = None
+            # menu frames
+            self.seedkeeper_menu_frame = None
+            self.settings_menu_frame = None
+            # settings frames
+            self.setup_card_frame = None
+            self.about_frame = None
+            self.authenticity_frame = None
+            self.edit_label_frame = None
+            self.change_pin_frame = None
+            self.seed_import_frame = None
+            self.factory_reset_frame = None
+            # seedkeeper frames
+            self.list_secrets_frame = None
+            self.seedkeeper_show_password_frame = None
+            self.seedkeeper_show_mnemonic_frame = None
+            self.seedkeeper_show_descriptor_frame = None
+            self.seedkeeper_show_data_frame = None
+            self.seedkeeper_show_masterseed_frame = None
+            self.seedkeeper_show_2fa_frame = None
+            self.seedkeeper_show_pubkey_frame = None
+            self.seedkeeper_show_simple_secret_frame = None
+
             # Initializing controller
             self.controller = Controller(None, self, loglevel=loglevel)
 
@@ -103,25 +136,6 @@ class View(customtkinter.CTk):
             self.counter = None
             self.display_menu = False
             logger.debug("Widgets declared successfully")
-
-            # frames
-            # these will be created when needed using show_* methods
-            self.welcome_frame = None
-            self.start_frame = None
-            # menu frames
-            self.seedkeeper_menu_frame = None
-            self.settings_menu_frame = None
-            # settings frames
-            self.setup_card_frame = None
-            self.about_frame = None
-            self.authenticity_frame = None
-            self.edit_label_frame = None
-            self.change_pin_frame = None
-            self.seed_import_frame = None
-            self.factory_reset_frame = None
-            # seedkeeper frames
-            self.list_secrets_frame = None
-            self.seedkeeper_show_password_frame = None
 
             # widgets (todo: clean)
             self.show_button = None
@@ -601,12 +615,12 @@ class View(customtkinter.CTk):
 
         return button
 
-    def create_entry(self, show_option: str = "", frame=None)-> customtkinter.CTkEntry:
+    def create_entry(self, show_option: str = "", width=555, height=37, frame=None)-> customtkinter.CTkEntry:
         logger.debug("create_entry start")
         if frame is None:
             frame = self.current_frame # todo
         entry = customtkinter.CTkEntry(
-            frame, width=555, height=37, corner_radius=10,
+            frame, width=width, height=height, corner_radius=10,
             bg_color='white', fg_color=BUTTON_COLOR, border_color=BUTTON_COLOR,
             show=show_option, text_color='grey'
         )
@@ -620,6 +634,18 @@ class View(customtkinter.CTk):
             show=show_option, text_color='grey'
         )
         return entry
+
+    def create_textbox(self, frame, width=555, height=37) -> customtkinter.CTkTextbox:
+        # Créer la textbox avec les mêmes dimensions et styles que l'entrée
+        textbox = customtkinter.CTkTextbox(
+            frame,
+            width=width, height=height, corner_radius=10,
+            bg_color='white', fg_color=BG_BUTTON, border_color=BG_BUTTON,
+            text_color='grey', wrap='word'
+        )
+        # Ajouter du padding pour centrer verticalement le texte
+        #textbox.configure(pady=40)  # Ajustez le nombre pour mieux centrer
+        return textbox
 
     def update_textbox_old(self, text):
         try:
@@ -1027,17 +1053,85 @@ class View(customtkinter.CTk):
         # show secret according to type
         if secret_header['type'] == 'Password':
             logger.debug(f"Secret: {secret_header}, with id {secret_header['id']} is a couple login password")
-            #self._create_password_secret_frame(secret_details)
             self.show_password_secret(secret_details)
-            logger.debug(f"Frame corresponding to {secret_header['type']} details called")
+        elif secret_header['type'] == 'Masterseed':
+            if secret_details['subtype'] > 0 or secret_details['subtype'] == '0x1':
+                self.show_mnemonic_secret(secret_details)
+            else:
+                self.show_simple_secret(secret_details)
+        elif secret_header['type'] == "BIP39 mnemonic":
+            self.show_mnemonic_secret(secret_details)
+        elif secret_header['type'] == 'Electrum mnemonic':
+            self.show_mnemonic_secret(secret_details)
+        elif (secret_header['type'] == 'Wallet descriptor' or
+              secret_header['type'] == 'Free text' or
+              secret_header['type'] == '2FA secret' or
+              secret_header['type'] == 'Public Key'
+        ):
+            self.show_simple_secret(secret_details)
+        # elif secret_header['type'] == 'Wallet descriptor':
+        #     logger.info(f"this is wallet descriptor, subtype: {secret_details['subtype']}")
+        #     self.show_descriptor_secret(secret_details)
+        # elif secret_header['type'] == 'Free text':
+        #     logger.info(f"this is data")
+        #     self.show_data_secret(secret_details)
+        # elif secret_header['type'] == '2FA secret':
+        #     logger.debug(f"this is 2FA secret")
+        #     self.show_2fa_secret(secret_details)
+        # elif secret_header['type'] == 'Public Key':
+        #     logger.debug(f"this is pubkey secret")
+        #     self.show_pubkey_secret(secret_details)
         else:
-            pass # TODO unsuported secret type
+            self.show_simple_secret(secret_details)
 
     def show_password_secret(self, secret):
         if self.seedkeeper_show_password_frame is None:
             self.seedkeeper_show_password_frame = FrameSeedkeeperShowPasswordSecret(self)
         self.seedkeeper_show_password_frame.update(secret)
         self.seedkeeper_show_password_frame.tkraise()
+
+    def show_mnemonic_secret(self, secret):
+        if self.seedkeeper_show_mnemonic_frame is None:
+            self.seedkeeper_show_mnemonic_frame = FrameSeedkeeperShowMnemonic(self)
+        self.seedkeeper_show_mnemonic_frame.update(secret)
+        self.seedkeeper_show_mnemonic_frame.tkraise()
+
+    def show_simple_secret(self, secret):
+        if self.seedkeeper_show_simple_secret_frame is None:
+            self.seedkeeper_show_simple_secret_frame = FrameSeedkeeperShowSecret(self)
+        self.seedkeeper_show_simple_secret_frame.update(secret)
+        self.seedkeeper_show_simple_secret_frame.tkraise()
+
+    def show_descriptor_secret(self, secret):
+        if self.seedkeeper_show_descriptor_frame is None:
+            self.seedkeeper_show_descriptor_frame = FrameSeedkeeperShowDescriptor(self)
+        self.seedkeeper_show_descriptor_frame.update(secret)
+        self.seedkeeper_show_descriptor_frame.tkraise()
+
+    def show_data_secret(self, secret):
+        if self.seedkeeper_show_data_frame is None:
+            self.seedkeeper_show_data_frame = FrameSeedkeeperShowData(self)
+        self.seedkeeper_show_data_frame.update(secret)
+        self.seedkeeper_show_data_frame.tkraise()
+
+    def show_masterseed_secret(self, secret):
+        if self.seedkeeper_show_masterseed_frame is None:
+            self.seedkeeper_show_masterseed_frame = FrameSeedkeeperShowMasterseed(self)
+        self.seedkeeper_show_masterseed_frame.update(secret)
+        self.seedkeeper_show_masterseed_frame.tkraise()
+
+    def show_2fa_secret(self, secret):
+        if self.seedkeeper_show_2fa_frame is None:
+            self.seedkeeper_show_2fa_frame = FrameSeedkeeperShow2fa(self)
+        self.seedkeeper_show_2fa_frame.update(secret)
+        self.seedkeeper_show_2fa_frame.tkraise()
+
+    def show_pubkey_secret(self, secret):
+        if self.seedkeeper_show_pubkey_frame is None:
+            self.seedkeeper_show_pubkey_frame = FrameSeedkeeperShowPubkey(self)
+        self.seedkeeper_show_pubkey_frame.update(secret)
+        self.seedkeeper_show_pubkey_frame.tkraise()
+
 
     @log_method
     def show_view_generate_secret(self):

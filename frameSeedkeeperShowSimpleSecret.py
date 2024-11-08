@@ -1,7 +1,8 @@
 import customtkinter
 import logging
 
-from utils import show_qr_code, toggle_entry_visibility, toggle_textbox_visibility
+from frameWidgetHeader import FrameWidgetHeader
+from utils import show_qr_code, toggle_entry_visibility, toggle_textbox_visibility, reset_qr_code, update_textbox
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -21,7 +22,7 @@ class FrameSeedkeeperShowSecret(customtkinter.CTkFrame):
             )
 
             # Creating header
-            self.header = master.create_an_header(
+            self.header = FrameWidgetHeader(
                 "Secret details",
                 "secrets_icon_popup.png",
                 frame=self
@@ -69,7 +70,7 @@ class FrameSeedkeeperShowSecret(customtkinter.CTkFrame):
             self.qr_button.place(relx=0.75, rely=0.95, anchor="e")
             # show
             self.show_button = master.create_button(
-                text="Show",
+                text="Hide",
                 command= None, # will be updated in update
                 frame=self
             )
@@ -84,23 +85,28 @@ class FrameSeedkeeperShowSecret(customtkinter.CTkFrame):
 
     def update(self, secret):
         logger.debug(f"update() secret: {secret}")
+        self.label_entry.delete(0, "end")
         self.label_entry.insert(0, secret['label'])
 
-        # update header #todo!
-        #self.header.configure(text=f"{secret.get('type')} details")
+        # update header
+        self.header.button.configure(text=f"   {secret.get('type')} details")
 
-        # Decode secret
+        # Decode secret and update textbox
         secret = self.master.controller.decode_secret(secret)
         secret_decoded = secret['secret_decoded']
-        self.secret_textbox.insert("1.0", '*' * len(secret_decoded)) # Masque la valeur
+        update_textbox(self.secret_textbox, secret_decoded)
 
         # qr-code
+        reset_qr_code(self.qr_label)
         self.qr_button.configure(
             command=lambda params=(secret_decoded, self.qr_label): show_qr_code(params[0], params[1])
         )
 
         self.show_button.configure(
             command=lambda txt=secret_decoded: [
+                self.show_button.configure(
+                    text="Show" if self.show_button.cget("text") == "Hide" else "Hide"
+                ),
                 toggle_textbox_visibility(self.secret_textbox, txt),
             ]
         )

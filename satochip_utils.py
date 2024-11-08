@@ -45,6 +45,5 @@ else:
 
 if __name__ == '__main__':
     view = View(logger.getEffectiveLevel())
-
     view.resizable(False, False)
     view.mainloop()

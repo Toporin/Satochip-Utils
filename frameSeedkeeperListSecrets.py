@@ -72,6 +72,8 @@ class FrameSeedkeeperListSecrets(customtkinter.CTkFrame):
                 self, width=600, height=400, x=33.5, y=200
             )
 
+            self.secret_rows = []
+
             self.place(relx=1.0, rely=0.5, anchor="e")
 
         except Exception as e:
@@ -88,6 +90,12 @@ class FrameSeedkeeperListSecrets(customtkinter.CTkFrame):
         # def _on_mouse_out_secret(event, buttons):
         #     for button in buttons:
         #         button.configure(fg_color=button.default_color)
+
+        # clear rows
+        if len(self.secret_rows)>0:
+            for i, row in enumerate(self.secret_rows):
+                self.secret_rows[i].destroy()
+            self.secret_rows=[]
 
         # Create rows of labels with alternating colors
         rely = 0.3
@@ -123,14 +131,14 @@ class FrameSeedkeeperListSecrets(customtkinter.CTkFrame):
                     cell_button.configure(command=lambda s=secret: self.master.show_view_secret(s))
                     #buttons.append(cell_button)
 
-                # Bind hover events to change color for all buttons in the row
-                # for button in buttons:
-                #     button.bind("<Enter>", lambda event, btns=buttons: _on_mouse_on_secret(event, btns))
-                #     button.bind("<Leave>", lambda event, btns=buttons: _on_mouse_out_secret(event, btns))
-                #     button.configure(command=lambda s=secret: _show_secret_details(s))
+                # add row to list (keep ref to destroy them on card removal)
+                self.secret_rows += [row_frame]
 
                 logger.debug(f"016 Row created for secret ID: {secret['id']}")
             except Exception as e:
                 logger.error(f"017 Error creating row for secret {secret['id']}: {str(e)}")
 
+        # update status flag
+        # todo detect changes in secret_headers to update list when needed
+        self.master.seedkeeper_secret_headers_need_update = False
 

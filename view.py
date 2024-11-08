@@ -96,6 +96,13 @@ class View(customtkinter.CTk):
             # self.seedkeeper_show_pubkey_frame = None
             self.seedkeeper_show_simple_secret_frame = None
 
+            # state
+
+            # store seedkeeper secret headers
+            self.secrets_data = None
+            # should we update the list of headers?
+            self.seedkeeper_secret_headers_need_update = True
+
             # Initializing controller
             self.controller = Controller(None, self, loglevel=loglevel)
 
@@ -146,6 +153,10 @@ class View(customtkinter.CTk):
             self.welcome_frame = FrameWelcome(self)
             self.protocol("WM_DELETE_WINDOW", lambda: [self.on_close()])
 
+            # A bug related to copy-paste is patched in tcl/tk v8.6.11:
+            # https://arbitrary-but-fixed.net/2021/11/21/tk-disabled-text-copy-paste.html
+            logger.debug(f"Tcl/Tk version {self.tk.call('info', 'patchlevel')}")
+
         except Exception as e:
             logger.critical(f"An unexpected error occurred in __init__: {e}", exc_info=True)
 
@@ -169,6 +180,8 @@ class View(customtkinter.CTk):
 
             self.geometry(f'{window_width}x{window_height}+{center_x}+{center_y}')
             logger.debug("Window geometry set successfully")
+
+
         except Exception as e:
             logger.critical(f"An unexpected error occurred in main_window: {e}", exc_info=True)
         logger.debug("OUT View.main_window")
@@ -730,7 +743,6 @@ class View(customtkinter.CTk):
                 if isConnected is True:
                     try:
                         #logger.info("Getting card status")
-                        #self.controller.get_card_status() # todo:neeeded?
 
                         if self.start_frame is not None: # do not create frame now as it is not main thread
                             self.show_start_frame()
@@ -741,6 +753,11 @@ class View(customtkinter.CTk):
 
                 elif isConnected is False:
                     try:
+                        # update state
+                        # Seedkeeper: reset secret_headers to force update on reconnection
+                        self.secrets_data = None
+                        self.seedkeeper_secret_headers_need_update = True
+
                         if self.start_frame is not None: # do not create frame now as it is not main thread
                             self.show_start_frame()
                             self.show_nocard_menu()
@@ -914,15 +931,18 @@ class View(customtkinter.CTk):
         try:
             logger.debug("show_view_my_secrets start")
 
-            # verify PIN
-            self.update_verify_pin()
-
-            secrets_data = self.controller.retrieve_secrets_stored_into_the_card()
-            logger.debug(f"Fetched {len(secrets_data['headers'])} headers")
+            if self.secrets_data is None:
+                # verify PIN
+                self.update_verify_pin()
+                # get list of secret headers
+                self.secrets_data = self.controller.retrieve_secrets_stored_into_the_card()
+                self.seedkeeper_secret_headers_need_update = True
+                logger.debug(f"Fetched {len(self.secrets_data['headers'])} headers from card")
 
             if self.list_secrets_frame is None:
                 self.list_secrets_frame = FrameSeedkeeperListSecrets(self)
-            self.list_secrets_frame.update(secrets_data)
+            if self.seedkeeper_secret_headers_need_update is True:
+                self.list_secrets_frame.update(self.secrets_data)
             self.list_secrets_frame.tkraise()
 
         except Exception as e:
@@ -978,7 +998,7 @@ class View(customtkinter.CTk):
     def show_mnemonic_secret(self, secret):
         if self.seedkeeper_show_mnemonic_frame is None:
             self.seedkeeper_show_mnemonic_frame = FrameSeedkeeperShowMnemonic(self)
-        self.seedkeeper_show_mnemonic_frame.update(secret)
+        self.seedkeeper_show_mnemonic_frame.update_frame(secret)
         self.seedkeeper_show_mnemonic_frame.tkraise()
 
     def show_simple_secret(self, secret):

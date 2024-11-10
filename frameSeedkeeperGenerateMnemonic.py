@@ -28,21 +28,26 @@ class FrameSeedkeeperGenerateMnemonic(customtkinter.CTkFrame):
             )
             self.header.place(relx=0.05, rely=0.05, anchor="nw")
 
+            # label
             self.label = master.create_label("Label*:", frame=self)
-            self.label.place(relx=0.05, rely=0.20, anchor="nw")
+            self.label.place(relx=0.05, rely=0.15, anchor="nw")
+
+            self.label_entry = master.create_entry(frame=self)
+            self.label_entry.configure(placeholder_text="Enter label")
+            self.label_entry.place(relx=0.05, rely=0.20, anchor="nw")
 
             # mnemonic
-            self.mnemonic_label_name = master.create_entry(frame=self)
-            self.mnemonic_label_name.place(relx=0.04, rely=0.25, anchor="nw")
+            self.mnemonic_label = master.create_label("Mnemonic*:", frame=self)
+            self.mnemonic_label.place(relx=0.05, rely=0.28, anchor="nw")
 
             def update_mnemonic():
                 try:
                     mnemonic_length = int(self.radio_value.get())
                     mnemonic = master.controller.generate_random_seed(mnemonic_length)
-                    self.mnemonic_textbox.configure(state='normal')
+                    #self.mnemonic_textbox.configure(state='normal')
                     self.mnemonic_textbox.delete("1.0", customtkinter.END)
                     self.mnemonic_textbox.insert("1.0", mnemonic)
-                    self.mnemonic_textbox.configure(state='disabled')
+                    #self.mnemonic_textbox.configure(state='disabled') # also disable copy-paste on some linux distro
                 except Exception as e:
                     logger.error(f"Error generating mnemonic: {e}", exc_info=True)
 
@@ -56,7 +61,7 @@ class FrameSeedkeeperGenerateMnemonic(customtkinter.CTkFrame):
                 value="12",
                 command=lambda: update_mnemonic()
             )
-            self.radio_12.place(relx=0.05, rely=0.35, anchor="w")
+            self.radio_12.place(relx=0.05, rely=0.34, anchor="nw")
 
             self.radio_24 = customtkinter.CTkRadioButton(
                 self,
@@ -65,17 +70,17 @@ class FrameSeedkeeperGenerateMnemonic(customtkinter.CTkFrame):
                 value="24",
                 command=lambda: update_mnemonic()
             )
-            self.radio_24.place(relx=0.2, rely=0.35, anchor="w")
+            self.radio_24.place(relx=0.2, rely=0.34, anchor="nw")
 
             self.mnemonic_textbox = master.create_textbox(frame=self)
-            self.mnemonic_textbox.place(relx=0.045, rely=0.5, relheight=0.20, anchor="w")
+            self.mnemonic_textbox.place(relx=0.05, rely=0.40, relheight=0.1, anchor="nw")
 
             # use passphrase
             def toggle_passphrase():
                 if self.use_passphrase.get():
-                    self.passphrase_entry.configure(state="normal")
+                    self.passphrase_entry.place(relx=0.05, rely=0.60, anchor="nw")
                 else:
-                    self.passphrase_entry.configure(state="disabled")
+                    self.passphrase_entry.place_forget()
 
             self.passphrase_checkbox = customtkinter.CTkCheckBox(
                 self,
@@ -83,20 +88,39 @@ class FrameSeedkeeperGenerateMnemonic(customtkinter.CTkFrame):
                 variable=self.use_passphrase,
                 command=lambda: toggle_passphrase()
             )
-            self.passphrase_checkbox.place(relx=0.05, rely=0.66, anchor="w")
+            self.passphrase_checkbox.place(relx=0.05, rely=0.55, anchor="w")
 
             self.passphrase_entry = master.create_entry(frame=self)
-            self.passphrase_entry.place(relx=0.045, rely=0.73, anchor="w")
+
             self.passphrase_entry.configure(placeholder_text="Enter passphrase (optional)")
-            self.passphrase_entry.configure(state='disabled')
+
+            # use descriptor
+            def toggle_descriptor():
+                if self.use_descriptor.get():
+                    self.descriptor_textbox.place(relx=0.05, rely=0.75, relheight=0.15, anchor="nw")
+                else:
+                    self.descriptor_textbox.place_forget()
+
+            self.use_descriptor = customtkinter.BooleanVar(value=False)
+            self.descriptor_checkbox = customtkinter.CTkCheckBox(
+                self,
+                text="Use descriptor",
+                variable=self.use_descriptor,
+                command=lambda: toggle_descriptor()
+            )
+            self.descriptor_checkbox.place(relx=0.05, rely=0.68, anchor="nw")
+
+            self.descriptor_textbox = master.create_textbox(frame=self)
+
 
             # action buttons
             def import_mnemonic_on_card():
                 try:
                     logger.info("Saving mnemonic to card")
-                    label = self.mnemonic_label_name.get()
+                    label = self.label_entry.get()
                     mnemonic = self.mnemonic_textbox.get("1.0", "end").strip()
                     passphrase = self.passphrase_entry.get() if self.use_passphrase.get() else None
+                    descriptor = self.descriptor_textbox.get("1.0", "end") if self.use_descriptor.get() else None
 
                     if not mnemonic:
                         raise ValueError("Mnemonic field is mandatory")
@@ -108,7 +132,7 @@ class FrameSeedkeeperGenerateMnemonic(customtkinter.CTkFrame):
                     # verify PIN
                     master.update_verify_pin()
                     # import
-                    sid, fingerprint = master.controller.import_masterseed(label, mnemonic, passphrase)
+                    sid, fingerprint = master.controller.import_masterseed(label, mnemonic, passphrase, descriptor)
 
                     master.show(
                         "SUCCESS",

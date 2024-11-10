@@ -79,7 +79,7 @@ class FrameSeedkeeperImportMnemonic(customtkinter.CTkFrame):
             self.descriptor_checkbox.place(relx=0.05, rely=0.67, anchor="nw")
 
             self.descriptor_textbox = master.create_textbox(frame=self)
-            #self.descriptor_textbox.place(relx=0.05, rely=0.76, relheight=0.15, anchor="nw")
+
 
             # action buttons
             def import_mnemonic_on_card():
@@ -89,6 +89,7 @@ class FrameSeedkeeperImportMnemonic(customtkinter.CTkFrame):
                     mnemonic = self.mnemonic_textbox.get("1.0", "end").strip()
                     passphrase = self.passphrase_entry.get() if self.use_passphrase.get() else None
                     descriptor = self.descriptor_textbox.get("1.0", "end") if self.use_descriptor.get() else None
+
                     if not mnemonic:
                         logger.warning("No mnemonic to save")
                         raise ValueError("Mnemonic field is mandatory")

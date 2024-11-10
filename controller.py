@@ -1,24 +1,25 @@
 import binascii
+import hashlib
 import logging
 from os import urandom
 import sys
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 from mnemonic import Mnemonic
-from pysatochip.CardConnector import (CardConnector, UninitializedSeedError)
+from pysatochip.CardConnector import (CardConnector, UninitializedSeedError, SeedKeeperError)
 
 from exceptions import ControllerError, SecretRetrievalError
 from log_config import log_method, SUCCESS
 
 seed = None
-if (len(sys.argv) >= 2) and (sys.argv[1] in ['-v', '--verbose']):
-    logging.basicConfig(level=logging.DEBUG,
-                        format='%(asctime)s - [%(filename)s:%(lineno)d] - %(levelname)s - %(name)s - %(funcName)s() - %(message)s',
-                        datefmt='%Y-%m-%d %H:%M:%S')
-else:
-    logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s - [%(filename)s:%(lineno)d] - %(levelname)s - %(name)s - %(funcName)s() - %(message)s',
-                        datefmt='%Y-%m-%d %H:%M:%S')
+# if (len(sys.argv) >= 2) and (sys.argv[1] in ['-v', '--verbose']):
+#     logging.basicConfig(level=logging.DEBUG,
+#                         format='%(asctime)s - [%(filename)s:%(lineno)d] - %(levelname)s - %(name)s - %(funcName)s() - %(message)s',
+#                         datefmt='%Y-%m-%d %H:%M:%S')
+# else:
+#     logging.basicConfig(level=logging.INFO,
+#                         format='%(asctime)s - [%(filename)s:%(lineno)d] - %(levelname)s - %(name)s - %(funcName)s() - %(message)s',
+#                         datefmt='%Y-%m-%d %H:%M:%S')
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -26,7 +27,7 @@ logger.setLevel(logging.DEBUG)
 
 class Controller:
 
-    dic_type = { # todo: move in pysatochip?
+    dic_type = {  # todo: move in pysatochip?
         0x10: 'Masterseed',
         0x30: 'BIP39 mnemonic',
         0x40: 'Electrum mnemonic',
@@ -58,7 +59,7 @@ class Controller:
         # card infos
         self.card_status = None
 
-    def get_card_status(self): #todo deprecate?
+    def get_card_status(self):  #todo deprecate?
         if self.cc.card_present:
             logger.info("In get_card_status")
             try:
@@ -574,6 +575,7 @@ class Controller:
                     except UnicodeDecodeError:
                         result['descriptor'] = descriptor_bytes.hex()
             else:
+                logger.debug(f"No descriptor field")
                 result['descriptor'] = ""
 
             return result
@@ -674,3 +676,220 @@ class Controller:
             logger.error(error_msg)
             result['secret_decoded'] = error_msg
             return result
+
+    ##########################
+    """ IMPORTING SECRETS """
+    ##########################
+
+    @log_method
+    def generate_random_seed(self, mnemonic_length):
+        try:
+            logger.info(f"Generating random seed of length {mnemonic_length}")
+            strength = 128 if mnemonic_length == 12 else 256
+            mnemonic = Mnemonic("english").generate(strength=strength)
+            logger.log(SUCCESS, f"Random seed of length {mnemonic_length} generated successfully")
+            return mnemonic
+        except Exception as e:
+            logger.error(f"Error generating random seed: {e}", exc_info=True)
+            raise ControllerError(f"Failed to generate random seed: {e}")
+
+    """ 
+    IMPORT SECRETS
+    """
+
+    @log_method
+    def import_password(self, label: str, password: str, login: str, url: str = None):
+        try:
+            logger.info("import_password start")
+
+            # Prepare datas for the importation
+            secret_type = 0x90  # password
+            export_rights = 0x01 # export in plaintext allowed by default
+
+            # encode secret
+            logger.info(f"DEBUG list(secret_encoded): start")
+            logger.info(f"DEBUG list(secret_encoded): start list([bytes([len(password)])]): {list([bytes([len(password)])])}")
+
+            secret_encoded = bytes([len(password.encode('utf-8'))]) + password.encode('utf-8')
+            if login != "":
+                secret_encoded += bytes([len(login.encode('utf-8'))]) + login.encode('utf-8')
+            if url != "":
+                secret_encoded += bytes([len(url.encode('utf-8'))]) + url.encode('utf-8')
+
+            logger.info(f"DEBUG list(secret_encoded): {list(secret_encoded)}")
+            logger.info(f"DEBUG secret_encoded: {secret_encoded}")
+
+            # create dict object for import
+            secret_dic = {
+                'header': self.cc.make_header(secret_type, export_rights, label),
+                'secret_list': list(secret_encoded)
+            }
+
+            # import encoded secret into card
+            sid, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
+
+            logger.info(f"Password imported successfully with id: {sid} and fingerprint: {fingerprint}")
+
+            return sid, fingerprint
+
+        except SeedKeeperError as e:
+            logger.error(f"SeedKeeper error during password import: {str(e)}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error during password import: {str(e)}")
+            raise ControllerError(f"Failed to import password: {str(e)}") from e
+
+    @log_method
+    def import_masterseed(self, label: str, mnemonic: str, passphrase: Optional[str] = None, descriptor: Optional[str] = None):
+        try:
+            logger.info("001 Starting masterseed import process")
+
+            # Validate the mnemonic
+            mnemonic = mnemonic.strip()
+            word_count = len(mnemonic.split())
+            if word_count not in [12, 24]:
+                raise ValueError(f"002 Invalid mnemonic word count: {word_count}. Must be 12 or 24.")
+
+            # Verify mnemonic validity
+            MNEMONIC = Mnemonic("english")
+            if not MNEMONIC.check(mnemonic):
+                raise ValueError("003 Invalid mnemonic")
+
+            # Generate entropy from mnemonic
+            entropy = MNEMONIC.to_entropy(mnemonic)
+
+            # Generate seed
+            salt = "mnemonic" + (passphrase or "")
+            seed = hashlib.pbkdf2_hmac("sha512", mnemonic.encode("utf-8"), salt.encode("utf-8"), 2048)
+
+            # Prepare the secret data
+            wordlist_selector = 0x00  # english
+            entropy_list = list(entropy)
+            seed_list = list(seed)
+            passphrase_list = list(passphrase.encode('utf-8')) if passphrase else []
+            descriptor_list = list(descriptor.encode('utf-8')) if descriptor else []
+            descriptor_size = len(descriptor_list)
+
+
+            secret_list = (
+                    [len(seed_list)] +
+                    seed_list +
+                    [wordlist_selector] +
+                    [len(entropy_list)] +
+                    entropy_list +
+                    [len(passphrase_list)] +
+                    passphrase_list +
+                    list(len(descriptor_list).to_bytes(2, byteorder='big')) +
+                    #[len(descriptor_list)] +
+                    descriptor_list
+            )
+
+            # Prepare the header
+            secret_type = 0x10  # SECRET_TYPE_MASTER_SEED
+            export_rights = 0x01  # SECRET_EXPORT_ALLOWED
+            subtype = 0x01  # SECRET_SUBTYPE_BIP39
+
+            secret_dic = {
+                'header': self.cc.make_header(secret_type, export_rights, label, subtype=subtype),
+                'secret_list': secret_list
+            }
+
+            # Import the secret
+            id, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
+
+            logger.log(SUCCESS,
+                       f"004 Masterseed imported successfully with id: {id} and fingerprint: {fingerprint}")
+            return id, fingerprint
+
+        except ValueError as e:
+            logger.error(f"005 Validation error during masterseed import: {str(e)}")
+            raise
+        except Exception as e:
+            logger.error(f"006 Unexpected error during masterseed import: {str(e)}")
+            raise ControllerError(f"007 Failed to import masterseed: {str(e)}") from e
+
+    @log_method
+    def import_free_text(self, label: str, free_text: str):
+        try:
+            logger.info("Starting import of free text")
+
+            # Validate input
+            if not label:
+                raise ValueError("Label is required")
+            if not free_text:
+                raise ValueError("Free text is required")
+
+            # Prepare the secret data
+            secret_type = 0xC0  # SECRET_TYPE_FREE_TEXT
+            secret_subtype = 0x00  # SECRET_SUBTYPE_DEFAULT
+            export_rights = 0x01  # SECRET_EXPORT_ALLOWED
+
+            # Encode the free text
+            raw_text_bytes = free_text.encode('utf-8')
+            text_size = len(raw_text_bytes)
+
+            # Prepare the secret dictionary
+            secret_dic = {
+                'header': self.cc.make_header(secret_type, export_rights, label, subtype=secret_subtype),
+                'secret_list': list(text_size.to_bytes(2, byteorder='big')) + list(raw_text_bytes)
+            }
+
+            # Import the secret
+            id, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
+
+            logger.log(SUCCESS, f"Free text imported successfully with id: {id} and fingerprint: {fingerprint}")
+            return id, fingerprint
+
+        except ValueError as e:
+            logger.error(f"Validation error during free text import: {str(e)}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error during free text import: {str(e)}")
+            raise ControllerError(f"Failed to import free text: {str(e)}") from e
+
+    @log_method
+    def import_wallet_descriptor(self, label: str, wallet_descriptor: str):
+        try:
+            logger.info("Starting import of wallet descriptor")
+
+            # Validate input
+            if not label:
+                raise ValueError("Label is required")
+            if not wallet_descriptor:
+                raise ValueError("Wallet descriptor is required")
+
+            # Prepare the secret data
+            secret_type = 0xC1  # SECRET_TYPE_WALLET_DESCRIPTOR
+            secret_subtype = 0x00  # SECRET_SUBTYPE_DEFAULT
+            export_rights = 0x01  # SECRET_EXPORT_ALLOWED
+
+            # Encode the wallet descriptor
+            raw_descriptor_bytes = wallet_descriptor.encode('utf-8')
+            descriptor_size = len(raw_descriptor_bytes)
+
+            if descriptor_size > 65535:  # 2^16 - 1, max value for 2 bytes
+                raise ValueError("Wallet descriptor is too long (max 65535 bytes)")
+
+            # Prepare the secret dictionary
+            secret_dic = {
+                'header': self.cc.make_header(secret_type, export_rights, label, subtype=secret_subtype),
+                'secret_list': list(descriptor_size.to_bytes(2, byteorder='big')) + list(raw_descriptor_bytes)
+            }
+
+            # Import the secret
+            id, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
+
+            logger.log(SUCCESS,
+                       f"Wallet descriptor imported successfully with id: {id} and fingerprint: {fingerprint}")
+            return id, fingerprint
+
+        except ValueError as e:
+            logger.error(f"Validation error during wallet descriptor import: {str(e)}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error during wallet descriptor import: {str(e)}")
+            raise ControllerError(f"Failed to import wallet descriptor: {str(e)}") from e
+
+    def import_pubkey(self, label: str, pubkey: str):
+        # todo!
+        pass

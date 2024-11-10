@@ -7,7 +7,9 @@ from typing import Optional, Dict, Callable, Any, Tuple
 
 import customtkinter
 from PIL import Image, ImageTk
+from customtkinter import CTkOptionMenu
 
+from FrameSeedkeeperGenerateSecretSelectType import FrameSeedkeeperGenerateSecretSelectType
 from controller import Controller
 from exceptions import ViewError, FrameClearingError, FrameCreationError
 from frameCardAbout import FrameCardAbout
@@ -20,6 +22,12 @@ from frameCardSetupPin import FrameCardSetupPin
 from frameMenuNoCard import FrameMenuNoCard
 from frameMenuSeedkeeper import FrameMenuSeedkeeper
 from frameMenuSettings import FrameMenuSettings
+from frameSeedkeeperGenerateMnemonic import FrameSeedkeeperGenerateMnemonic
+from frameSeedkeeperGeneratePassword import FrameSeedkeeperGeneratePassword
+from frameSeedkeeperImportMnemonic import FrameSeedkeeperImportMnemonic
+from frameSeedkeeperImportPassword import FrameSeedkeeperImportPassword
+from frameSeedkeeperImportSecret import FrameSeedkeeperImportSecret
+from frameSeedkeeperImportSimpleSecret import FrameSeedkeeperImportSimpleSecret
 from frameSeedkeeperListSecrets import FrameSeedkeeperListSecrets
 from frameSeedkeeperShowMnemonic import FrameSeedkeeperShowMnemonic
 from frameSeedkeeperShowPassword import FrameSeedkeeperShowPasswordSecret
@@ -95,6 +103,16 @@ class View(customtkinter.CTk):
             # self.seedkeeper_show_2fa_frame = None
             # self.seedkeeper_show_pubkey_frame = None
             self.seedkeeper_show_simple_secret_frame = None
+            # seedkeeper generate secret
+            self.seedkeeper_generate_secret_frame = None
+            self.seedkeeper_generate_mnemonic_frame = None
+            self.seedkeeper_generate_password_frame = None
+            # seedkeeper import secret
+            self.seedkeeper_import_secret_frame = None
+            self.seedkeeper_import_mnemonic_frame = None
+            self.seedkeeper_import_password_frame = None
+            self.seedkeeper_import_descriptor_frame = None
+            self.seedkeeper_import_data_frame = None
 
             # state
 
@@ -288,7 +306,7 @@ class View(customtkinter.CTk):
             logger.error(f"Unexpected error in _clear_welcome_frame: {e}", exc_info=True)
             raise FrameClearingError(f"009 Unexpected error during welcome frame clearing: {e}") from e
 
-    def convert_icon_name_to_photo_image(self, filename):
+    def convert_name_to_photo_image(self, filename):
         icon_path = f"{ICON_PATH}{filename}"
         image = Image.open(icon_path)
         image = image.resize((25, 25), Image.LANCZOS)
@@ -540,14 +558,14 @@ class View(customtkinter.CTk):
         )
         return entry
 
-    def _create_entry(self, show_option: str = "")-> customtkinter.CTkEntry: # todo merge with create_entry
-        logger.debug("create_entry start")
-        entry = customtkinter.CTkEntry(
-            self.current_frame, width=555, height=37, corner_radius=10,
-            bg_color='white', fg_color=BUTTON_COLOR, border_color=BUTTON_COLOR,
-            show=show_option, text_color='grey'
-        )
-        return entry
+    # def _create_entry(self, show_option: str = "")-> customtkinter.CTkEntry: # todo merge with create_entry
+    #     logger.debug("create_entry start")
+    #     entry = customtkinter.CTkEntry(
+    #         self.current_frame, width=555, height=37, corner_radius=10,
+    #         bg_color='white', fg_color=BUTTON_COLOR, border_color=BUTTON_COLOR,
+    #         show=show_option, text_color='grey'
+    #     )
+    #     return entry
 
     def create_textbox(self, frame, width=555, height=37) -> customtkinter.CTkTextbox:
         # Créer la textbox avec les mêmes dimensions et styles que l'entrée
@@ -561,16 +579,6 @@ class View(customtkinter.CTk):
         #textbox.configure(pady=40)  # Ajustez le nombre pour mieux centrer
         return textbox
 
-    def update_textbox_old(self, text):
-        try:
-            logger.debug("update_textbox start")
-            # Efface le contenu actuel
-            self.text_box.delete(1.0, "end")
-            # Inserting new text into the textbox
-            self.text_box.insert("end", text)
-        except Exception as e:
-            logger.error(f"An unexpected error occurred in update_textbox: {e}", exc_info=True)
-
     def update_textbox(self, text_box, text):
         try:
             logger.debug("update_textbox start")
@@ -580,6 +588,34 @@ class View(customtkinter.CTk):
             text_box.insert("end", text)
         except Exception as e:
             logger.error(f"An unexpected error occurred in update_textbox: {e}", exc_info=True)
+
+    def create_option_list(
+            self,
+            frame,
+            options,
+            default_value: Optional[str] = None,
+            width: int = 300,
+
+    ) -> Tuple[tkinter.StringVar, CTkOptionMenu]:
+        logger.info(f"Creating option list with options: {options}")
+        variable = customtkinter.StringVar(value=default_value if default_value else options[0])
+        option_menu = customtkinter.CTkOptionMenu(
+            master=frame,
+            variable=variable,
+            values=options,
+            width=width,
+            fg_color=BG_BUTTON,  # Utilisez la même couleur que pour les entrées
+            button_color=BG_BUTTON,  # Couleur du bouton déroulant
+            button_hover_color=BG_HOVER_BUTTON,  # Couleur au survol du bouton
+            dropdown_fg_color=BG_MAIN_MENU,  # Couleur de fond du menu déroulant
+            dropdown_hover_color=BG_HOVER_BUTTON,  # Couleur au survol des options
+            dropdown_text_color="white",  # Couleur du texte des options
+            text_color="grey",  # Couleur du texte sélectionné
+            font=customtkinter.CTkFont(family="Outfit", size=13, weight="normal"),
+            dropdown_font=customtkinter.CTkFont(family="Outfit", size=13, weight="normal"),
+            corner_radius=10,  # Même rayon de coin que les entrées
+        )
+        return variable, option_menu
 
     @staticmethod
     def create_background_photo(picture_path):
@@ -1007,33 +1043,79 @@ class View(customtkinter.CTk):
         self.seedkeeper_show_simple_secret_frame.update(secret)
         self.seedkeeper_show_simple_secret_frame.tkraise()
 
-    @log_method
-    def show_view_generate_secret(self):
-        try:
-            self.in_backup_process = False
-            logger.info("001 Initiating secret generation process")
-            self.welcome_in_display = False
-            logger.debug("002 Welcome frame cleared")
-            self._clear_current_frame()
-            self.view_generate_secret()
-            logger.log(SUCCESS, "003 Secret generation process initiated")
-        except Exception as e:
-            logger.error(f"004 Error in show_generate_secret: {e}", exc_info=True)
-            raise ViewError(f"005 Failed to show generate secret: {e}")
+    """ Generate Secret"""
 
-    @log_method
-    def show_view_import_secret(self):
-        try:
-            self.in_backup_process = False
-            logger.info("001 Initiating secret import process")
-            self.welcome_in_display = False
-            self._clear_current_frame()
-            logger.debug("002 Welcome frame cleared")
-            self.view_import_secret()
-            logger.log(SUCCESS, "002 Secret import process initiated")
-        except Exception as e:
-            logger.error(f"003 Error in import_secret: {e}", exc_info=True)
-            raise ViewError(f"004 Failed to import secret: {e}") from e
+    def show_generate_secret(self):
+        if self.seedkeeper_generate_secret_frame is None:
+            self.seedkeeper_generate_secret_frame = FrameSeedkeeperGenerateSecretSelectType(self)
+        self.seedkeeper_generate_secret_frame.tkraise()
+
+    def show_generate_mnemonic(self):
+        if self.seedkeeper_generate_mnemonic_frame is None:
+            self.seedkeeper_generate_mnemonic_frame = FrameSeedkeeperGenerateMnemonic(self)
+        self.seedkeeper_generate_mnemonic_frame.tkraise()
+
+    def show_generate_password(self):
+        if self.seedkeeper_generate_password_frame is None:
+            self.seedkeeper_generate_password_frame = FrameSeedkeeperGeneratePassword(self)
+        self.seedkeeper_generate_password_frame.tkraise()
+
+    """ Import Secret"""
+
+    def show_import_secret(self):
+        if self.seedkeeper_import_secret_frame is None:
+            self.seedkeeper_import_secret_frame = FrameSeedkeeperImportSecret(self)
+        self.seedkeeper_import_secret_frame.tkraise()
+
+    def show_import_mnemonic(self):
+        if self.seedkeeper_import_mnemonic_frame is None:
+            self.seedkeeper_import_mnemonic_frame = FrameSeedkeeperImportMnemonic(self)
+        self.seedkeeper_import_mnemonic_frame.tkraise()
+
+    def show_import_password(self):
+        if self.seedkeeper_import_password_frame is None:
+            self.seedkeeper_import_password_frame = FrameSeedkeeperImportPassword(self)
+        self.seedkeeper_import_password_frame.tkraise()
+
+    def show_import_descriptor(self):
+        if self.seedkeeper_import_descriptor_frame is None:
+            self.seedkeeper_import_descriptor_frame = FrameSeedkeeperImportSimpleSecret(self, "descriptor")
+        self.seedkeeper_import_descriptor_frame.tkraise()
+
+    def show_import_data(self):
+        if self.seedkeeper_import_data_frame is None:
+            self.seedkeeper_import_data_frame = FrameSeedkeeperImportSimpleSecret(self, "data")
+        self.seedkeeper_import_data_frame.tkraise()
+
+    """ """
+
+    # @log_method
+    # def show_view_generate_secret(self):
+    #     try:
+    #         self.in_backup_process = False
+    #         logger.info("001 Initiating secret generation process")
+    #         self.welcome_in_display = False
+    #         logger.debug("002 Welcome frame cleared")
+    #         self._clear_current_frame()
+    #         self.view_generate_secret()
+    #         logger.log(SUCCESS, "003 Secret generation process initiated")
+    #     except Exception as e:
+    #         logger.error(f"004 Error in show_generate_secret: {e}", exc_info=True)
+    #         raise ViewError(f"005 Failed to show generate secret: {e}")
+    #
+    # @log_method
+    # def show_view_import_secret(self):
+    #     try:
+    #         self.in_backup_process = False
+    #         logger.info("001 Initiating secret import process")
+    #         self.welcome_in_display = False
+    #         self._clear_current_frame()
+    #         logger.debug("002 Welcome frame cleared")
+    #         self.view_import_secret()
+    #         logger.log(SUCCESS, "002 Secret import process initiated")
+    #     except Exception as e:
+    #         logger.error(f"003 Error in import_secret: {e}", exc_info=True)
+    #         raise ViewError(f"004 Failed to import secret: {e}") from e
 
     @log_method
     def show_view_logs(self):
@@ -1041,8 +1123,6 @@ class View(customtkinter.CTk):
         total_number_of_logs, total_number_available_logs, logs = self.controller.get_logs()
         self.view_logs_details(logs)
 
-    ##########################
-    '''SEEDKEEPER OPTIONS'''
 
 
 

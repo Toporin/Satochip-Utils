@@ -24,7 +24,7 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
             # Creating header
             self.header = FrameWidgetHeader(
                 "Password details",
-                "secrets_icon_popup.png",
+                "secrets_popup.png",
                 frame=self
             )
             self.header.place(relx=0.05, rely=0.05, anchor="nw")
@@ -157,7 +157,7 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
                         logger.debug(f"FrameSeedkeeperShowSecret update delete secret with id: {id}"),
                         self.master.controller.cc.seedkeeper_reset_secret(id),
                     ],
-                    './pictures_db/secrets_icon_popup.png'),
+                    './pictures_db/secrets_popup.png'),
                 self.master.show_view_my_secrets()
             ],
         )

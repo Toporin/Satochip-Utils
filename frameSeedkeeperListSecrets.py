@@ -33,7 +33,7 @@ class FrameSeedkeeperListSecrets(customtkinter.CTkFrame):
             # Creating header
             self.header = master.create_an_header(
                 "My secrets",
-                "secrets_icon_popup.png",
+                "generate_popup.png",
                 frame=self
             )
             self.header.place(relx=0.05, rely=0.05, anchor="nw")

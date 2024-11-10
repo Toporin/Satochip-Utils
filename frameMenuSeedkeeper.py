@@ -55,7 +55,7 @@ class FrameMenuSeedkeeper(customtkinter.CTkFrame):
                 "generate.png",
                 0.33, 0.05,
                 state="normal",
-                command=master.show_view_generate_secret
+                command=lambda: master.show_generate_secret()
             )
 
             self.button_import = master.create_button_for_main_menu_item(
@@ -64,7 +64,15 @@ class FrameMenuSeedkeeper(customtkinter.CTkFrame):
                 "import.png",
                 0.40, 0.05,
                 state="normal",
-                command=master.show_view_import_secret
+                command=lambda: master.show_import_secret()
+            )
+
+            self.button_backup = master.create_button_for_main_menu_item(
+                self, "Backup card",
+                "logs.png",
+                0.47, 0.05,
+                state="normal",
+                command=lambda: None  # todo!
             )
 
             self.button_logs = master.create_button_for_main_menu_item(
@@ -72,7 +80,7 @@ class FrameMenuSeedkeeper(customtkinter.CTkFrame):
                 "logs.png",
                 0.47, 0.05,
                 state="normal",
-                command=master.show_view_logs
+                command=lambda: master.show_view_logs()
             )
 
             self.button_settings = master.create_button_for_main_menu_item(
@@ -80,7 +88,7 @@ class FrameMenuSeedkeeper(customtkinter.CTkFrame):
                 "settings.png",
                 0.74, 0.05,
                 state="normal",
-                command=master.show_about_frame
+                command=lambda: master.show_about_frame()
             )
 
             self.button_help = master.create_button_for_main_menu_item(

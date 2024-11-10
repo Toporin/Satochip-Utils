@@ -1,13 +1,6 @@
-import binascii
-import time
-import tkinter
-
-import pyqrcode
 import customtkinter
 import logging
 
-from exceptions import ControllerError
-from frameWidgetCustomTextbox import FrameWidgetCustomTextbox
 from frameWidgetHeader import FrameWidgetHeader
 from utils import show_qr_code, toggle_entry_visibility, toggle_textbox_visibility, reset_qr_code, update_textbox
 
@@ -31,18 +24,18 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
             # Creating header
             self.header = FrameWidgetHeader(
                 "Mnemonic details",
-                "secrets_icon_popup.png",
+                "secrets_popup.png",
                 frame=self
             )
             self.header.place(relx=0.05, rely=0.05, anchor="nw")
 
             # y-offset
-            rely= 0.15
+            rely = 0.15
 
             # Create field for label
             self.label_label = master.create_label("Label:", frame=self)
             self.label_label.place(relx=0.05, rely=rely, anchor="nw")
-            rely+=0.05
+            rely += 0.05
             self.label_entry = master.create_entry(frame=self)
             self.label_entry.place(relx=0.05, rely=rely, anchor="nw")
             rely += 0.08
@@ -67,7 +60,7 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
             # qr label
             self.qr_label = master.create_label("", frame=self)
             self.qr_label.place(relx=0.8, rely=rely)
-            rely+=0.16
+            rely += 0.16
 
             # Create descriptor field
             self.descriptor_label_rely = rely
@@ -77,15 +70,15 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
             self.descriptor_textbox_rely = rely
             self.descriptor_textbox = master.create_textbox(frame=self)
             self.descriptor_textbox.place(relx=0.05, rely=rely, relheight=0.20, anchor="nw")
-            #self.descriptor_box = FrameWidgetCustomTextbox(self, label="Secret:", content="MyContent", height=120)
-            #self.descriptor_box.place(relx=0.0, rely=rely, anchor="nw")
+            # self.descriptor_box = FrameWidgetCustomTextbox(self, label="Secret:", content="MyContent", height=120)
+            # self.descriptor_box.place(relx=0.0, rely=rely, anchor="nw")
 
             # Create action buttons
 
             # delete #todo in red?
             self.delete_button = master.create_button(
                 text="Delete secret",
-                command=lambda: None, # will be updated in update
+                command=lambda: None,  # will be updated in update
                 frame=self
             )
             self.delete_button.place(relx=0.55, rely=0.95, anchor="e")
@@ -98,8 +91,8 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
             self.qr_button.place(relx=0.75, rely=0.95, anchor="e")
             # show
             self.show_button = master.create_button(
-                text="Hide", # secret is shown by default
-                command= None, # will be updated in update
+                text="Hide",  # secret is shown by default
+                command=None,  # will be updated in update
                 frame=self
             )
             self.show_button.place(relx=0.95, rely=0.95, anchor="e")
@@ -118,7 +111,7 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
         # update header
         if secret.get('type') == "Masterseed":
             if secret.get('subtype') == 0x00:
-                self.header.button.configure(text="   Masterseed details") # should not happen here
+                self.header.button.configure(text="   Masterseed details")  # should not happen here
             else:
                 self.header.button.configure(text="   Bip39 mnemonic details")
         else:
@@ -134,7 +127,7 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
             secret = self.master.controller.decode_mnemonic(secret)
         # update passphrase
         passphrase = secret.get('passphrase', "")
-        if passphrase=="":
+        if passphrase == "":
             self.passphrase_label.place_forget()
             self.passphrase_entry.place_forget()
         else:
@@ -143,11 +136,11 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
             self.passphrase_entry.delete(0, "end")
             self.passphrase_entry.insert(0, passphrase)
         # update mnemonic
-        mnemonic = secret.get('mnemonic',"")
+        mnemonic = secret.get('mnemonic', "")
         update_textbox(self.mnemonic_textbox, mnemonic)
         # update descriptor
-        descriptor = secret.get('descriptor',"")
-        if descriptor=="":
+        descriptor = secret.get('descriptor', "")
+        if descriptor == "":
             self.descriptor_label.place_forget()
             self.descriptor_textbox.place_forget()
         else:
@@ -177,11 +170,11 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
                     "WARNING",
                     "Are you sure to delete this secret ?!\n Click Yes for delete the secret or close popup",
                     "Yes",
-                    lambda id=secret['id']: [
-                        logger.debug(f"FrameSeedkeeperShowSecret update delete secret with id: {id}"),
-                        self.master.controller.cc.seedkeeper_reset_secret(id),
+                    lambda sid=secret['id']: [
+                        logger.debug(f"FrameSeedkeeperShowSecret update delete secret with id: {sid}"),
+                        self.master.controller.cc.seedkeeper_reset_secret(sid),
                     ],
-                    './pictures_db/secrets_icon_popup.png'),
+                    './pictures_db/secrets_popup.png'),
                 self.master.show_view_my_secrets()
             ],
         )

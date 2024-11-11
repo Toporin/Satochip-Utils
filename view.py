@@ -22,6 +22,7 @@ from frameCardSetupPin import FrameCardSetupPin
 from frameMenuNoCard import FrameMenuNoCard
 from frameMenuSeedkeeper import FrameMenuSeedkeeper
 from frameMenuSettings import FrameMenuSettings
+from frameSeedkeeperCardLogs import FrameSeedkeeperCardLogs
 from frameSeedkeeperGenerateMnemonic import FrameSeedkeeperGenerateMnemonic
 from frameSeedkeeperGeneratePassword import FrameSeedkeeperGeneratePassword
 from frameSeedkeeperImportMnemonic import FrameSeedkeeperImportMnemonic
@@ -113,6 +114,8 @@ class View(customtkinter.CTk):
             self.seedkeeper_import_password_frame = None
             self.seedkeeper_import_descriptor_frame = None
             self.seedkeeper_import_data_frame = None
+            # seedkeeper logs
+            self.seedkeeper_card_logs_frame = None
 
             # state
 
@@ -429,7 +432,9 @@ class View(customtkinter.CTk):
             scrollbar.pack(side="right", fill="y")
 
             # Configure scrollbar colors
-            scrollbar.configure(fg_color=DEFAULT_BG_COLOR, button_color=DEFAULT_BG_COLOR,
+            #scrollbar.configure(fg_color=DEFAULT_BG_COLOR, button_color=DEFAULT_BG_COLOR,
+            #                    button_hover_color=BG_HOVER_BUTTON)
+            scrollbar.configure(fg_color=DEFAULT_BG_COLOR, button_color=BG_HOVER_BUTTON,
                                 button_hover_color=BG_HOVER_BUTTON)
 
             # Configure the canvas
@@ -1117,12 +1122,22 @@ class View(customtkinter.CTk):
     #         logger.error(f"003 Error in import_secret: {e}", exc_info=True)
     #         raise ViewError(f"004 Failed to import secret: {e}") from e
 
-    @log_method
-    def show_view_logs(self):
-        self.in_backup_process = False
-        total_number_of_logs, total_number_available_logs, logs = self.controller.get_logs()
-        self.view_logs_details(logs)
+    # @log_method
+    # def show_view_logs(self):
+    #     self.in_backup_process = False
+    #     total_number_of_logs, total_number_available_logs, logs = self.controller.get_logs()
+    #     self.view_logs_details(logs)
 
+    def show_card_logs(self):
 
+        # verify PIN
+        self.update_verify_pin()
+        # get logs from card
+        total_number_of_logs, total_number_available_logs, logs = self.controller.get_card_logs()
+
+        if self.seedkeeper_card_logs_frame is None:
+            self.seedkeeper_card_logs_frame = FrameSeedkeeperCardLogs(self)
+        self.seedkeeper_card_logs_frame.update_frame(logs)
+        self.seedkeeper_card_logs_frame.tkraise()
 
 

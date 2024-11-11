@@ -1,13 +1,13 @@
 import binascii
 import hashlib
+import json
 import logging
 from os import urandom
-import sys
 from typing import Dict, Any, List, Optional
-
 from mnemonic import Mnemonic
 from pysatochip.CardConnector import (CardConnector, UninitializedSeedError, SeedKeeperError)
 
+from constants import INS_DIC, RES_DIC
 from exceptions import ControllerError, SecretRetrievalError
 from log_config import log_method, SUCCESS
 
@@ -351,6 +351,54 @@ class Controller:
     ####################################################################################################################
     """MY SECRETS MANAGEMENT"""
     ####################################################################################################################
+
+    def get_card_logs(self):
+        logger.debug('In get_card_logs start')
+
+        # get raw logs from card
+        logs, nbtotal_logs, nbavail_logs = self.cc.seedkeeper_print_logs()
+
+        nblogs = nbtotal_logs if nbtotal_logs < nbavail_logs else nbavail_logs
+        logs = logs[0:nblogs]
+        json_logs = []
+        # convert raw logs to readable data
+        for log in logs:
+            ins = log[0]
+            id1 = log[1]
+            id2 = log[2]
+            result = log[3]
+            if ins == 0xA1:  # encrypted or plain import? depends on value of id2
+                ins = 0xA1A if (id2 == 0xFFFF) else 0xA1B
+            elif ins == 0xA2:
+                ins = 0xA2A if (id2 == 0xFFFF) else 0xA2B
+            ins = INS_DIC.get(ins, hex(log[0]))
+
+            id1 = '' if id1 == 0xFFFF else str(id1)
+            id2 = '' if id2 == 0xFFFF else str(id2)
+
+            if (result & 0x63C0) == 0x63C0:  # last nible contains number of pin remaining
+                remaining_tries = (result & 0x000F)
+                result = f'PIN failed - {remaining_tries} tries remaining'
+            else:
+                result = RES_DIC.get(log[3], hex(log[3]))
+
+            json_logs.append({
+                "Operation": ins,
+                "ID1": id1,
+                "ID2": id2,
+                "Result": result
+            })
+
+        # Convert to JSON string
+        json_string = json.dumps(json_logs)
+        logger.debug(f"JSON formatted logs: {json_string}")
+
+        logger.debug(json_logs)
+        logger.debug(nbtotal_logs)
+        logger.debug(nbavail_logs)
+
+        return nbtotal_logs, nbavail_logs, json_logs
+
     @log_method
     def retrieve_secrets_stored_into_the_card(self) -> Dict[str, Any]:
         try:
@@ -692,10 +740,6 @@ class Controller:
         except Exception as e:
             logger.error(f"Error generating random seed: {e}", exc_info=True)
             raise ControllerError(f"Failed to generate random seed: {e}")
-
-    """ 
-    IMPORT SECRETS
-    """
 
     @log_method
     def import_password(self, label: str, password: str, login: str, url: str = None):

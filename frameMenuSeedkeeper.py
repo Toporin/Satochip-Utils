@@ -80,7 +80,7 @@ class FrameMenuSeedkeeper(customtkinter.CTkFrame):
                 "logs.png",
                 0.47, 0.05,
                 state="normal",
-                command=lambda: master.show_view_logs()
+                command=lambda: master.show_card_logs()
             )
 
             self.button_settings = master.create_button_for_main_menu_item(

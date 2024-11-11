@@ -42,12 +42,12 @@ class FrameSeedkeeperListSecrets(customtkinter.CTkFrame):
 
             # Introduce table
             self.label_text = master.create_label(text="Click on a secret to manage it:", frame=self)
-            self.label_text.place(relx=0.05, rely=0.2, anchor="w")
+            self.label_text.place(relx=0.05, rely=0.15, anchor="nw")
 
             # Define headers
             self.headers = ["Id", "Type of secret", "Label"]
             rely = 0.3
-            absx = 40
+            absx = 33.5
 
             # Create header labels
             # self.header_frame = customtkinter.CTkFrame(
@@ -65,11 +65,11 @@ class FrameSeedkeeperListSecrets(customtkinter.CTkFrame):
                 )
                 #self.header_button.pack(side="left", expand=True, fill="both")
                 #self.header_button.place(relx=0.05, rely=rely, anchor="w")
-                self.header_button.place(x=absx, rely=0.3, anchor="w")
-                absx=absx+width+5
+                self.header_button.place(x=absx, rely=0.23, anchor="nw")
+                absx=absx+width+2
 
             self.table_frame = master._create_scrollable_frame(
-                self, width=600, height=400, x=33.5, y=200
+                self, width=600, height=400, x=33.5, y=175
             )
 
             self.secret_rows = []
@@ -98,10 +98,10 @@ class FrameSeedkeeperListSecrets(customtkinter.CTkFrame):
             self.secret_rows=[]
 
         # Create rows of labels with alternating colors
-        rely = 0.3
+        #rely = 0.3
         for i, secret in enumerate(secrets_data['headers']):
             try:
-                rely += 0.06
+                #rely += 0.06
                 row_frame = customtkinter.CTkFrame(
                     self.table_frame, width=750,
                     bg_color=DEFAULT_BG_COLOR,

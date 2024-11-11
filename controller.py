@@ -707,17 +707,11 @@ class Controller:
             export_rights = 0x01 # export in plaintext allowed by default
 
             # encode secret
-            logger.info(f"DEBUG list(secret_encoded): start")
-            logger.info(f"DEBUG list(secret_encoded): start list([bytes([len(password)])]): {list([bytes([len(password)])])}")
-
             secret_encoded = bytes([len(password.encode('utf-8'))]) + password.encode('utf-8')
             if login != "":
                 secret_encoded += bytes([len(login.encode('utf-8'))]) + login.encode('utf-8')
             if url != "":
                 secret_encoded += bytes([len(url.encode('utf-8'))]) + url.encode('utf-8')
-
-            logger.info(f"DEBUG list(secret_encoded): {list(secret_encoded)}")
-            logger.info(f"DEBUG secret_encoded: {secret_encoded}")
 
             # create dict object for import
             secret_dic = {
@@ -727,6 +721,10 @@ class Controller:
 
             # import encoded secret into card
             sid, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
+
+            # set flag to signal the secret_headers list should be updated
+            # todo: update secret_headers list directly?
+            self.view.seedkeeper_secret_headers_need_update = True
 
             logger.info(f"Password imported successfully with id: {sid} and fingerprint: {fingerprint}")
 
@@ -797,6 +795,10 @@ class Controller:
             # Import the secret
             id, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
 
+            # set flag to signal the secret_headers list should be updated
+            # todo: update secret_headers list directly?
+            self.view.seedkeeper_secret_headers_need_update = True
+
             logger.log(SUCCESS,
                        f"004 Masterseed imported successfully with id: {id} and fingerprint: {fingerprint}")
             return id, fingerprint
@@ -836,6 +838,10 @@ class Controller:
 
             # Import the secret
             id, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
+
+            # set flag to signal the secret_headers list should be updated
+            # todo: update secret_headers list directly?
+            self.view.seedkeeper_secret_headers_need_update = True
 
             logger.log(SUCCESS, f"Free text imported successfully with id: {id} and fingerprint: {fingerprint}")
             return id, fingerprint
@@ -878,6 +884,10 @@ class Controller:
 
             # Import the secret
             id, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
+
+            # set flag to signal the secret_headers list should be updated
+            # todo: update secret_headers list directly?
+            self.view.seedkeeper_secret_headers_need_update = True
 
             logger.log(SUCCESS,
                        f"Wallet descriptor imported successfully with id: {id} and fingerprint: {fingerprint}")

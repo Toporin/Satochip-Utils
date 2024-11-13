@@ -46,7 +46,8 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                 "insert_card.jpg",
                 0.26, 0.05,
                 command=lambda: None,
-                state='normal'
+                state='normal',
+                text_color='white',
             )
             # change PIN button
             self.button_change_pin = master.create_button_for_main_menu_item(
@@ -89,9 +90,18 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                 self,
                 "About",
                 "about_locked.jpg",
-                0.73, 0.05,
+                0.61, 0.05,  # 0.73, 0.05,
                 command=lambda: master.show_about_frame(),
                 state='disabled'
+            )
+            # back to start button
+            self.button_back = master.create_button_for_main_menu_item(
+                self,
+                "Back",
+                "about_locked.jpg", #todo
+                0.74, 0.05,
+                command=lambda: master.show_start_frame(),
+                state='normal'
             )
             # webshop
             self.button_webshop = master.create_button_for_main_menu_item(
@@ -130,7 +140,7 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                             require_redraw,
                             text="Setup Done", image=photo_image,
                             command=lambda: None,
-                            state='normal'
+                            state='normal', text_color='white',
                         )
                     else: # import seed
                         photo_image = self.master.convert_name_to_photo_image("seed.png")
@@ -138,7 +148,7 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                             require_redraw,
                             text="Setup Seed", image=photo_image,
                             command=lambda: self.master.show_seed_import_frame(),
-                            state='normal'
+                            state='normal', text_color="green",
                         )
                 else: # setup card
                     photo_image = self.master.convert_name_to_photo_image("setup_my_card.png")
@@ -146,7 +156,7 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                         require_redraw,
                         text="Setup my card", image=photo_image,
                         command=lambda: self.master.show_setup_card_frame(),
-                        state='normal'
+                        state='normal', text_color="green",
                     )
                     self.button_change_pin.configure(state="disabled")
                     self.button_edit_label.configure(state="disabled")
@@ -161,7 +171,7 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                         require_redraw,
                         text="Setup Done", image=photo_image,
                         command=lambda: None,
-                        state='normal'
+                        state='normal', text_color='white',
                     )
                     self.button_change_pin.configure(state="normal")
                     self.button_edit_label.configure(state="normal")
@@ -173,7 +183,7 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                         require_redraw,
                         text="Setup my card", image=photo_image,
                         command=lambda: self.master.show_setup_card_frame(),
-                        state='normal'
+                        state='normal', text_color="green",
                     )
                     self.button_change_pin.configure(state="disabled")
                     self.button_edit_label.configure(state="disabled")
@@ -187,7 +197,7 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                         require_redraw,
                         text="Setup Done", image=photo_image,
                         command=lambda: None,
-                        state="normal"
+                        state="normal", text_color='white',
                     )
                     self.button_edit_label.configure(state="normal")
                     self.button_check_auth.configure(state="normal")
@@ -198,7 +208,7 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                         require_redraw,
                         text="Setup my card", image=photo_image,
                         command=lambda: self.master.show_setup_card_frame(),
-                        state="normal"
+                        state="normal", text_color="green",
                     )
                     self.button_edit_label.configure(state="disabled")
                     self.button_check_auth.configure(state="disabled")
@@ -206,7 +216,7 @@ class FrameMenuSettings(customtkinter.CTkFrame):
 
         else: # no card
             photo_image = self.master.convert_name_to_photo_image("insert_card.jpg")
-            self.button_status.configure(text="Insert card", image=photo_image, command=lambda: None)
+            self.button_status.configure(text="Insert card", image=photo_image, command=lambda: None, text_color='white')
             self.button_change_pin.configure(state="disabled")
             self.button_edit_label.configure(state="disabled")
             self.button_check_auth.configure(state="disabled")

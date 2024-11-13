@@ -106,12 +106,13 @@ class FrameMenuSeedkeeperBackup(customtkinter.CTkFrame):
             #     command=lambda: master.show_about_frame()
             # )
 
-            self.button_help = master.create_button_for_main_menu_item(
-                self, "Online help", "help.png",
-                0.81, 0.05,
-                state='normal',
-                command=lambda: webbrowser.open("https://satochip.io/setup-use-seedkeeper-on-desktop/", new=2)
-            )
+            # todo: add link for seedkeeper backup & factory reset?
+            # self.button_help = master.create_button_for_main_menu_item(
+            #     self, "Online help", "help.png",
+            #     0.81, 0.05,
+            #     state='normal',
+            #     command=lambda: webbrowser.open("https://satochip.io/setup-use-seedkeeper-on-desktop/", new=2)
+            # )
 
             self.button_webshop = master.create_button_for_main_menu_item(
                 self,

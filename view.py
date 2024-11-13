@@ -740,7 +740,7 @@ class View(customtkinter.CTk):
     def show_menu_frame(self):
         logger.info("IN View.show_menu_frame start")
         if self.controller.cc.card_present:
-            if self.controller.cc.card_type == "SeedKeeper":
+            if self.controller.cc.card_type == "SeedKeeper" and self.controller.cc.setup_done:
                 self.show_seedkeeper_menu()
             else:
                 self.show_settings_menu()

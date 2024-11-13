@@ -98,12 +98,12 @@ class FrameCardAbout(customtkinter.CTkFrame):
             self.pysatochip_version = master.create_label(f"Pysatochip version: {PYSATOCHIP_VERSION}", frame=self)
             self.pysatochip_version.place(relx=0.05, rely=0.88)
 
-            self.back_button = master.create_button(
-                'Back',
-                lambda: master.show_start_frame(),
-                frame=self
-            )
-            self.back_button.place(relx=0.8, rely=0.9, anchor="w")
+            # self.back_button = master.create_button(
+            #     'Back',
+            #     lambda: master.show_start_frame(),
+            #     frame=self
+            # )
+            # self.back_button.place(relx=0.8, rely=0.9, anchor="w")
 
             self.update()
             self.place(relx=1.0, rely=0.5, anchor="e")

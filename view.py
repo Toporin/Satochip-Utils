@@ -969,6 +969,13 @@ class View(customtkinter.CTk):
             self.factory_reset_frame = FrameCardFactoryReset(self)
         self.factory_reset_frame.tkraise()
 
+        # show reset menu on the left
+        # This menu force the user to cancel if he wants to leave reset process
+        # By cancelling, the app is notified to leave ApplicationMode.SeedkeeperBackup back to normal mode
+        # todo we reuse show_seedkeeper_backup_menu() since functionalities are the same
+        self.show_seedkeeper_backup_menu()
+
+
     def show_about_frame(self):
         logger.info("show_about_frame start")
         if self.about_frame is None:

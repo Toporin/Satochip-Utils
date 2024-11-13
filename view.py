@@ -674,8 +674,8 @@ class View(customtkinter.CTk):
             popup.configure(fg_color='whitesmoke')
             logger.debug("Popup window created and titled")
 
-            # Désactiver la fermeture du popup via le bouton de fermeture standard
-            popup.protocol("WM_DELETE_WINDOW", lambda: close_show())
+            # closing the popup through the upper right 'x' does not execute command
+            popup.protocol("WM_DELETE_WINDOW", lambda: close_no_execute())
             logger.debug("Popup close button disabled")
 
             popup_width = 400
@@ -710,12 +710,15 @@ class View(customtkinter.CTk):
                 label.pack(pady=20)
                 logger.debug("Label added to popup")
 
-            def close_show():
+            def close_and_execute():
                 if cmd:
                     popup.destroy()
                     cmd()
                 else:
                     popup.destroy()
+
+            def close_no_execute():
+                popup.destroy()
 
             # Ajout d'un bouton pour fermer le popup
             self.show_button = customtkinter.CTkButton(
@@ -723,7 +726,7 @@ class View(customtkinter.CTk):
                 hover_color=HOVER_COLOR, bg_color='whitesmoke',
                 width=120, height=35, corner_radius=34,
                 font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal"),
-                command=lambda: close_show()
+                command=lambda: close_and_execute()
             )
             self.show_button.pack(pady=20)
 

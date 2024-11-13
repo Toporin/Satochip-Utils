@@ -125,7 +125,7 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                     self.button_check_auth.configure(state="normal")
                     self.button_about.configure(state="normal")
                     if self.master.controller.cc.is_seeded:
-                        photo_image = self.master.convert_icon_name_to_photo_image("setup_done.jpg")
+                        photo_image = self.master.convert_name_to_photo_image("setup_done.jpg")
                         self.button_status.configure(
                             require_redraw,
                             text="Setup Done", image=photo_image,
@@ -133,7 +133,7 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                             state='normal'
                         )
                     else: # import seed
-                        photo_image = self.master.convert_icon_name_to_photo_image("seed.png")
+                        photo_image = self.master.convert_name_to_photo_image("seed.png")
                         self.button_status.configure(
                             require_redraw,
                             text="Setup Seed", image=photo_image,
@@ -141,7 +141,7 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                             state='normal'
                         )
                 else: # setup card
-                    photo_image = self.master.convert_icon_name_to_photo_image("setup_my_card.png")
+                    photo_image = self.master.convert_name_to_photo_image("setup_my_card.png")
                     self.button_status.configure(
                         require_redraw,
                         text="Setup my card", image=photo_image,
@@ -156,7 +156,7 @@ class FrameMenuSettings(customtkinter.CTkFrame):
             if self.master.controller.cc.card_type == "SeedKeeper":
                 self.button_factory_reset.configure(state="normal")
                 if self.master.controller.cc.setup_done:
-                    photo_image = self.master.convert_icon_name_to_photo_image("setup_done.jpg")
+                    photo_image = self.master.convert_name_to_photo_image("setup_done.jpg")
                     self.button_status.configure(
                         require_redraw,
                         text="Setup Done", image=photo_image,
@@ -168,7 +168,7 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                     self.button_check_auth.configure(state="normal")
                     self.button_about.configure(state="normal")
                 else:  # setup card
-                    photo_image = self.master.convert_icon_name_to_photo_image("setup_my_card.png")
+                    photo_image = self.master.convert_name_to_photo_image("setup_my_card.png")
                     self.button_status.configure(
                         require_redraw,
                         text="Setup my card", image=photo_image,
@@ -182,7 +182,7 @@ class FrameMenuSettings(customtkinter.CTkFrame):
 
             if self.master.controller.cc.card_type == "Satodime":
                 if self.master.controller.cc.setup_done:
-                    photo_image = self.master.convert_icon_name_to_photo_image("setup_done.jpg")
+                    photo_image = self.master.convert_name_to_photo_image("setup_done.jpg")
                     self.button_status.configure(
                         require_redraw,
                         text="Setup Done", image=photo_image,
@@ -193,7 +193,7 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                     self.button_check_auth.configure(state="normal")
                     self.button_about.configure(state="normal")
                 else: # todo check
-                    photo_image = self.master.convert_icon_name_to_photo_image("setup_my_card.png")
+                    photo_image = self.master.convert_name_to_photo_image("setup_my_card.png")
                     self.button_status.configure(
                         require_redraw,
                         text="Setup my card", image=photo_image,
@@ -205,7 +205,7 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                     self.button_about.configure(state="disabled")
 
         else: # no card
-            photo_image = self.master.convert_icon_name_to_photo_image("insert_card.jpg")
+            photo_image = self.master.convert_name_to_photo_image("insert_card.jpg")
             self.button_status.configure(text="Insert card", image=photo_image, command=lambda: None)
             self.button_change_pin.configure(state="disabled")
             self.button_edit_label.configure(state="disabled")

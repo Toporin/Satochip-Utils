@@ -88,7 +88,10 @@ class FrameMenuSeedkeeper(customtkinter.CTkFrame):
                 "settings.png",
                 0.74, 0.05,
                 state="normal",
-                command=lambda: master.show_about_frame()
+                command=lambda: [
+                    master.show_about_frame(),
+                    master.show_settings_menu(),
+                ]
             )
 
             self.button_help = master.create_button_for_main_menu_item(

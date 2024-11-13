@@ -150,7 +150,7 @@ class FrameSeedkeeperBackupCard(customtkinter.CTkFrame):
 
         def on_next_button():
             # verify PIN
-            self.master.controller.PIN_dialog(f'Enter the PIN for your backup card')
+            self.master.controller.PIN_dialog(f'Enter the PIN of your BACKUP card')
             # hack: recover master pin from cc
             self.backup_pin = bytes(self.master.controller.cc.pin)
             logger.debug(f"self.backup_pin: {self.backup_pin}")

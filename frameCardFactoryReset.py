@@ -225,14 +225,16 @@ class FrameCardFactoryReset(customtkinter.CTkFrame):
                 except WrongPinError as ex:
                     pin_remaining = ex.pin_left
                     logger.info(f"Factory reset in progress. Remaining counter: {pin_remaining}")
-                    self.master.show(
-                        'IN PROGRESS',
-                        f"Please follow the instruction below ({pin_remaining}).",
-                        "Remove card",
-                        lambda: self.click_reset_button(),
-                        "./pictures_db/reset_popup.jpg"
-                    )
-                    self.master.show_button.configure(state='disabled')
+                    if pin_remaining > 0:
+                        # if pin_remaining == 0, no need to show this popup
+                        self.master.show(
+                            'IN PROGRESS',
+                            f"Please follow the instruction below.\n{pin_remaining} steps left.",
+                            "Remove card",
+                            lambda: self.click_reset_button(),
+                            "./pictures_db/reset_popup.jpg"
+                        )
+                        self.master.show_button.configure(state='disabled')
                 except Exception as ex:
                     logger.debug(f"exception: {str(ex)}")
                     import traceback
@@ -253,6 +255,7 @@ class FrameCardFactoryReset(customtkinter.CTkFrame):
                         except CardResetToFactoryError as ex:
                             # Card reset to factory
                             logger.debug(f"CARD RESET TO FACTORY!")
+                            self.master.controller.cc.setup_done = False  # force update cc state
                             self.master.appMode = ApplicationMode.Normal
                             self.master.show(
                                 'SUCCESS',

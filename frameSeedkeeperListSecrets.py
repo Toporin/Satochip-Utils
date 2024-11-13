@@ -99,7 +99,7 @@ class FrameSeedkeeperListSecrets(customtkinter.CTkFrame):
 
         # Create rows of labels with alternating colors
         #rely = 0.3
-        for i, secret in enumerate(secrets_data['headers']):
+        for i, secret in enumerate(secrets_data):
             try:
                 #rely += 0.06
                 row_frame = customtkinter.CTkFrame(

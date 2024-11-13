@@ -1,12 +1,19 @@
 import tkinter
 import customtkinter
 import logging
-
+import hashlib
 import pyqrcode
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+
+def getFingerprintFromAuthentikeyBytes(authentikeyBytes):
+    logger.debug(f"getFingerprintFromAuthentikeyBytes for authentikeyBytes: {authentikeyBytes.hex()}")
+    raw_secret =  bytes([len(authentikeyBytes)]) + authentikeyBytes
+    fingerprint = hashlib.sha256(raw_secret).hexdigest()[0:8]
+    logger.debug(f"getFingerprintFromAuthentikeyBytes fingerprint: {fingerprint}")
+    return fingerprint
 
 def toggle_entry_visibility(entry: customtkinter.CTkEntry):
     try:

@@ -10,6 +10,7 @@ from PIL import Image, ImageTk
 from customtkinter import CTkOptionMenu
 
 from FrameSeedkeeperGenerateSecretSelectType import FrameSeedkeeperGenerateSecretSelectType
+from applicationMode import ApplicationMode
 from controller import Controller
 from exceptions import ViewError, FrameClearingError, FrameCreationError
 from frameCardAbout import FrameCardAbout
@@ -22,6 +23,8 @@ from frameCardSetupPin import FrameCardSetupPin
 from frameMenuNoCard import FrameMenuNoCard
 from frameMenuSeedkeeper import FrameMenuSeedkeeper
 from frameMenuSettings import FrameMenuSettings
+from frameSeedkeeperBackupCard import FrameSeedkeeperBackupCard
+from frameSeedkeeperBackupResult import FrameSeedkeeperBackupResult
 from frameSeedkeeperCardLogs import FrameSeedkeeperCardLogs
 from frameSeedkeeperGenerateMnemonic import FrameSeedkeeperGenerateMnemonic
 from frameSeedkeeperGeneratePassword import FrameSeedkeeperGeneratePassword
@@ -116,13 +119,17 @@ class View(customtkinter.CTk):
             self.seedkeeper_import_data_frame = None
             # seedkeeper logs
             self.seedkeeper_card_logs_frame = None
+            # seedkeeper backup card
+            self.seedkeeper_backup_card_frame = None
+            self.seedkeeper_backup_result_frame = None
 
             # state
-
             # store seedkeeper secret headers
             self.secrets_data = None
             # should we update the list of headers?
             self.seedkeeper_secret_headers_need_update = True
+            # app is in seedbackup mode (inserting/removing card should not trigger start screen!)
+            self.appMode = ApplicationMode.Normal
 
             # Initializing controller
             self.controller = Controller(None, self, loglevel=loglevel)
@@ -778,6 +785,10 @@ class View(customtkinter.CTk):
                                      exc_info=True)
                 else:  # None
                     pass
+            elif self.appMode == ApplicationMode.SeedkeeperBackup:
+                logger.debug("View.update_status start (seedkeeper backup mode)")
+                # nothing to do...
+
             else:
                 # normal mode
                 logger.info("View.update_status start (normal mode)")
@@ -978,7 +989,7 @@ class View(customtkinter.CTk):
                 # get list of secret headers
                 self.secrets_data = self.controller.retrieve_secrets_stored_into_the_card()
                 self.seedkeeper_secret_headers_need_update = True
-                logger.debug(f"Fetched {len(self.secrets_data['headers'])} headers from card")
+                logger.debug(f"Fetched {len(self.secrets_data)} headers from card")
 
             if self.list_secrets_frame is None:
                 self.list_secrets_frame = FrameSeedkeeperListSecrets(self)
@@ -1092,41 +1103,23 @@ class View(customtkinter.CTk):
             self.seedkeeper_import_data_frame = FrameSeedkeeperImportSimpleSecret(self, "data")
         self.seedkeeper_import_data_frame.tkraise()
 
-    """ """
+    """ BACKUP CARD"""
 
-    # @log_method
-    # def show_view_generate_secret(self):
-    #     try:
-    #         self.in_backup_process = False
-    #         logger.info("001 Initiating secret generation process")
-    #         self.welcome_in_display = False
-    #         logger.debug("002 Welcome frame cleared")
-    #         self._clear_current_frame()
-    #         self.view_generate_secret()
-    #         logger.log(SUCCESS, "003 Secret generation process initiated")
-    #     except Exception as e:
-    #         logger.error(f"004 Error in show_generate_secret: {e}", exc_info=True)
-    #         raise ViewError(f"005 Failed to show generate secret: {e}")
-    #
-    # @log_method
-    # def show_view_import_secret(self):
-    #     try:
-    #         self.in_backup_process = False
-    #         logger.info("001 Initiating secret import process")
-    #         self.welcome_in_display = False
-    #         self._clear_current_frame()
-    #         logger.debug("002 Welcome frame cleared")
-    #         self.view_import_secret()
-    #         logger.log(SUCCESS, "002 Secret import process initiated")
-    #     except Exception as e:
-    #         logger.error(f"003 Error in import_secret: {e}", exc_info=True)
-    #         raise ViewError(f"004 Failed to import secret: {e}") from e
+    def show_backup_card(self):
+        # set application mode to seedkeeper backup (avoid interruption on card insertion/removal)
+        self.appMode = ApplicationMode.SeedkeeperBackup
+        if self.seedkeeper_backup_card_frame is None:
+            self.seedkeeper_backup_card_frame = FrameSeedkeeperBackupCard(self)
+        self.seedkeeper_backup_card_frame.backup_start()
+        self.seedkeeper_backup_card_frame.tkraise()
 
-    # @log_method
-    # def show_view_logs(self):
-    #     self.in_backup_process = False
-    #     total_number_of_logs, total_number_available_logs, logs = self.controller.get_logs()
-    #     self.view_logs_details(logs)
+    def show_backup_result(self, is_backup_error, backup_logs):
+        if self.seedkeeper_backup_result_frame is None:
+            self.seedkeeper_backup_result_frame = FrameSeedkeeperBackupResult(self)
+        self.seedkeeper_backup_result_frame.update_frame(is_backup_error, backup_logs)
+        self.seedkeeper_backup_result_frame.tkraise()
+
+    """ CARD LOGS"""
 
     def show_card_logs(self):
 

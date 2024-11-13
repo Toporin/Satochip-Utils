@@ -72,13 +72,13 @@ class FrameMenuSeedkeeper(customtkinter.CTkFrame):
                 "logs.png",
                 0.47, 0.05,
                 state="normal",
-                command=lambda: None  # todo!
+                command=lambda: master.show_backup_card()
             )
 
             self.button_logs = master.create_button_for_main_menu_item(
                 self, "Logs",
                 "logs.png",
-                0.47, 0.05,
+                0.54, 0.05,
                 state="normal",
                 command=lambda: master.show_card_logs()
             )

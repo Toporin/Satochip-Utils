@@ -419,15 +419,17 @@ class Controller:
                 'subtype': Controller.dic_type.get(header['subtype'], hex(header['subtype'])),
                 'origin': Controller.dic_type.get(header['origin'], hex(header['origin'])),
                 'export_rights': Controller.dic_type.get(header['export_rights'], hex(header['export_rights'])),
-                'label': header['label']
+                'label': header['label'],
+                'fingerprint': header['fingerprint'],
             }
             formatted_headers.append(formatted_header)
 
         logger.debug(f"Formated headers: {formatted_headers}")
-        return {
-            'num_secrets': len(headers),
-            'headers': formatted_headers
-        }
+        return formatted_headers
+        # return {
+        #     'num_secrets': len(headers),
+        #     'headers': formatted_headers
+        # }
 
     @log_method
     def retrieve_details_about_secret_selected(self, secret_id):
@@ -508,7 +510,11 @@ class Controller:
             offset += 1
             password_bytes = secret_bytes[offset:offset + password_size]
             result['password_bytes'] = password_bytes
-            result['password'] = result['secret_decoded'] = password_bytes.decode('utf-8')
+            try:
+                result['password'] = result['secret_decoded'] = password_bytes.decode('utf-8')
+            except Exception as e:
+                logger.error(f"Error during password decoding: {str(e)}")
+                result['password'] = result['secret_decoded'] = f"error during utf8 decoding: {password_bytes.hex()}"
             offset += password_size
 
             # login
@@ -944,6 +950,44 @@ class Controller:
             logger.error(f"Unexpected error during wallet descriptor import: {str(e)}")
             raise ControllerError(f"Failed to import wallet descriptor: {str(e)}") from e
 
-    def import_pubkey(self, label: str, pubkey: str):
-        # todo!
-        pass
+    def import_pubkey(self, label: str, pubkey_bytes: bytes):
+        try:
+            logger.info("Starting import of pubkey")
+
+            # Validate input
+            if not label:
+                raise ValueError("Label is required")
+            if not pubkey_bytes:
+                raise ValueError("Free text is required")
+
+            # Prepare the secret data
+            secret_type = 0x70  # SECRET_TYPE_PRIVKEY
+            secret_subtype = 0x00  # SECRET_SUBTYPE_DEFAULT
+            export_rights = 0x01  # SECRET_EXPORT_ALLOWED
+
+            # Encode the free text
+            # todo: pubkey_bytes should be in uncompressed format
+            secret_encoded = bytes([len(pubkey_bytes)]) + pubkey_bytes
+
+            # Prepare the secret dictionary
+            secret_dic = {
+                'header': self.cc.make_header(secret_type, export_rights, label, subtype=secret_subtype),
+                'secret_list': list(secret_encoded)
+            }
+
+            # Import the secret
+            id, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
+
+            # set flag to signal the secret_headers list should be updated
+            # todo: update secret_headers list directly?
+            self.view.seedkeeper_secret_headers_need_update = True
+
+            logger.log(SUCCESS, f"Free text imported successfully with id: {id} and fingerprint: {fingerprint}")
+            return id, fingerprint
+
+        except ValueError as e:
+            logger.error(f"Validation error during free text import: {str(e)}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error during free text import: {str(e)}")
+            raise ControllerError(f"Failed to import free text: {str(e)}") from e

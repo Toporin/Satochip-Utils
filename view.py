@@ -22,6 +22,7 @@ from frameCardImportSeed import FrameCardImportSeed
 from frameCardSetupPin import FrameCardSetupPin
 from frameMenuNoCard import FrameMenuNoCard
 from frameMenuSeedkeeper import FrameMenuSeedkeeper
+from frameMenuSeedkeeperBackup import FrameMenuSeedkeeperBackup
 from frameMenuSettings import FrameMenuSettings
 from frameSeedkeeperBackupCard import FrameSeedkeeperBackupCard
 from frameSeedkeeperBackupResult import FrameSeedkeeperBackupResult
@@ -87,8 +88,9 @@ class View(customtkinter.CTk):
             self.welcome_frame = None
             self.start_frame = None
             # menu frames
-            self.seedkeeper_menu_frame = None
             self.settings_menu_frame = None
+            self.seedkeeper_menu_frame = None
+            self.seedkeeper_backup_menu_frame = None
             # settings frames
             self.setup_card_frame = None
             self.about_frame = None
@@ -755,6 +757,23 @@ class View(customtkinter.CTk):
         logger.info("IN View.show_settings_menu start")
         self.nocard_menu_frame.tkraise()
 
+    def show_seedkeeper_menu(self, state=None, frame=None):
+        logger.info("show_seedkeeper_menu start")
+        if self.seedkeeper_menu_frame is None:
+            self.seedkeeper_menu_frame = FrameMenuSeedkeeper(self)
+        else:
+            logger.info("show_seedkeeper_menu seedkeeper_menu_frame is not None, show it")
+            #self.settings_menu_frame.place_forget()
+            #self.seedkeeper_menu_frame.place()
+            self.seedkeeper_menu_frame.tkraise()
+
+    def show_seedkeeper_backup_menu(self):
+        logger.info("show_seedkeeper_backup_menu start")
+        if self.seedkeeper_backup_menu_frame is None:
+            self.seedkeeper_backup_menu_frame = FrameMenuSeedkeeperBackup(self)
+        self.seedkeeper_backup_menu_frame.tkraise()
+
+
     ################################
     """ UTILS FOR CARD CONNECTOR """
 
@@ -798,7 +817,7 @@ class View(customtkinter.CTk):
 
                         if self.start_frame is not None: # do not create frame now as it is not main thread
                             self.show_start_frame()
-                            self.show_menu_frame()
+                            #self.show_menu_frame() done in show_start_frame()
 
                     except Exception as e:
                         logger.error(f"An error occurred while getting card status: {e}", exc_info=True)
@@ -918,6 +937,9 @@ class View(customtkinter.CTk):
             self.start_frame.update()
             self.start_frame.tkraise()
 
+        # show menu
+        self.show_menu_frame()
+
     def show_setup_card_frame(self):
         if self.setup_card_frame is None:
             self.setup_card_frame = FrameCardSetupPin(self)
@@ -960,19 +982,6 @@ class View(customtkinter.CTk):
             self.about_frame = FrameCardAbout(self)
         self.about_frame.update()
         self.about_frame.tkraise()
-
-    ################################
-    """ SEEDKEEPER MENU """
-
-    def show_seedkeeper_menu(self, state=None, frame=None):
-        logger.info("show_seedkeeper_menu start")
-        if self.seedkeeper_menu_frame is None:
-            self.seedkeeper_menu_frame = FrameMenuSeedkeeper(self)
-        else:
-            logger.info("show_seedkeeper_menu seedkeeper_menu_frame is not None, show it")
-            #self.settings_menu_frame.place_forget()
-            #self.seedkeeper_menu_frame.place()
-            self.seedkeeper_menu_frame.tkraise()
 
     ####################################################################################################################
     """ METHODS TO DISPLAY A VIEW FROM SEEDKEEPER MENU SELECTION """
@@ -1112,6 +1121,11 @@ class View(customtkinter.CTk):
             self.seedkeeper_backup_card_frame = FrameSeedkeeperBackupCard(self)
         self.seedkeeper_backup_card_frame.backup_start()
         self.seedkeeper_backup_card_frame.tkraise()
+
+        # show backup menu on the left
+        # This menu force the user to cancel if he wants to leave backup process
+        # By cancelling, the app is notified to leave ApplicationMode.SeedkeeperBackup back to normal mode
+        self.show_seedkeeper_backup_menu()
 
     def show_backup_result(self, is_backup_error, backup_logs):
         if self.seedkeeper_backup_result_frame is None:

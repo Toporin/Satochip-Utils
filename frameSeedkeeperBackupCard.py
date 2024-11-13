@@ -88,6 +88,9 @@ class FrameSeedkeeperBackupCard(customtkinter.CTkFrame):
                  "\nto another Seedkeeper (the 'backup') via an encrypted communication.")
         self.label_instruction.configure(text="Press the start button to continue.")
 
+        # reset state
+        self.reset_backup_state()
+
         def on_next_button():
             self.master_pairing()
 

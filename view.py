@@ -779,46 +779,37 @@ class View(customtkinter.CTk):
 
     def update_status(self, isConnected=None):
         try:
-            if self.controller.cc.mode_factory_reset == True:
+            if (self.appMode == ApplicationMode.FactoryResetV1 or
+                    self.appMode == ApplicationMode.FactoryResetV2):
                 # we are in factory reset mode
-                #TODO: refactor?
                 if isConnected is True:
                     logger.info(f"Card inserted for Reset Factory!")
                     try:
-                        # Mettre à jour les labels et les boutons en fonction de l'insertion de la carte
-                        # self.reset_button.configure(text='Reset', state='normal')
-                        self.show_button.configure(text='Reset', state='normal')
-                        logger.debug("Labels and button updated for card insertion")
+                        self.show_button.configure(text='Click to reset', state='normal')
                     except Exception as e:
                         logger.error(f"An error occurred while updating labels and button for card insertion: {e}",
                                      exc_info=True)
-
                 elif isConnected is False:
                     logger.info(f"Card removed for Reset Factory!")
                     try:
-                        # Mettre à jour les labels et les boutons en fonction du retrait de la carte
                         self.show_button.configure(text='Insert card', state='disabled')
-                        logger.debug("Labels and button updated for card removal")
                     except Exception as e:
                         logger.error(f"An error occurred while updating labels and button for card removal: {e}",
                                      exc_info=True)
                 else:  # None
                     pass
+
             elif self.appMode == ApplicationMode.SeedkeeperBackup:
                 logger.debug("View.update_status start (seedkeeper backup mode)")
-                # nothing to do...
+                # nothing to do here
 
             else:
                 # normal mode
                 logger.info("View.update_status start (normal mode)")
                 if isConnected is True:
                     try:
-                        #logger.info("Getting card status")
-
                         if self.start_frame is not None: # do not create frame now as it is not main thread
                             self.show_start_frame()
-                            #self.show_menu_frame() done in show_start_frame()
-
                     except Exception as e:
                         logger.error(f"An error occurred while getting card status: {e}", exc_info=True)
 
@@ -847,7 +838,7 @@ class View(customtkinter.CTk):
             if self.controller.cc.is_pin_set():
                 self.controller.cc.card_verify_PIN_simple()
             else:
-                self.controller.PIN_dialog(f'Unlock your {self.controller.cc.card_type}')
+                self.controller.PIN_dialog(f'Enter the PIN of your {self.controller.cc.card_type}')
 
     def get_passphrase(self, msg): #todo rename
         try:
@@ -874,7 +865,7 @@ class View(customtkinter.CTk):
             icon_image = Image.open("./pictures_db/change_pin_popup.jpg")
             icon = customtkinter.CTkImage(light_image=icon_image, size=(20, 20))
             icon_label = customtkinter.CTkLabel(
-                popup, image=icon, text=f"\nEnter the PIN code of your card.",
+                popup, image=icon, text= msg,  # f"\nEnter the PIN code of your card.",
                 compound='top',
                 font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal")
             )

@@ -834,9 +834,9 @@ class View(customtkinter.CTk):
             else:
                 self.controller.PIN_dialog(f'Enter the PIN of your {self.controller.cc.card_type}')
 
-    def get_passphrase(self, msg): #todo rename
+    def get_pin(self, msg): #todo rename
         try:
-            logger.info("View.get_passphrase() start")
+            logger.info("View.get_pin start")
 
             # Création d'une nouvelle fenêtre pour le popup
             popup = customtkinter.CTkToplevel(self)
@@ -908,7 +908,7 @@ class View(customtkinter.CTk):
             return pin
 
         except Exception as e:
-            logger.error(f"An error occurred in get_passphrase: {e}", exc_info=True)
+            logger.error(f"An error occurred in get_pin: {e}", exc_info=True)
             return None
 
     #############
@@ -966,7 +966,6 @@ class View(customtkinter.CTk):
         # todo we reuse show_seedkeeper_backup_menu() since functionalities are the same
         self.show_seedkeeper_backup_menu()
 
-
     def show_about_frame(self):
         logger.info("show_about_frame start")
         if self.about_frame is None:
@@ -980,7 +979,7 @@ class View(customtkinter.CTk):
 
     # SEEDKEEPER MENU SELECTION
     #@log_method
-    def show_seedkeeper_list_secrets(self):  #todo rename show_seedkeeper_list_secrets
+    def show_seedkeeper_list_secrets(self):
         try:
             logger.debug("show_view_my_secrets start")
 

@@ -237,7 +237,7 @@ class Controller:
             while True:
                 try:
                     logger.debug("Requesting PIN")
-                    pin = self.view.get_passphrase(msg)
+                    pin = self.view.get_pin(msg)
                     logger.debug(f"PIN received: pin={'***' if pin else None}")
 
                     if pin is None:

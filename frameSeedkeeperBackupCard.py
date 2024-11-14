@@ -90,6 +90,7 @@ class FrameSeedkeeperBackupCard(customtkinter.CTkFrame):
 
         # reset state
         self.reset_backup_state()
+        self.master.secret_headers = None  # reset cached list of headers since multiple cards will be inserted/removed
 
         def on_next_button():
             self.master_pairing()

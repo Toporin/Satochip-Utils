@@ -86,7 +86,6 @@ class FrameCardFactoryReset(customtkinter.CTkFrame):
                 logger.info("Executing quit button action")
                 master.controller.cc.set_mode_factory_reset(False)
                 master.appMode = ApplicationMode.Normal
-                #time.sleep(0.5)  # todo remove?
                 master.show_start_frame()
 
             self.cancel_button = master.create_button(
@@ -112,6 +111,10 @@ class FrameCardFactoryReset(customtkinter.CTkFrame):
             def click_start_button():
                 # get card type and version
                 if master.controller.cc.card_present:
+
+                    # reset cached list of headers since card state will change
+                    self.master.secret_headers = None
+                    
                     # get card version
                     response, sw1, sw2, card_status = self.master.controller.cc.card_get_status()
                     applet_version = card_status['protocol_major_version']*256 + card_status['protocol_minor_version']
@@ -149,8 +152,6 @@ class FrameCardFactoryReset(customtkinter.CTkFrame):
                         "./pictures_db/reset_popup.jpg"
                     )
                     master.show_button.configure(state='normal')
-
-
 
             self.reset_button = master.create_button(
                 'Start',

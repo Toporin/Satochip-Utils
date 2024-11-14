@@ -42,7 +42,7 @@ class FrameWidgetHeader(customtkinter.CTkFrame):
             self.button.place(rely=0.5, relx=0, anchor="w")
 
         except Exception as e:
-            logger.error(f"An unexpected error occurred in create_an_header: {e}", exc_info=True)
+            logger.error(f"An unexpected error occurred in init: {e}", exc_info=True)
 
     def update_frame(self):
         pass

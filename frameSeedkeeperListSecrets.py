@@ -5,6 +5,7 @@ import logging
 
 from constants import (DEFAULT_BG_COLOR, BG_MAIN_MENU, BG_HOVER_BUTTON,
                        TEXT_COLOR, BUTTON_TEXT_COLOR, HIGHLIGHT_COLOR)
+from frameWidgetHeader import FrameWidgetHeader
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -31,7 +32,7 @@ class FrameSeedkeeperListSecrets(customtkinter.CTkFrame):
             )
 
             # Creating header
-            self.header = master.create_an_header(
+            self.header = FrameWidgetHeader(
                 "My secrets",
                 "generate_popup.png",
                 frame=self

@@ -2,6 +2,7 @@ import customtkinter
 import logging
 
 from constants import MAIN_MENU_COLOR
+from frameWidgetHeader import FrameWidgetHeader
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -23,7 +24,7 @@ class FrameStart(customtkinter.CTkFrame):
             self.canvas.create_image(0, 0, image=self.background_photo, anchor="nw")
 
             # Creating header
-            self.header = master.create_an_header("Welcome", "home_popup.jpg", frame=self)
+            self.header = FrameWidgetHeader("Welcome", "home_popup.jpg", frame=self)
             self.header.place(relx=0.05, rely=0.05, anchor="nw")
 
             # Setting up labels

@@ -45,7 +45,7 @@ class FrameWidgetCustomTextbox(customtkinter.CTkFrame):
             self.textbox.place(relx=0.05, rely=rely, anchor="nw")
 
         except Exception as e:
-            logger.error(f"An unexpected error occurred in create_an_header: {e}", exc_info=True)
+            logger.error(f"An unexpected error occurred in init: {e}", exc_info=True)
 
     def update_frame(self, label, content):
 

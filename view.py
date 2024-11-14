@@ -336,46 +336,6 @@ class View(customtkinter.CTk):
         result = customtkinter.CTkFont(size=size)
         return result
 
-    def create_an_header(self, title_text: str = "", icon_name: str = None, fg_bg_color=None, frame = None):
-        try:
-            logger.debug("create_an_header start")
-
-            if frame is None:
-                frame = self.main_frame
-
-            # Créer le cadre de l'en-tête
-            header_frame = customtkinter.CTkFrame(frame, fg_color="whitesmoke", bg_color="whitesmoke", width=750, height=40)
-
-            # Creating header with title and icon
-            title_text = f"   {title_text}"
-            icon_path = f"{ICON_PATH}{icon_name}"
-            logger.debug(f"Loading icon from path: {icon_path}")
-
-            # Charger et redimensionner l'image de l'icône
-            image = Image.open(icon_path)
-            image = image.resize((40, 40), Image.LANCZOS)
-            logger.debug("Icon image resized successfully")
-
-            # Convertir l'image en PhotoImage
-            photo_image = ImageTk.PhotoImage(image)
-            logger.debug("Icon image converted to PhotoImage successfully")
-
-            # Créer le bouton avec l'image de l'icône
-            button = customtkinter.CTkButton(
-                header_frame, text=title_text, image=photo_image,
-                font=customtkinter.CTkFont(family="Outfit", size=25,weight="bold"),
-                bg_color="whitesmoke", fg_color="whitesmoke", text_color="black",
-                hover_color="whitesmoke", compound="left"
-            )
-            button.image = photo_image  # Garder une référence de l'image
-            button.place(rely=0.5, relx=0, anchor="w")
-
-            logger.debug("create_an_header method completed successfully")
-            return header_frame
-
-        except Exception as e:
-            logger.error(f"An unexpected error occurred in create_an_header: {e}", exc_info=True)
-
     def create_header_for_welcome(self, frame=None):
         if frame is None:
             frame = self.welcome_frame

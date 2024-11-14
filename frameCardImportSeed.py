@@ -2,6 +2,7 @@ import customtkinter
 import logging
 
 from constants import BUTTON_COLOR
+from frameWidgetHeader import FrameWidgetHeader
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -21,7 +22,7 @@ class FrameCardImportSeed(customtkinter.CTkFrame):
             )
 
             # Creating header
-            self.header = master.create_an_header(
+            self.header = FrameWidgetHeader(
                 "Import Seed",
                 "seed_popup.jpg",
                 frame=self

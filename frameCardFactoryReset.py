@@ -5,6 +5,7 @@ import logging
 from pysatochip.CardConnector import IdentityBlockedError, WrongPinError, PinBlockedError, CardResetToFactoryError
 
 from applicationMode import ApplicationMode
+from frameWidgetHeader import FrameWidgetHeader
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -30,7 +31,7 @@ class FrameCardFactoryReset(customtkinter.CTkFrame):
             self.canvas.create_image(0, 0, image=self.background_photo, anchor="nw")
 
             # Creating header
-            self.header = master.create_an_header(
+            self.header = FrameWidgetHeader(
                 f"Reset Your {master.controller.cc.card_type}",
                 "reset_popup.jpg",
                 frame=self

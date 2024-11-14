@@ -3,6 +3,7 @@ import logging
 from PIL import Image, ImageTk
 
 from constants import MAIN_MENU_COLOR, BUTTON_COLOR
+from frameWidgetHeader import FrameWidgetHeader
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -21,7 +22,7 @@ class FrameCardAuthenticity(customtkinter.CTkFrame):
                 bg_color="whitesmoke", fg_color="whitesmoke"
             )
 
-            self.header = master.create_an_header(
+            self.header = FrameWidgetHeader(
                 "Check authenticity",
                 "check_authenticity_popup.jpg",
                 frame=self

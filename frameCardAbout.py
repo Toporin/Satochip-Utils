@@ -2,8 +2,8 @@ import customtkinter
 import logging
 from pysatochip.version import PYSATOCHIP_VERSION
 
+from frameWidgetHeader import FrameWidgetHeader
 from version import VERSION
-from constants import MAIN_MENU_COLOR, BUTTON_COLOR
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -29,7 +29,7 @@ class FrameCardAbout(customtkinter.CTkFrame):
             self.canvas.create_image(0, 0, image=self.background_photo, anchor="nw")
 
             # title
-            self.header = master.create_an_header(
+            self.header = FrameWidgetHeader(
                 "About", "about_popup.jpg",
                 frame=self
             )
@@ -42,7 +42,7 @@ class FrameCardAbout(customtkinter.CTkFrame):
             self.card_information.configure(font=master.make_text_bold())
 
             self.applet_version = master.create_label(
-                f"Applet version: [UNKNOWN]", # to update later
+                f"Applet version: [UNKNOWN]",  # to update later
                 frame=self
             )
             self.applet_version.place(relx=0.05, rely=0.33)
@@ -59,23 +59,23 @@ class FrameCardAbout(customtkinter.CTkFrame):
             )
             self.card_genuine.place(relx=0.05, rely=0.38)
 
-            self.watch_all = master.create_label("card status [UNKNOWN]", frame=self) # updated later
+            self.watch_all = master.create_label("card status [UNKNOWN]", frame=self)  # updated later
             self.watch_all.place(relx=0.05, rely=0.17)
 
             self.unlock_button = master.create_button("Verify PIN", lambda: [self.unlock()], frame=self)
             self.unlock_button.configure(font=master.make_text_size_at(15))
             self.unlock_button.place(relx=0.66, rely=0.17)
-            #self.unlock_button.place_forget()
+            # self.unlock_button.place_forget()
 
             # card configuration
             self.card_configuration = master.create_label("Card configuration", frame=self)
             self.card_configuration.place(relx=0.05, rely=0.48, anchor="w")
             self.card_configuration.configure(font=master.make_text_bold())
 
-            self.pin_information = master.create_label("PIN status", frame=self) # updated later
+            self.pin_information = master.create_label("PIN status", frame=self)  # updated later
             self.pin_information.place(relx=0.05, rely=0.52)
 
-            self.two_FA = master.create_label("2FA status", frame=self) # updated later
+            self.two_FA = master.create_label("2FA status", frame=self)  # updated later
             self.two_FA.place(relx=0.05, rely=0.58)
 
             # card connectivity # todo remove as part of card info?
@@ -83,7 +83,7 @@ class FrameCardAbout(customtkinter.CTkFrame):
             self.card_connectivity.place(relx=0.05, rely=0.68, anchor="w")
             self.card_connectivity.configure(font=master.make_text_bold())
 
-            self.nfc = master.create_label(f"NFC status: [UNKNOWN]", frame=self) # updated later
+            self.nfc = master.create_label(f"NFC status: [UNKNOWN]", frame=self)  # updated later
             self.nfc.place(relx=0.05, rely=0.715)
             # self.button_nfc = self.create_button("Disable NFC")
             # self.button_nfc.place(relx=0.5, rely=0.71)
@@ -169,8 +169,3 @@ class FrameCardAbout(customtkinter.CTkFrame):
                 #     self.button_2FA = self.create_button("Enable 2FA")
                 # self.button_2FA.configure(font=self.make_text_size_at(15), state='disabled')
                 # self.button_2FA.place(relx=0.5, rely=0.58)
-
-
-
-
-

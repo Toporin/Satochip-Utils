@@ -1,6 +1,8 @@
 import customtkinter
 import logging
 
+from frameWidgetHeader import FrameWidgetHeader
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -19,7 +21,7 @@ class FrameCardChangePin(customtkinter.CTkFrame):
             )
 
             # Creating header
-            self.header = master.create_an_header(
+            self.header = FrameWidgetHeader(
                 "Change PIN ",
                 "change_pin_popup.jpg",
                 frame=self

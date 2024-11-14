@@ -3,7 +3,7 @@ import logging
 
 from applicationMode import ApplicationMode
 from frameWidgetHeader import FrameWidgetHeader
-from utils import getFingerprintFromAuthentikeyBytes
+from utils import get_fingerprint_from_authentikey_bytes
 from constants import BG_MAIN_MENU, BG_HOVER_BUTTON
 
 logger = logging.getLogger(__name__)
@@ -196,7 +196,7 @@ class FrameSeedkeeperBackupCard(customtkinter.CTkFrame):
             logger.debug(f"Fetched {len(self.secret_headers_to_backup)} headers to backup")
 
             # check if master authentikey is already in backup or import it
-            master_authentikey_fingerprint = getFingerprintFromAuthentikeyBytes(self.master_authentikey.get_public_key_bytes(compressed=False))
+            master_authentikey_fingerprint = get_fingerprint_from_authentikey_bytes(self.master_authentikey.get_public_key_bytes(compressed=False))
             authentikey_found = next((item for item in self.backup_secret_headers if item['fingerprint'] == master_authentikey_fingerprint), None)
 
             #if not any(d['fingerprint'] == master_authentikey_fingerprint for d in self.backup_secret_headers):
@@ -247,7 +247,7 @@ class FrameSeedkeeperBackupCard(customtkinter.CTkFrame):
                     return
 
                 # check if backup authentikey is already in master, or import it
-                backup_authentikey_fingerprint = getFingerprintFromAuthentikeyBytes(
+                backup_authentikey_fingerprint = get_fingerprint_from_authentikey_bytes(
                     self.backup_authentikey.get_public_key_bytes(compressed=False))
                 authentikey_found = next((item for item in self.master_secret_headers if
                                           item['fingerprint'] == backup_authentikey_fingerprint), None)

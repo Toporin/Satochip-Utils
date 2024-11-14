@@ -2,7 +2,8 @@ import customtkinter
 import logging
 
 from frameWidgetHeader import FrameWidgetHeader
-from utils import show_qr_code, toggle_entry_visibility, toggle_textbox_visibility, reset_qr_code, update_textbox
+from utils import (show_qr_code, toggle_entry_visibility, toggle_textbox_visibility, reset_qr_code,
+                   update_textbox, mnemonic_to_entropy_string)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -81,14 +82,24 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
                 command=lambda: None,  # will be updated in update
                 frame=self
             )
-            self.delete_button.place(relx=0.55, rely=0.95, anchor="e")
+            self.delete_button.place(relx=0.35, rely=0.95, anchor="e")
+
             # seed_qr button #todo use icons on the side?
-            self.qr_button = master.create_button(
+            self.seedqr_button = master.create_button(
                 text="SeedQR",
                 command=lambda: None,  # will be updated in update_frame()
                 frame=self
             )
+            self.seedqr_button.place(relx=0.55, rely=0.95, anchor="e")
+
+            # qr button #todo use icons on the side?
+            self.qr_button = master.create_button(
+                text="QR code",
+                command=lambda: None,  # will be updated in update_frame()
+                frame=self
+            )
             self.qr_button.place(relx=0.75, rely=0.95, anchor="e")
+
             # show
             self.show_button = master.create_button(
                 text="Hide",  # secret is shown by default
@@ -148,8 +159,13 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
             self.descriptor_textbox.place(relx=0.05, rely=self.descriptor_textbox_rely, relheight=0.20,)
             update_textbox(self.descriptor_textbox, descriptor)
 
-        # qr-code
+        # seedqr-code
         reset_qr_code(self.qr_label)
+        self.seedqr_button.configure(
+            command=lambda params=(mnemonic, self.qr_label): show_qr_code(mnemonic_to_entropy_string(params[0]), params[1])
+        )
+
+        # qr-code
         self.qr_button.configure(
             command=lambda params=(mnemonic, self.qr_label): show_qr_code(params[0], params[1])
         )
@@ -164,6 +180,7 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
             ]
         )
 
+        # delete button
         self.delete_button.configure(
             command=lambda:
                 self.master.show(

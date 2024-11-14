@@ -628,7 +628,7 @@ class Controller:
             result['wordlist_selector'] = secret_bytes[offset]
             offset += 1
 
-            # passphrase
+            # entropy
             entropy_size = secret_bytes[offset]
             offset += 1
             result['entropy'] = secret_bytes[offset:offset + entropy_size]

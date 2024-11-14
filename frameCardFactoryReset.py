@@ -1,6 +1,4 @@
-import random
-import time
-
+from os import urandom
 import customtkinter
 import logging
 
@@ -214,7 +212,7 @@ class FrameCardFactoryReset(customtkinter.CTkFrame):
             try:
                 logger.info("click_reset_button attempting to reset the card (v2)")
 
-                pin = str(random.randrange(1000, 9999)).encode('utf-8') # random pin
+                pin = urandom(6) # random pin
                 try:
                     (response, sw1, sw2) = self.master.controller.cc.card_verify_PIN_simple(pin)
                     if sw1 == 0x90 and sw2 == 0x00:
@@ -244,7 +242,7 @@ class FrameCardFactoryReset(customtkinter.CTkFrame):
                 if card_status["PIN0_remaining_tries"] == 0:
                     # at this point, pin is blocked, now block the puk
                     while True:
-                        puk = str(random.randrange(1000, 9999)).encode('utf-8')  # random pin  # random puk
+                        puk = urandom(16)  # random puk
                         puk_list = list(puk)
                         try:
                             (response, sw1, sw2) = self.master.controller.cc.card_unblock_PIN(0, puk_list)

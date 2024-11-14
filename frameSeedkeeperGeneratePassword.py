@@ -1,6 +1,6 @@
 import customtkinter
 import logging
-import random
+import secrets
 
 from frameWidgetHeader import FrameWidgetHeader
 from constants import BG_MAIN_MENU, BG_HOVER_BUTTON, BG_BUTTON
@@ -186,7 +186,7 @@ class FrameSeedkeeperGeneratePassword(customtkinter.CTkFrame):
                             "No character set selected.\nPlease select at least one character set.")
 
                     # password generation
-                    generated_password = ''.join(random.choice(char_pool) for _ in range(password_length))
+                    generated_password = ''.join(secrets.choice(char_pool) for _ in range(password_length))
 
                     # adjust alignement of text into text_boxw
                     textbox_width = 100

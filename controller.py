@@ -400,7 +400,7 @@ class Controller:
         return nbtotal_logs, nbavail_logs, json_logs
 
     @log_method
-    def retrieve_secrets_stored_into_the_card(self) -> Dict[str, Any]:
+    def retrieve_secrets_stored_into_the_card(self) -> List[Dict[str, Any]]:
         try:
             headers = self.cc.seedkeeper_list_secret_headers()
             logger.log(SUCCESS, f"Secrets retrieved successfully: {headers}")
@@ -409,7 +409,7 @@ class Controller:
             logger.error(f"Error retrieving secrets: {e}")
             raise ControllerError(f"Failed to retrieve secrets: {e}")
 
-    def _format_secret_headers(self, headers: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _format_secret_headers(self, headers: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         # todo refactor & clean
         formatted_headers = []
         for header in headers:
@@ -772,9 +772,19 @@ class Controller:
             # import encoded secret into card
             sid, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
 
-            # set flag to signal the secret_headers list should be updated
-            # todo: update secret_headers list directly?
-            self.view.seedkeeper_secret_headers_need_update = True
+            # update secret_headers if it is already populated and set flag
+            # if secret_headers is None, we will have to regenerate it completely
+            if self.view.secret_headers is not None:
+                secret_header = {
+                    'label': label,
+                    'type': "Password",  # todo unify 'type' entry (either str or byte)
+                    'subtype': 0x00,
+                    'export_rights': export_rights,
+                    'id': sid,
+                    'fingerprint': fingerprint
+                }
+                self.view.secret_headers = [secret_header] + self.view.secret_headers  # prepend
+                self.view.seedkeeper_secret_headers_need_update = True
 
             logger.info(f"Password imported successfully with id: {sid} and fingerprint: {fingerprint}")
 
@@ -818,7 +828,6 @@ class Controller:
             descriptor_list = list(descriptor.encode('utf-8')) if descriptor else []
             descriptor_size = len(descriptor_list)
 
-
             secret_list = (
                     [len(seed_list)] +
                     seed_list +
@@ -843,15 +852,25 @@ class Controller:
             }
 
             # Import the secret
-            id, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
+            sid, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
 
-            # set flag to signal the secret_headers list should be updated
-            # todo: update secret_headers list directly?
-            self.view.seedkeeper_secret_headers_need_update = True
+            # update secret_headers if it is already populated and set flag
+            # if secret_headers is None, we will have to regenerate it completely
+            if self.view.secret_headers is not None:
+                secret_header = {
+                    'label': label,
+                    'type': "Masterseed",  # todo unify 'type' entry (either str or byte)
+                    'subtype': '0x1', # todo unify entry (either str or byte)
+                    'export_rights': export_rights,
+                    'id': sid,
+                    'fingerprint': fingerprint
+                }
+                self.view.secret_headers = [secret_header] + self.view.secret_headers  # prepend
+                self.view.seedkeeper_secret_headers_need_update = True
 
             logger.log(SUCCESS,
-                       f"004 Masterseed imported successfully with id: {id} and fingerprint: {fingerprint}")
-            return id, fingerprint
+                       f"004 Masterseed imported successfully with id: {sid} and fingerprint: {fingerprint}")
+            return sid, fingerprint
 
         except ValueError as e:
             logger.error(f"005 Validation error during masterseed import: {str(e)}")
@@ -889,9 +908,9 @@ class Controller:
             # Import the secret
             sid, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
 
-            # set flag to signal the secret_headers list should be updated
+            # update secret_headers if it is already populated and set flag
+            # if secret_headers is None, we will have to regenerate it completely
             if self.view.secret_headers is not None:
-                # if secret_headers is None, we will have to regenerate it completely
                 secret_header = {
                     'label': label,
                     'type': "Data",  # todo unify 'type' entry (either str or byte)
@@ -901,7 +920,7 @@ class Controller:
                     'fingerprint': fingerprint
                 }
                 self.view.secret_headers = [secret_header] + self.view.secret_headers # prepend
-            self.view.seedkeeper_secret_headers_need_update = True
+                self.view.seedkeeper_secret_headers_need_update = True
 
             logger.log(SUCCESS, f"Data imported successfully with id: {sid} and fingerprint: {fingerprint}")
             return sid, fingerprint
@@ -943,14 +962,24 @@ class Controller:
             }
 
             # Import the secret
-            id, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
+            sid, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
 
-            # set flag to signal the secret_headers list should be updated
-            # todo: update secret_headers list directly?
-            self.view.seedkeeper_secret_headers_need_update = True
+            # update secret_headers if it is already populated and set flag
+            if self.view.secret_headers is not None:
+                # if secret_headers is None, we will have to regenerate it completely
+                secret_header = {
+                    'label': label,
+                    'type': "Wallet descriptor",  # todo unify 'type' entry (either str or byte)
+                    'subtype': secret_subtype,
+                    'export_rights': export_rights,
+                    'id': sid,
+                    'fingerprint': fingerprint
+                }
+                self.view.secret_headers = [secret_header] + self.view.secret_headers  # prepend
+                self.view.seedkeeper_secret_headers_need_update = True
 
             logger.log(SUCCESS,
-                       f"Wallet descriptor imported successfully with id: {id} and fingerprint: {fingerprint}")
+                       f"Wallet descriptor imported successfully with id: {sid} and fingerprint: {fingerprint}")
             return id, fingerprint
 
         except ValueError as e:
@@ -986,14 +1015,24 @@ class Controller:
             }
 
             # Import the secret
-            id, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
+            sid, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
 
-            # set flag to signal the secret_headers list should be updated
-            # todo: update secret_headers list directly?
-            self.view.seedkeeper_secret_headers_need_update = True
+            # update secret_headers if it is already populated and set flag
+            # if secret_headers is None, we will have to regenerate it completely
+            if self.view.secret_headers is not None:
+                secret_header = {
+                    'label': label,
+                    'type': "Public Key",  # todo unify 'type' entry (either str or byte)
+                    'subtype': secret_subtype,
+                    'export_rights': export_rights,
+                    'id': sid,
+                    'fingerprint': fingerprint
+                }
+                self.view.secret_headers = [secret_header] + self.view.secret_headers  # prepend
+                self.view.seedkeeper_secret_headers_need_update = True
 
-            logger.log(SUCCESS, f"Pubkey imported successfully with id: {id} and fingerprint: {fingerprint}")
-            return id, fingerprint
+            logger.log(SUCCESS, f"Pubkey imported successfully with id: {sid} and fingerprint: {fingerprint}")
+            return sid, fingerprint
 
         except ValueError as e:
             logger.error(f"Validation error during pubkey import: {str(e)}")

@@ -70,6 +70,7 @@ class FrameSeedkeeperImportSimpleSecret(customtkinter.CTkFrame):
                         # verify PIN
                         master.update_verify_pin()
                         # import
+                        sid = 0
                         if secret_type == "descriptor":
                             sid, fingerprint = master.controller.import_wallet_descriptor(label, secret)
                         elif secret_type == "data":

@@ -33,21 +33,25 @@ class FrameSeedkeeperImportSimpleSecret(customtkinter.CTkFrame):
             self.label.place(relx=0.05, rely=0.20, anchor="nw")
 
             self.label_entry = master.create_entry(frame=self)
-            self.label_entry.place(relx=0.12, rely=0.195, anchor="nw")
-            self.label_entry.configure(width=400)
+            self.label_entry.configure(width=500)
+            self.label_entry.configure(placeholder_text="Enter label")
+            self.label_entry.place(relx=0.15, rely=0.20, anchor="nw")
 
-            # password generation
+            # secret textbox
             self.secret_label = master.create_label(f"{secret_type}:", frame=self)
-            self.secret_label.place(relx=0.04, rely=0.67, anchor="nw")
+            if secret_type == "descriptor":
+                self.secret_label.configure(text="Wallet descriptor*:")
+            elif secret_type == "data":
+                self.secret_label.configure(text="Data*:")
+            self.secret_label.place(relx=0.05, rely=0.30, anchor="nw")
 
             self.secret_textbox = customtkinter.CTkTextbox(
                 self, corner_radius=20, bg_color="whitesmoke", fg_color=BG_BUTTON,
-                border_color=BG_BUTTON, border_width=1, width=500, height=83,
+                border_color=BG_BUTTON, border_width=1, width=500, height=200,
                 text_color="grey",
                 font=customtkinter.CTkFont(family="Outfit", size=13, weight="normal")
             )
-            self.secret_textbox.place(relx=0.28, rely=0.8, anchor="w")
-            self.secret_textbox.configure(state='disabled')
+            self.secret_textbox.place(relx=0.15, rely=0.36, anchor="nw")
 
             # action buttons
             # password import to card

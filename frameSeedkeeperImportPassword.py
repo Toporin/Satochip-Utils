@@ -33,28 +33,31 @@ class FrameSeedkeeperImportPassword(customtkinter.CTkFrame):
             self.label.place(relx=0.05, rely=0.20, anchor="nw")
 
             self.label_entry = master.create_entry(frame=self)
-            self.label_entry.place(relx=0.12, rely=0.195, anchor="nw")
-            self.label_entry.configure(width=400)
+            self.label_entry.configure(width=500)
+            self.label_entry.configure(placeholder_text="Enter label")
+            self.label_entry.place(relx=0.15, rely=0.20, anchor="nw")
 
             # login field (opt)
             self.login_label = master.create_label("Login:", frame=self)
-            self.login_label.place(relx=0.04, rely=0.32, anchor="nw")
+            self.login_label.place(relx=0.05, rely=0.32, anchor="nw")
 
             self.login_entry = master.create_entry(frame=self)
-            self.login_entry.place(relx=0.12, rely=0.318, anchor="nw")
-            self.login_entry.configure(width=400)
+            self.login_entry.configure(width=500)
+            self.login_entry.configure(placeholder_text="Enter login (optional)")
+            self.login_entry.place(relx=0.15, rely=0.32, anchor="nw")
 
             # url field (opt)
             self.url_label = master.create_label("Url:", frame=self)
-            self.url_label.place(relx=0.04, rely=0.44, anchor="nw")
+            self.url_label.place(relx=0.05, rely=0.44, anchor="nw")
 
             self.url_entry = master.create_entry(frame=self)
-            self.url_entry.place(relx=0.12, rely=0.438, anchor="nw")
-            self.url_entry.configure(width=400)
+            self.url_entry.configure(width=500)
+            self.url_entry.configure(placeholder_text="Enter url (optional)")
+            self.url_entry.place(relx=0.15, rely=0.44, anchor="nw")
 
             # password generation
             self.password_label = master.create_label("Password:", frame=self)
-            self.password_label.place(relx=0.04, rely=0.67, anchor="nw")
+            self.password_label.place(relx=0.05, rely=0.56, anchor="nw")
 
             self.password_text_box = customtkinter.CTkTextbox(
                 self, corner_radius=20, bg_color="whitesmoke", fg_color=BG_BUTTON,
@@ -62,8 +65,7 @@ class FrameSeedkeeperImportPassword(customtkinter.CTkFrame):
                 text_color="grey",
                 font=customtkinter.CTkFont(family="Outfit", size=13, weight="normal")
             )
-            self.password_text_box.place(relx=0.28, rely=0.8, anchor="w")
-            self.password_text_box.configure(state='disabled')
+            self.password_text_box.place(relx=0.15, rely=0.68, anchor="w")
 
             # action buttons
             # password import to card

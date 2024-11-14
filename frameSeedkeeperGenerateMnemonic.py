@@ -91,7 +91,6 @@ class FrameSeedkeeperGenerateMnemonic(customtkinter.CTkFrame):
             self.passphrase_checkbox.place(relx=0.05, rely=0.55, anchor="w")
 
             self.passphrase_entry = master.create_entry(frame=self)
-
             self.passphrase_entry.configure(placeholder_text="Enter passphrase (optional)")
 
             # use descriptor

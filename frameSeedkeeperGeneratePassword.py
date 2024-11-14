@@ -34,61 +34,63 @@ class FrameSeedkeeperGeneratePassword(customtkinter.CTkFrame):
             self.label.place(relx=0.05, rely=0.20, anchor="nw")
 
             self.label_entry = master.create_entry(frame=self)
-            self.label_entry.place(relx=0.15, rely=0.20, anchor="nw")
             self.label_entry.configure(width=400)
+            self.label_entry.configure(placeholder_text="Enter label")
+            self.label_entry.place(relx=0.15, rely=0.20, anchor="nw")
 
             # login field (opt)
             self.login_label = master.create_label("Login:", frame=self)
             self.login_label.place(relx=0.05, rely=0.32, anchor="nw")
 
             self.login_entry = master.create_entry(frame=self)
-            self.login_entry.place(relx=0.15, rely=0.32, anchor="nw")
             self.login_entry.configure(width=400)
+            self.login_entry.configure(placeholder_text="Enter login (optional)")
+            self.login_entry.place(relx=0.15, rely=0.32, anchor="nw")
 
             # url field (opt)
             self.url_label = master.create_label("Url:", frame=self)
             self.url_label.place(relx=0.05, rely=0.44, anchor="nw")
 
             self.url_entry = master.create_entry(frame=self)
-            self.url_entry.place(relx=0.15, rely=0.44, anchor="nw")
             self.url_entry.configure(width=400)
+            self.url_entry.configure(placeholder_text="Enter url (optional)")
+            self.url_entry.place(relx=0.15, rely=0.44, anchor="nw")
 
             # Slide bar creation
-            # Création de la slide bar
-            self.slider_moved = False
 
             def _length_slider_event(value):
                 try:
-                    self.slider_moved = True
                     int_value = int(value)
                     self.length_value_label.configure(text=f"{int_value}")
                     self.length_value_label.place(x=self.length_slider.get() * 3.5 + 250, y=324)
 
                     if int_value < 8:
                         self.length_slider.configure(button_color="red", progress_color="red")
-                    elif int_value == 8:
+                    elif int_value < 10:
                         self.length_slider.configure(button_color="orange", progress_color="orange")
-                    elif int_value > 8:
+                    elif int_value >= 10:
                         self.length_slider.configure(button_color="green", progress_color="green")
                 except Exception as e:
                     logger.error(f"077 Error updating slider value: {e}", exc_info=True)
 
             self.length_slider = customtkinter.CTkSlider(
                 self,
-                from_=4, to=16,
+                from_=6, to=18,
                 command=_length_slider_event,
                 width=600,
                 progress_color=BG_HOVER_BUTTON,
                 button_color=BG_MAIN_MENU
             )
+            self.length_slider.configure(button_color="green", progress_color="green")
+            self.length_slider.set(12)  # use secure value by default
             self.length_slider.place(relx=0.15, rely=0.55)
 
             self.length = master.create_label("Length*: ", frame=self)
             self.length.place(relx=0.04, rely=0.535)
 
-            self.length_value_label = master.create_label("6", frame=self)
+            self.length_value_label = master.create_label("12", frame=self)
             self.length_value_label.configure(font=master.make_text_bold(20))
-            self.length_value_label.place(x=250, y=324)
+            self.length_value_label.place(x=285, y=324)
 
             # Checkbox creation
             self.characters_used = master.create_label("Characters used: ", frame=self)
@@ -112,6 +114,7 @@ class FrameSeedkeeperGeneratePassword(customtkinter.CTkFrame):
                 command=checkbox_event,
                 checkmark_color=BG_MAIN_MENU,
                 fg_color=BG_HOVER_BUTTON)
+            self.minus_abc.select()  # selected by default
             self.minus_abc.place(relx=0.3, rely=0.6)
 
             self.major_abc = customtkinter.CTkCheckBox(
@@ -120,6 +123,7 @@ class FrameSeedkeeperGeneratePassword(customtkinter.CTkFrame):
                 checkmark_color=BG_MAIN_MENU,
                 fg_color=BG_HOVER_BUTTON
             )
+            self.major_abc.select()  # selected by default
             self.major_abc.place(relx=0.4, rely=0.6)
 
             self.numeric_value = customtkinter.CTkCheckBox(
@@ -131,6 +135,7 @@ class FrameSeedkeeperGeneratePassword(customtkinter.CTkFrame):
                 checkmark_color=BG_MAIN_MENU,
                 fg_color=BG_HOVER_BUTTON
             )
+            self.numeric_value.select()  # selected by default
             self.numeric_value.place(relx=0.5, rely=0.6)
 
             self.symbolic_value = customtkinter.CTkCheckBox(
@@ -141,6 +146,7 @@ class FrameSeedkeeperGeneratePassword(customtkinter.CTkFrame):
                 command=checkbox_event,
                 checkmark_color=BG_MAIN_MENU,
                 fg_color=BG_HOVER_BUTTON)
+            self.symbolic_value.select()  # selected by default
             self.symbolic_value.place(relx=0.6, rely=0.6)
 
             # password generation
@@ -153,18 +159,15 @@ class FrameSeedkeeperGeneratePassword(customtkinter.CTkFrame):
                 text_color="grey",
                 font=customtkinter.CTkFont(family="Outfit", size=13, weight="normal")
             )
-            self.password_textbox.place(relx=0.15, rely=0.8, anchor="w")
-            self.password_textbox.configure(state='disabled')
+            # self.password_textbox.configure(state='disabled') # does not allow copy-paste on some linux distro
+            self.password_textbox.tag_config("tag_centered", justify="center")  # for text justification
             self.password_textbox.configure(width=400)
+            self.password_textbox.place(relx=0.15, rely=0.8, anchor="w")
 
             # action buttons
             # password generation
             def generate_password():
                 try:
-                    if not self.slider_moved:  # todo use secure default instead
-                        logger.warning("Slider has not been moved; cannot generate password.")
-                        raise ValueError("Adjust the slider to select the password length.")
-
                     # retrieving the length selected by user
                     password_length = int(self.length_slider.get())
                     logger.debug(password_length)
@@ -188,16 +191,11 @@ class FrameSeedkeeperGeneratePassword(customtkinter.CTkFrame):
                     # password generation
                     generated_password = ''.join(secrets.choice(char_pool) for _ in range(password_length))
 
-                    # adjust alignement of text into text_boxw
-                    textbox_width = 100
-                    centered_text = generated_password.center(textbox_width)
-
-                    # Affichage du mot de passe dans la boîte de texte
                     # displaying password into text box
                     self.password_textbox.configure(state='normal')
                     self.password_textbox.delete("1.0", customtkinter.END)
-                    self.password_textbox.insert("1.0", centered_text)
-                    self.password_textbox.configure(state='disabled')
+                    self.password_textbox.insert("1.0", generated_password, "tag_centered")
+                    # self.password_textbox.configure(state='disabled')  # does not allow copy-paste on some linux distro
                 except ValueError as e:
                     logger.error(f"Error generating login/password: {e}", exc_info=True)
                     master.show("ERROR", str(e), "Ok", None, "./pictures_db/generate_popup.png")

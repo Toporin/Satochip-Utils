@@ -1,4 +1,3 @@
-import gc
 import logging
 import sys
 import os
@@ -12,7 +11,7 @@ from customtkinter import CTkOptionMenu
 from FrameSeedkeeperGenerateSecretSelectType import FrameSeedkeeperGenerateSecretSelectType
 from applicationMode import ApplicationMode
 from controller import Controller
-from exceptions import ViewError, FrameClearingError, FrameCreationError
+from exceptions import FrameCreationError
 from frameCardAbout import FrameCardAbout
 from frameCardAuthenticity import FrameCardAuthenticity
 from frameCardChangePin import FrameCardChangePin
@@ -39,7 +38,6 @@ from frameSeedkeeperShowPassword import FrameSeedkeeperShowPasswordSecret
 from frameSeedkeeperShowSimpleSecret import FrameSeedkeeperShowSecret
 from frameStart import FrameStart
 from frameWelcome import FrameWelcome
-from log_config import SUCCESS, log_method
 
 if (len(sys.argv) >= 2) and (sys.argv[1] in ['-v', '--verbose']):
     logging.basicConfig(level=logging.DEBUG,
@@ -71,17 +69,11 @@ ICON_PATH = "./pictures_db/"
 class View(customtkinter.CTk):
     def __init__(self, loglevel=logging.INFO):
         try:
-            #logger.setLevel(loglevel)
+            # logger.setLevel(loglevel)
             logger.setLevel(logging.DEBUG)
             logger.debug("Log level set to INFO")
             logger.info("Starting View.__init__()")
             super().__init__()
-
-            # status infos
-            self.welcome_in_display = True
-
-            # seedkeeper state
-            self.in_backup_process = False
 
             # frame declaration
             # these frames will be created when needed using show_* methods
@@ -139,38 +131,8 @@ class View(customtkinter.CTk):
                                                      fg_color="white")
             self.main_frame.place(relx=0.5, rely=0.5, anchor="center")
 
-            # Widget declaration -> Maybe unnecessary but marked as error if not declared before
-            # TODO: clean code
-            logger.debug("Declaring widgets")
-            self.current_frame = None
-            self.canvas = None
-            self.background_photo = None
-            #self.create_background_photo = None
-            self.header = None
-            self.text_box = None
-            self.button = None
-            self.finish_button = None # todo: local variable
-            self.menu = None
-            #self.main_menu = None
-            #self.seedkeeper_menu = None
-            self.counter = None
-            self.display_menu = False
-            logger.debug("Widgets declared successfully")
-
-            # widgets (todo: clean)
-            self.show_button = None
-
-            # Application state attributes
-            # Status de l'application et de certains widgets
-            # TODO: remove??
-            self.app_open: bool = True
-            self.welcome_in_display: bool = True
-            self.spot_if_unlock: bool = False
-            self.pin_left: Optional[int] = None
-            self.mnemonic_textbox_active: bool = False
-            self.mnemonic_textbox: Optional[customtkinter.CTkTextbox] = None
-            self.password_text_box_active: bool = False
-            self.password_text_box: Optional[customtkinter.CTkTextbox] = None
+            # widgets
+            self.show_button = None # popup button called in different contexts todo: refactor
 
             # Launching initialization starting with welcome view
             self.nocard_menu_frame = FrameMenuNoCard(self)
@@ -184,7 +146,7 @@ class View(customtkinter.CTk):
         except Exception as e:
             logger.critical(f"An unexpected error occurred in __init__: {e}", exc_info=True)
 
-    def main_window(self, width=None, height=None):
+    def main_window(self):
         logger.debug("IN View.main_window")
         try:
             self.title("SATOCHIP UTILS")
@@ -311,7 +273,7 @@ class View(customtkinter.CTk):
             scrollbar.pack(side="right", fill="y")
 
             # Configure scrollbar colors
-            #scrollbar.configure(fg_color=DEFAULT_BG_COLOR, button_color=DEFAULT_BG_COLOR,
+            # scrollbar.configure(fg_color=DEFAULT_BG_COLOR, button_color=DEFAULT_BG_COLOR,
             #                    button_hover_color=BG_HOVER_BUTTON)
             scrollbar.configure(fg_color=DEFAULT_BG_COLOR, button_color=BG_HOVER_BUTTON,
                                 button_hover_color=BG_HOVER_BUTTON)
@@ -359,10 +321,6 @@ class View(customtkinter.CTk):
             raise FrameCreationError(f"004 Failed to create scrollable frame: {e}") from e
 
     def create_label(self, text, bg_fg_color: str = "whitesmoke", frame=None) -> customtkinter.CTkLabel:
-        # todo use frame
-        if frame is None:
-            frame = self.current_frame
-
         logger.debug("view.create_label start")
         label = customtkinter.CTkLabel(
             frame,
@@ -380,8 +338,6 @@ class View(customtkinter.CTk):
             frame=None
     ) -> customtkinter.CTkButton:
         logger.debug("View.create_button() start")
-        if frame is None:
-            frame = self.current_frame
 
         button = customtkinter.CTkButton(
             frame,
@@ -426,15 +382,13 @@ class View(customtkinter.CTk):
             state=state,
             anchor="w"
         )
-        #button.image = photo_image  # keep a reference!
+        # button.image = photo_image  # keep a reference!
         button.place(rely=rel_y, relx=rel_x, anchor="w")
 
         return button
 
-    def create_entry(self, show_option: str = "", width=555, height=37, frame=None)-> customtkinter.CTkEntry:
+    def create_entry(self, show_option: str = "", width=555, height=37, frame=None) -> customtkinter.CTkEntry:
         logger.debug("create_entry start")
-        if frame is None:
-            frame = self.current_frame # todo
         entry = customtkinter.CTkEntry(
             frame, width=width, height=height, corner_radius=10,
             bg_color='white', fg_color=BUTTON_COLOR, border_color=BUTTON_COLOR,
@@ -544,7 +498,7 @@ class View(customtkinter.CTk):
 
             # Rendre la fenêtre modale
             popup.transient(self)  # Set to be on top of the main window
-            popup.wait_visibility() # patch _tkinter.TclError: grab failed: window not viewable
+            popup.wait_visibility()  # patch _tkinter.TclError: grab failed: window not viewable
             popup.grab_set()  # Grab all events
             logger.debug("Popup set to be modal")
 
@@ -605,30 +559,26 @@ class View(customtkinter.CTk):
                 self.show_seedkeeper_menu()
             else:
                 self.show_settings_menu()
-        else: # no card
+        else:  # no card
             self.show_nocard_menu()
 
-    def show_settings_menu(self, state=None, frame=None):
+    def show_settings_menu(self):
         logger.info("IN View.show_settings_menu start")
         if self.settings_menu_frame is None:
             self.settings_menu_frame = FrameMenuSettings(self)
         self.settings_menu_frame.update_frame()
-        logger.info("IN View.show_settings_menu before tkraise")
         self.settings_menu_frame.tkraise()
-        logger.info("IN View.show_settings_menu after tkraise")
 
     def show_nocard_menu(self):
         logger.info("IN View.show_settings_menu start")
         self.nocard_menu_frame.tkraise()
 
-    def show_seedkeeper_menu(self, state=None, frame=None):
+    def show_seedkeeper_menu(self):
         logger.info("show_seedkeeper_menu start")
         if self.seedkeeper_menu_frame is None:
             self.seedkeeper_menu_frame = FrameMenuSeedkeeper(self)
         else:
             logger.info("show_seedkeeper_menu seedkeeper_menu_frame is not None, show it")
-            #self.settings_menu_frame.place_forget()
-            #self.seedkeeper_menu_frame.place()
             self.seedkeeper_menu_frame.tkraise()
 
     def show_seedkeeper_backup_menu(self):
@@ -636,7 +586,6 @@ class View(customtkinter.CTk):
         if self.seedkeeper_backup_menu_frame is None:
             self.seedkeeper_backup_menu_frame = FrameMenuSeedkeeperBackup(self)
         self.seedkeeper_backup_menu_frame.tkraise()
-
 
     ################################
     """ UTILS FOR CARD CONNECTOR """
@@ -672,7 +621,7 @@ class View(customtkinter.CTk):
                 logger.info("View.update_status start (normal mode)")
                 if isConnected is True:
                     try:
-                        if self.start_frame is not None: # do not create frame now as it is not main thread
+                        if self.start_frame is not None:  # do not create frame now as it is not main thread
                             self.show_start_frame()
                     except Exception as e:
                         logger.error(f"An error occurred while getting card status: {e}", exc_info=True)
@@ -684,14 +633,14 @@ class View(customtkinter.CTk):
                         self.secret_headers = None
                         self.seedkeeper_secret_headers_need_update = True
 
-                        if self.start_frame is not None: # do not create frame now as it is not main thread
+                        if self.start_frame is not None:  # do not create frame now as it is not main thread
                             self.show_start_frame()
                             self.show_nocard_menu()
 
                     except Exception as e:
                         logger.error(f"An error occurred while resetting card status: {e}", exc_info=True)
 
-                else: # isConnected is None
+                else:  # isConnected is None
                     logger.error("View.update_status isConnected is None (should not happen!)", exc_info=True)
 
         except Exception as e:
@@ -704,7 +653,7 @@ class View(customtkinter.CTk):
             else:
                 self.controller.PIN_dialog(f'Enter the PIN of your {self.controller.cc.card_type}')
 
-    def get_pin(self, msg): #todo rename
+    def get_pin(self, msg):
         try:
             logger.info("View.get_pin start")
 
@@ -729,7 +678,7 @@ class View(customtkinter.CTk):
             icon_image = Image.open("./pictures_db/change_pin_popup.jpg")
             icon = customtkinter.CTkImage(light_image=icon_image, size=(20, 20))
             icon_label = customtkinter.CTkLabel(
-                popup, image=icon, text= msg,  # f"\nEnter the PIN code of your card.",
+                popup, image=icon, text=msg,  # f"\nEnter the PIN code of your card.",
                 compound='top',
                 font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal")
             )
@@ -821,7 +770,6 @@ class View(customtkinter.CTk):
 
         if self.authenticity_frame is None:
             self.authenticity_frame = FrameCardAuthenticity(self)
-            #self.authenticity_frame = self.create_check_authenticity_frame()
         self.authenticity_frame.place()
         self.authenticity_frame.tkraise()
 
@@ -848,7 +796,6 @@ class View(customtkinter.CTk):
     """ METHODS TO DISPLAY A VIEW FROM SEEDKEEPER MENU SELECTION """
 
     # SEEDKEEPER MENU SELECTION
-    #@log_method
     def show_seedkeeper_list_secrets(self):
         try:
             logger.debug("show_view_my_secrets start")
@@ -868,10 +815,10 @@ class View(customtkinter.CTk):
             self.list_secrets_frame.tkraise()
 
         except Exception as e:
-            logger.error(f"005 Error in show_secrets: {e}", exc_info=True)
+            logger.error(f"Error in show_secrets: {e}", exc_info=True)
 
     def show_seedkeeper_secret(self, secret_header):
-        logger.log(SUCCESS, f"show_view_secret start")
+        logger.debug("show_view_secret start")
         # Managing export rights control
         secret_details = {}
         if secret_header['export_rights'] == '0x2':
@@ -885,11 +832,9 @@ class View(customtkinter.CTk):
             secret_details = self.controller.retrieve_details_about_secret_selected(secret_header['id'])
             secret_details['id'] = secret_header['id']
             logger.debug(f"secret id details: {secret_details} for id: {secret_details['id']}")
-        logger.log(SUCCESS, f"Secret details retrieved: {secret_details}")
 
         # show secret according to type
         if secret_header['type'] == 'Password':
-            logger.debug(f"Secret: {secret_header}, with id {secret_header['id']} is a couple login password")
             self.show_password_secret(secret_details)
         elif secret_header['type'] == 'Masterseed':
             if secret_details['subtype'] > 0 or secret_details['subtype'] == '0x1':
@@ -1006,5 +951,3 @@ class View(customtkinter.CTk):
             self.seedkeeper_card_logs_frame = FrameSeedkeeperCardLogs(self)
         self.seedkeeper_card_logs_frame.update_frame(logs)
         self.seedkeeper_card_logs_frame.tkraise()
-
-

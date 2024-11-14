@@ -127,7 +127,7 @@ class FrameSeedkeeperListSecrets(customtkinter.CTkFrame):
                     cell_button.pack(side='left', expand=True, fill="both")
                     #cell_button.bind("<Enter>", lambda event, btns=buttons: _on_mouse_on_secret(event, btns))
                     #cell_button.bind("<Leave>", lambda event, btns=buttons: _on_mouse_out_secret(event, btns))
-                    cell_button.configure(command=lambda s=secret: self.master.show_view_secret(s))
+                    cell_button.configure(command=lambda s=secret: self.master.show_seedkeeper_secret(s))
                     #buttons.append(cell_button)
 
                 # add row to list (keep ref to destroy them on card removal)

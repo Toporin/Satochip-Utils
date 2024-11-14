@@ -1001,7 +1001,7 @@ class View(customtkinter.CTk):
         except Exception as e:
             logger.error(f"005 Error in show_secrets: {e}", exc_info=True)
 
-    def show_view_secret(self, secret_header):
+    def show_seedkeeper_secret(self, secret_header):
         logger.log(SUCCESS, f"show_view_secret start")
         # Managing export rights control
         secret_details = {}

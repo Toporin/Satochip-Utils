@@ -127,7 +127,7 @@ class View(customtkinter.CTk):
 
             # state
             # store seedkeeper secret headers
-            self.secrets_data = None
+            self.secret_headers = None
             # should we update the list of headers?
             self.seedkeeper_secret_headers_need_update = True
             # app is in seedbackup mode (inserting/removing card should not trigger start screen!)
@@ -820,7 +820,7 @@ class View(customtkinter.CTk):
                     try:
                         # update state
                         # Seedkeeper: reset secret_headers to force update on reconnection
-                        self.secrets_data = None
+                        self.secret_headers = None
                         self.seedkeeper_secret_headers_need_update = True
 
                         if self.start_frame is not None: # do not create frame now as it is not main thread
@@ -993,18 +993,18 @@ class View(customtkinter.CTk):
         try:
             logger.debug("show_view_my_secrets start")
 
-            if self.secrets_data is None:
+            if self.secret_headers is None:
                 # verify PIN
                 self.update_verify_pin()
                 # get list of secret headers
-                self.secrets_data = self.controller.retrieve_secrets_stored_into_the_card()
+                self.secret_headers = self.controller.retrieve_secrets_stored_into_the_card()
                 self.seedkeeper_secret_headers_need_update = True
-                logger.debug(f"Fetched {len(self.secrets_data)} headers from card")
+                logger.debug(f"Fetched {len(self.secret_headers)} headers from card")
 
             if self.list_secrets_frame is None:
                 self.list_secrets_frame = FrameSeedkeeperListSecrets(self)
             if self.seedkeeper_secret_headers_need_update is True:
-                self.list_secrets_frame.update(self.secrets_data)
+                self.list_secrets_frame.update(self.secret_headers)
             self.list_secrets_frame.tkraise()
 
         except Exception as e:

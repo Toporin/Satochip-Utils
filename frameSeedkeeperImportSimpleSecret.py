@@ -73,14 +73,15 @@ class FrameSeedkeeperImportSimpleSecret(customtkinter.CTkFrame):
                         if secret_type == "descriptor":
                             sid, fingerprint = master.controller.import_wallet_descriptor(label, secret)
                         elif secret_type == "data":
-                            sid, fingerprint = master.controller.import_free_text(label, secret)
+                            sid, fingerprint = master.controller.import_data(label, secret)
                         else:
                             raise ValueError(f"Unsupported secret for import: {secret_type}")
 
                         master.show(
                             "SUCCESS",
                             f"Secret imported successfully\nID: {sid}",
-                            "Ok", master.show_view_my_secrets,
+                            "Ok",
+                            master.show_view_my_secrets,
                             "./pictures_db/generate_popup.png"  # todo change icon
                         )
                     else:

@@ -141,4 +141,3 @@ class FrameSeedkeeperListSecrets(customtkinter.CTkFrame):
         # update status flag
         # todo detect changes in secret_headers to update list when needed
         self.master.seedkeeper_secret_headers_need_update = False
-

@@ -40,7 +40,7 @@ class Controller:
         0x91: 'Master Password',
         0xA0: 'Certificate',
         0xB0: '2FA secret',
-        0xC0: 'Free text',
+        0xC0: 'Data',
         0xC1: 'Wallet descriptor'
     }
 
@@ -484,7 +484,7 @@ class Controller:
             return self.decode_mnemonic(secret)
         elif secret['type'] == 'Wallet descriptor':
             return self.decode_descriptor(secret)
-        elif secret['type'] == 'Free text':
+        elif secret['type'] == 'Data':
             return self.decode_data(secret)
         elif secret['type'] == '2FA secret':
             return self.decode_2fa(secret)
@@ -861,23 +861,23 @@ class Controller:
             raise ControllerError(f"007 Failed to import masterseed: {str(e)}") from e
 
     @log_method
-    def import_free_text(self, label: str, free_text: str):
+    def import_data(self, label: str, data: str):
         try:
-            logger.info("Starting import of free text")
+            logger.info("Starting import of data")
 
             # Validate input
             if not label:
                 raise ValueError("Label is required")
-            if not free_text:
-                raise ValueError("Free text is required")
+            if not data:
+                raise ValueError("Data is required")
 
             # Prepare the secret data
             secret_type = 0xC0  # SECRET_TYPE_FREE_TEXT
             secret_subtype = 0x00  # SECRET_SUBTYPE_DEFAULT
             export_rights = 0x01  # SECRET_EXPORT_ALLOWED
 
-            # Encode the free text
-            raw_text_bytes = free_text.encode('utf-8')
+            # Encode the data
+            raw_text_bytes = data.encode('utf-8')
             text_size = len(raw_text_bytes)
 
             # Prepare the secret dictionary
@@ -887,21 +887,31 @@ class Controller:
             }
 
             # Import the secret
-            id, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
+            sid, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
 
             # set flag to signal the secret_headers list should be updated
-            # todo: update secret_headers list directly?
+            if self.view.secret_headers is not None:
+                # if secret_headers is None, we will have to regenerate it completely
+                secret_header = {
+                    'label': label,
+                    'type': "Data",  # todo unify 'type' entry (either str or byte)
+                    'subtype': secret_subtype,
+                    'export_rights': export_rights,
+                    'id': sid,
+                    'fingerprint': fingerprint
+                }
+                self.view.secret_headers = [secret_header] + self.view.secret_headers # prepend
             self.view.seedkeeper_secret_headers_need_update = True
 
-            logger.log(SUCCESS, f"Free text imported successfully with id: {id} and fingerprint: {fingerprint}")
-            return id, fingerprint
+            logger.log(SUCCESS, f"Data imported successfully with id: {sid} and fingerprint: {fingerprint}")
+            return sid, fingerprint
 
         except ValueError as e:
             logger.error(f"Validation error during free text import: {str(e)}")
             raise
         except Exception as e:
-            logger.error(f"Unexpected error during free text import: {str(e)}")
-            raise ControllerError(f"Failed to import free text: {str(e)}") from e
+            logger.error(f"Unexpected error during data import: {str(e)}")
+            raise ControllerError(f"Failed to import data: {str(e)}") from e
 
     @log_method
     def import_wallet_descriptor(self, label: str, wallet_descriptor: str):
@@ -958,14 +968,14 @@ class Controller:
             if not label:
                 raise ValueError("Label is required")
             if not pubkey_bytes:
-                raise ValueError("Free text is required")
+                raise ValueError("Pubkey is required")
 
             # Prepare the secret data
             secret_type = 0x70  # SECRET_TYPE_PRIVKEY
             secret_subtype = 0x00  # SECRET_SUBTYPE_DEFAULT
             export_rights = 0x01  # SECRET_EXPORT_ALLOWED
 
-            # Encode the free text
+            # Encode the pubkey
             # todo: pubkey_bytes should be in uncompressed format
             secret_encoded = bytes([len(pubkey_bytes)]) + pubkey_bytes
 
@@ -982,12 +992,12 @@ class Controller:
             # todo: update secret_headers list directly?
             self.view.seedkeeper_secret_headers_need_update = True
 
-            logger.log(SUCCESS, f"Free text imported successfully with id: {id} and fingerprint: {fingerprint}")
+            logger.log(SUCCESS, f"Pubkey imported successfully with id: {id} and fingerprint: {fingerprint}")
             return id, fingerprint
 
         except ValueError as e:
-            logger.error(f"Validation error during free text import: {str(e)}")
+            logger.error(f"Validation error during pubkey import: {str(e)}")
             raise
         except Exception as e:
-            logger.error(f"Unexpected error during free text import: {str(e)}")
-            raise ControllerError(f"Failed to import free text: {str(e)}") from e
+            logger.error(f"Unexpected error during pubkey import: {str(e)}")
+            raise ControllerError(f"Failed to import pubkey: {str(e)}") from e

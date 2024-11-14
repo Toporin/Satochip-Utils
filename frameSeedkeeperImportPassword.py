@@ -86,9 +86,12 @@ class FrameSeedkeeperImportPassword(customtkinter.CTkFrame):
                         master.update_verify_pin()
                         # import
                         sid, fingerprint = master.controller.import_password(label, password, login, url)
-                        master.show("SUCCESS",
-                                  f"Password saved successfully\nID: {sid}\nFingerlogger.debug: {fingerprint}",
-                                  "Ok", master.show_view_my_secrets, "./pictures_db/generate_popup.png")
+                        master.show(
+                            "SUCCESS",
+                            f"Password saved successfully!\nID: {sid}",
+                            "Ok", master.show_view_my_secrets,
+                            "./pictures_db/generate_popup.png"
+                        )
                     else:
                         logger.warning("No password to save")
                         raise ValueError("No password generated")

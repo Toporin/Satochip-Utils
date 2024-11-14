@@ -523,7 +523,7 @@ class View(customtkinter.CTk):
             command=command)
         return button
 
-    def create_button_for_main_menu_item( # todo rename create_menu_button
+    def create_menu_button(
             self,
             frame: customtkinter.CTkFrame,
             button_label: str,

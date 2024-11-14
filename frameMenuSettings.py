@@ -40,7 +40,7 @@ class FrameMenuSettings(customtkinter.CTkFrame):
             # create default widgets, use update method to update state
 
             # setup/seed/insert/done button
-            self.button_status = master.create_button_for_main_menu_item(
+            self.button_status = master.create_menu_button(
                 self,
                 "Insert Card",
                 "insert_card.jpg",
@@ -50,7 +50,7 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                 text_color='white',
             )
             # change PIN button
-            self.button_change_pin = master.create_button_for_main_menu_item(
+            self.button_change_pin = master.create_menu_button(
                 self,
                 "Change Pin",
                 "change_pin_locked.jpg",
@@ -59,7 +59,7 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                 state='disabled'
             )
             # edit label
-            self.button_edit_label = master.create_button_for_main_menu_item(
+            self.button_edit_label = master.create_menu_button(
                 self,
                 "Edit Label",
                 "edit_label_locked.jpg",
@@ -68,7 +68,7 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                 state='disabled'
             )
             # check authenticity
-            self.button_check_auth = master.create_button_for_main_menu_item(
+            self.button_check_auth = master.create_menu_button(
                 self,
                 "Check Authenticity",
                 "check_authenticity_locked.jpg",
@@ -77,7 +77,7 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                 state='disabled'
             )
             # factory reset
-            self.button_factory_reset = master.create_button_for_main_menu_item(
+            self.button_factory_reset = master.create_menu_button(
                 self,
                 "Reset my Card",
                 "reset.png",
@@ -86,7 +86,7 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                 state='disabled'
             )
             # about
-            self.button_about = master.create_button_for_main_menu_item(
+            self.button_about = master.create_menu_button(
                 self,
                 "About",
                 "about_locked.jpg",
@@ -95,7 +95,7 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                 state='disabled'
             )
             # back to start button
-            self.button_back = master.create_button_for_main_menu_item(
+            self.button_back = master.create_menu_button(
                 self,
                 "Back",
                 "about_locked.jpg", #todo
@@ -104,7 +104,7 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                 state='normal'
             )
             # webshop
-            self.button_webshop = master.create_button_for_main_menu_item(
+            self.button_webshop = master.create_menu_button(
                 self,
                 "Go to the Webshop",
                 "webshop.png",

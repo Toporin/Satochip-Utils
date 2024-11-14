@@ -41,7 +41,7 @@ class FrameMenuNoCard(customtkinter.CTkFrame):
             # create default widgets, use update method to update state
 
             # Menu items
-            self.button_status = master.create_button_for_main_menu_item(
+            self.button_status = master.create_menu_button(
                 self,
                 "Insert Card",
                 "insert_card.jpg",
@@ -51,7 +51,7 @@ class FrameMenuNoCard(customtkinter.CTkFrame):
             )
 
             # webshop
-            self.button_webshop = master.create_button_for_main_menu_item(
+            self.button_webshop = master.create_menu_button(
                 self,
                 "Go to the Webshop",
                 "webshop.png",

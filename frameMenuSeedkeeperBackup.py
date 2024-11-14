@@ -46,7 +46,7 @@ class FrameMenuSeedkeeperBackup(customtkinter.CTkFrame):
                 master.show_start_frame()
                 master.show_menu_frame()
 
-            self.button_cancel_backup = master.create_button_for_main_menu_item(
+            self.button_cancel_backup = master.create_menu_button(
                 self,
                 "Back to main menu",
                 "secrets.png",  # todo
@@ -55,66 +55,8 @@ class FrameMenuSeedkeeperBackup(customtkinter.CTkFrame):
                 command=lambda: on_cancel_button(),
             )
 
-            # self.button_my_secrets = master.create_button_for_main_menu_item(
-            #     self,
-            #     "My secrets",
-            #     "secrets.png",
-            #     0.26, 0.05,
-            #     state="normal",
-            #     command=lambda: master.show_view_my_secrets(),
-            # )
-            #
-            # self.button_generate = master.create_button_for_main_menu_item(
-            #     self,
-            #     "Generate",
-            #     "generate.png",
-            #     0.33, 0.05,
-            #     state="normal",
-            #     command=lambda: master.show_generate_secret()
-            # )
-            #
-            # self.button_import = master.create_button_for_main_menu_item(
-            #     self,
-            #     "Import",
-            #     "import.png",
-            #     0.40, 0.05,
-            #     state="normal",
-            #     command=lambda: master.show_import_secret()
-            # )
-            #
-            # self.button_backup = master.create_button_for_main_menu_item(
-            #     self, "Backup card",
-            #     "logs.png",
-            #     0.47, 0.05,
-            #     state="normal",
-            #     command=lambda: master.show_backup_card()
-            # )
-            #
-            # self.button_logs = master.create_button_for_main_menu_item(
-            #     self, "Logs",
-            #     "logs.png",
-            #     0.54, 0.05,
-            #     state="normal",
-            #     command=lambda: master.show_card_logs()
-            # )
-            #
-            # self.button_settings = master.create_button_for_main_menu_item(
-            #     self, "Settings",
-            #     "settings.png",
-            #     0.74, 0.05,
-            #     state="normal",
-            #     command=lambda: master.show_about_frame()
-            # )
-
             # todo: add link for seedkeeper backup & factory reset?
-            # self.button_help = master.create_button_for_main_menu_item(
-            #     self, "Online help", "help.png",
-            #     0.81, 0.05,
-            #     state='normal',
-            #     command=lambda: webbrowser.open("https://satochip.io/setup-use-seedkeeper-on-desktop/", new=2)
-            # )
-
-            self.button_webshop = master.create_button_for_main_menu_item(
+            self.button_webshop = master.create_menu_button(
                 self,
                 "Go to the webshop", "webshop.png",
                 0.95, 0.05,

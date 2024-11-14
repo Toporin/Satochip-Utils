@@ -40,7 +40,7 @@ class FrameMenuSeedkeeper(customtkinter.CTkFrame):
             # create default widgets, use update method to update state
 
             # Menu items
-            self.button_my_secrets = master.create_button_for_main_menu_item(
+            self.button_my_secrets = master.create_menu_button(
                 self,
                 "My secrets",
                 "secrets.png",
@@ -49,7 +49,7 @@ class FrameMenuSeedkeeper(customtkinter.CTkFrame):
                 command=lambda: master.show_seedkeeper_list_secrets(),
             )
 
-            self.button_generate = master.create_button_for_main_menu_item(
+            self.button_generate = master.create_menu_button(
                 self,
                 "Generate",
                 "generate.png",
@@ -58,7 +58,7 @@ class FrameMenuSeedkeeper(customtkinter.CTkFrame):
                 command=lambda: master.show_generate_secret()
             )
 
-            self.button_import = master.create_button_for_main_menu_item(
+            self.button_import = master.create_menu_button(
                 self,
                 "Import",
                 "import.png",
@@ -67,7 +67,7 @@ class FrameMenuSeedkeeper(customtkinter.CTkFrame):
                 command=lambda: master.show_import_secret()
             )
 
-            self.button_backup = master.create_button_for_main_menu_item(
+            self.button_backup = master.create_menu_button(
                 self, "Backup card",
                 "logs.png",
                 0.47, 0.05,
@@ -75,7 +75,7 @@ class FrameMenuSeedkeeper(customtkinter.CTkFrame):
                 command=lambda: master.show_backup_card()
             )
 
-            self.button_logs = master.create_button_for_main_menu_item(
+            self.button_logs = master.create_menu_button(
                 self, "Logs",
                 "logs.png",
                 0.54, 0.05,
@@ -83,7 +83,7 @@ class FrameMenuSeedkeeper(customtkinter.CTkFrame):
                 command=lambda: master.show_card_logs()
             )
 
-            self.button_settings = master.create_button_for_main_menu_item(
+            self.button_settings = master.create_menu_button(
                 self, "Settings",
                 "settings.png",
                 0.74, 0.05,
@@ -94,14 +94,14 @@ class FrameMenuSeedkeeper(customtkinter.CTkFrame):
                 ]
             )
 
-            self.button_help = master.create_button_for_main_menu_item(
+            self.button_help = master.create_menu_button(
                 self, "Online help", "help.png",
                 0.88, 0.05,
                 state='normal',
                 command=lambda: webbrowser.open("https://satochip.io/setup-use-seedkeeper-on-desktop/", new=2)
             )
 
-            self.button_webshop = master.create_button_for_main_menu_item(
+            self.button_webshop = master.create_menu_button(
                 self,
                 "Go to the webshop", "webshop.png",
                 0.95, 0.05,

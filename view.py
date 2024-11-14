@@ -99,15 +99,10 @@ class View(customtkinter.CTk):
             self.change_pin_frame = None
             self.seed_import_frame = None
             self.factory_reset_frame = None
-            # seedkeeper frames
+            # seedkeeper secret frames
             self.list_secrets_frame = None
             self.seedkeeper_show_password_frame = None
             self.seedkeeper_show_mnemonic_frame = None
-            # self.seedkeeper_show_descriptor_frame = None
-            # self.seedkeeper_show_data_frame = None
-            # self.seedkeeper_show_masterseed_frame = None
-            # self.seedkeeper_show_2fa_frame = None
-            # self.seedkeeper_show_pubkey_frame = None
             self.seedkeeper_show_simple_secret_frame = None
             # seedkeeper generate secret
             self.seedkeeper_generate_secret_frame = None
@@ -165,7 +160,6 @@ class View(customtkinter.CTk):
             # widgets (todo: clean)
             self.show_button = None
 
-
             # Application state attributes
             # Status de l'application et de certains widgets
             # TODO: remove??
@@ -194,7 +188,6 @@ class View(customtkinter.CTk):
         logger.debug("IN View.main_window")
         try:
             self.title("SATOCHIP UTILS")
-            logger.debug("Window title set to 'SATOCHIP UTILS'")
 
             window_width = 1000
             window_height = 600
@@ -209,8 +202,6 @@ class View(customtkinter.CTk):
             logger.debug(f"Window position calculated: center_x: {center_x}, center_y: {center_y}")
 
             self.geometry(f'{window_width}x{window_height}+{center_x}+{center_y}')
-            logger.debug("Window geometry set successfully")
-
 
         except Exception as e:
             logger.critical(f"An unexpected error occurred in main_window: {e}", exc_info=True)
@@ -219,10 +210,6 @@ class View(customtkinter.CTk):
     def on_close(self):
         logger.info("IN View.on_close : Closing App")
         try:
-            # Changement de l'état de l'application
-            # self.app_open = False
-            # logger.debug("app_open set to False")
-
             # Destruction de la fenêtre principale
             self.destroy()
             logger.debug("Main window destroyed")
@@ -240,83 +227,6 @@ class View(customtkinter.CTk):
 
     ##############
     """ UTILS """
-    def _clear_current_frame(self): # todo merge with clear_current_frame
-        try:
-            def _unbind_mousewheel():
-                self.unbind_all("<MouseWheel>")
-                self.unbind_all("<Button-4>")
-                self.unbind_all("<Button-5>")
-
-            _unbind_mousewheel()
-            if self.app_open is True and self.current_frame is not None:
-                logger.info("001 Starting current frame clearing process")
-                if hasattr(self, 'current_frame') and self.current_frame:
-                    for widget in self.current_frame.winfo_children():
-                        widget.destroy()
-                        logger.debug("002 Widget destroyed")
-                    self.current_frame.destroy()
-                    logger.debug("003 Current frame destroyed")
-                    self.current_frame = None
-                    if self.mnemonic_textbox_active is True and self.mnemonic_textbox is not None:
-                        self.mnemonic_textbox.destroy()
-                        self.mnemonic_textbox_active = False
-                        self.mnemonic_textbox = None
-                    elif self.password_text_box_active is True and self.password_text_box is not None:
-                        self.password_text_box.destroy()
-                        self.password_text_box_active = False
-                        self.password_text_box = None
-                    logger.debug("004 Current frame reference set to None")
-                else:
-                    pass
-
-            # Nettoyage des attributs spécifiques
-            attributes_to_clear = ['header', 'canvas', 'background_photo', 'text_box', 'button', 'finish_button',
-                                   'menu']
-            for attr in attributes_to_clear:
-                if hasattr(self, attr):
-                    attr_value = getattr(self, attr)
-                    if attr_value:
-                        if isinstance(attr_value, (customtkinter.CTkBaseClass, tkinter.BaseWidget)):
-                            attr_value.destroy()
-                            logger.debug(f"005 Attribute {attr} destroyed")
-                        elif isinstance(attr_value, ImageTk.PhotoImage):
-                            del attr_value
-                            logger.debug(f"006 ImageTk.PhotoImage {attr} deleted")
-                    setattr(self, attr, None)
-                    logger.debug(f"007 Attribute {attr} set to None")
-
-            # Réinitialisation des variables d'état si nécessaire
-            self.display_menu = False
-            self.counter = None
-            logger.debug("008 State variables reset")
-
-            # Forcer le garbage collector
-            gc.collect()
-            logger.debug("009 Garbage collection forced")
-
-            logger.log(SUCCESS, "010 Current frame and associated objects cleared successfully")
-        except Exception as e:
-            logger.error(f"011 Unexpected error in _clear_current_frame: {e}", exc_info=True)
-            raise FrameClearingError(f"012 Failed to clear current frame: {e}") from e
-
-    def _clear_welcome_frame(self):
-        try:
-            logger.info("Starting to clear welcome frame")
-            if hasattr(self, 'welcome_frame'):
-                try:
-                    self.welcome_frame.destroy()
-                    logger.debug("frame destroyed")
-                    delattr(self, 'welcome_frame')
-                    logger.debug("attribute removed")
-                    logger.log(SUCCESS, "Welcome frame cleared successfully")
-                except Exception as e:
-                    logger.error(f"Error while clearing welcome frame: {e}", exc_info=True)
-                    raise FrameClearingError(f"Failed to clear welcome frame: {e}") from e
-            else:
-                logger.warning("No welcome frame to clear")
-        except Exception as e:
-            logger.error(f"Unexpected error in _clear_welcome_frame: {e}", exc_info=True)
-            raise FrameClearingError(f"009 Unexpected error during welcome frame clearing: {e}") from e
 
     def convert_name_to_photo_image(self, filename):
         icon_path = f"{ICON_PATH}{filename}"

@@ -5,7 +5,7 @@ import logging
 from os import urandom
 from typing import Dict, Any, List, Optional
 from mnemonic import Mnemonic
-from pysatochip.CardConnector import (CardConnector, UninitializedSeedError, SeedKeeperError)
+from pysatochip.CardConnector import (CardConnector, UninitializedSeedError, SeedKeeperError, UnexpectedSW12Error)
 
 from constants import INS_DIC, RES_DIC
 from exceptions import ControllerError, SecretRetrievalError
@@ -463,6 +463,44 @@ class Controller:
         except Exception as e:
             logger.error(f"Error retrieving secret details: {e}", exc_info=True)
             raise SecretRetrievalError(f"Failed to retrieve secret details: {e}") from e
+
+    def seedkeeper_reset_secret(self, sid):
+        logger.debug(f"delete secret with id: {sid}")
+        try:
+            response, sw1, sw2, dic = self.cc.seedkeeper_reset_secret(sid)
+            if sw1 == 0x90 and sw2 == 0x00:
+                # remove secret from secret_headers
+                if self.view.secret_headers is not None:
+                    self.view.secret_headers = [d for d in self.view.secret_headers if d.get('id') != sid]
+                    self.view.seedkeeper_secret_headers_need_update = True
+
+                self.view.show(
+                    "SUCCESS",
+                    f"Secret deleted successfully\nID: {sid}",
+                    "Ok",
+                    self.view.show_view_my_secrets(),
+                    "./pictures_db/generate_popup.png"  # todo change icon
+                )
+            elif sw1 == 0x9C and sw2 == 0x08:
+                self.view.show(
+                    "ERROR",
+                    f"Secret not found (code 0x9C08)",
+                    "Ok",
+                    self.view.show_view_my_secrets(),
+                    "./pictures_db/generate_popup.png"  # todo change icon
+                )
+            else:
+                raise UnexpectedSW12Error(
+                    f"Unexpected error during object deletion (error code {hex(256 * sw1 + sw2)})")
+        except Exception as ex:
+            logger.error(f"failed to delete secret with sid {sid}: {str(ex)}")
+            self.view.show(
+                "ERROR",
+                f"Failed to delete secret with sid {sid}.\n{str(ex)}",
+                "Ok",
+                self.view.show_view_my_secrets(),
+                "./pictures_db/generate_popup.png"  # todo change icon
+            )
 
     ####################################################################################################################
     """ DECODING SECRETS """

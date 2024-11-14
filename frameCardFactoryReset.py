@@ -114,7 +114,7 @@ class FrameCardFactoryReset(customtkinter.CTkFrame):
 
                     # reset cached list of headers since card state will change
                     self.master.secret_headers = None
-                    
+
                     # get card version
                     response, sw1, sw2, card_status = self.master.controller.cc.card_get_status()
                     applet_version = card_status['protocol_major_version']*256 + card_status['protocol_minor_version']

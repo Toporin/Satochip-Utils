@@ -82,7 +82,6 @@ class FrameSeedkeeperShowSecret(customtkinter.CTkFrame):
         except Exception as e:
             logger.error(f"FrameSeedkeeperShowSecret init error: {e}", exc_info=True)
 
-
     def update_frame(self, secret):
         logger.debug(f"update_frame() secret: {secret}")
         self.label_entry.delete(0, "end")
@@ -112,16 +111,12 @@ class FrameSeedkeeperShowSecret(customtkinter.CTkFrame):
         )
 
         self.delete_button.configure(
-            command=lambda: [
+            command=lambda:
                 self.master.show(
                     "WARNING",
                     "Are you sure to delete this secret ?!\n Click Yes for delete the secret or close popup",
                     "Yes",
-                    lambda id=secret['id']: [
-                        logger.debug(f"FrameSeedkeeperShowSecret update delete secret with id: {id}"),
-                        self.master.controller.cc.seedkeeper_reset_secret(id),
-                    ],
-                    './pictures_db/secrets_popup.png'),
-                self.master.show_view_my_secrets()
-            ],
+                    lambda sid=secret['id']: self.master.controller.seedkeeper_reset_secret(sid),
+                    './pictures_db/secrets_popup.png'
+                ),
         )

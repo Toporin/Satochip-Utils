@@ -165,16 +165,12 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
         )
 
         self.delete_button.configure(
-            command=lambda: [
+            command=lambda:
                 self.master.show(
                     "WARNING",
                     "Are you sure to delete this secret ?!\n Click Yes for delete the secret or close popup",
                     "Yes",
-                    lambda sid=secret['id']: [
-                        logger.debug(f"FrameSeedkeeperShowSecret update delete secret with id: {sid}"),
-                        self.master.controller.cc.seedkeeper_reset_secret(sid),
-                    ],
-                    './pictures_db/secrets_popup.png'),
-                self.master.show_view_my_secrets()
-            ],
+                    lambda sid=secret['id']: self.master.controller.seedkeeper_reset_secret(sid),
+                    './pictures_db/secrets_popup.png'
+                ),
         )

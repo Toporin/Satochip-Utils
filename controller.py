@@ -478,7 +478,7 @@ class Controller:
                     "SUCCESS",
                     f"Secret deleted successfully\nID: {sid}",
                     "Ok",
-                    self.view.show_view_my_secrets(),
+                    self.view.show_seedkeeper_list_secrets(),
                     "./pictures_db/generate_popup.png"  # todo change icon
                 )
             elif sw1 == 0x9C and sw2 == 0x08:
@@ -486,7 +486,7 @@ class Controller:
                     "ERROR",
                     f"Secret not found (code 0x9C08)",
                     "Ok",
-                    self.view.show_view_my_secrets(),
+                    self.view.show_seedkeeper_list_secrets(),
                     "./pictures_db/generate_popup.png"  # todo change icon
                 )
             else:
@@ -498,7 +498,7 @@ class Controller:
                 "ERROR",
                 f"Failed to delete secret with sid {sid}.\n{str(ex)}",
                 "Ok",
-                self.view.show_view_my_secrets(),
+                self.view.show_seedkeeper_list_secrets(),
                 "./pictures_db/generate_popup.png"  # todo change icon
             )
 

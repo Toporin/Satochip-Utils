@@ -229,7 +229,7 @@ class FrameSeedkeeperGeneratePassword(customtkinter.CTkFrame):
                         sid, fingerprint = master.controller.import_password(label, password, login, url)
                         master.show("SUCCESS",
                                   f"Password saved successfully with id: {sid}",
-                                  "Ok", master.show_view_my_secrets, "./pictures_db/generate_popup.png")
+                                  "Ok", master.show_seedkeeper_list_secrets, "./pictures_db/generate_popup.png")
                     else:
                         logger.warning("No password to save")
                         raise ValueError("No password generated")

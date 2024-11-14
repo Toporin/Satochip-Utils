@@ -89,7 +89,7 @@ class FrameSeedkeeperImportPassword(customtkinter.CTkFrame):
                         master.show(
                             "SUCCESS",
                             f"Password saved successfully!\nID: {sid}",
-                            "Ok", master.show_view_my_secrets,
+                            "Ok", master.show_seedkeeper_list_secrets,
                             "./pictures_db/generate_popup.png"
                         )
                     else:

@@ -137,7 +137,7 @@ class FrameSeedkeeperGenerateMnemonic(customtkinter.CTkFrame):
                         "SUCCESS",
                         f"Masterseed saved successfully with id: {sid}",
                         "Ok",
-                        master.show_view_my_secrets,
+                        master.show_seedkeeper_list_secrets,
                         "./pictures_db/generate_popup.png"
                     )
 

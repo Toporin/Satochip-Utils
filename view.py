@@ -980,7 +980,7 @@ class View(customtkinter.CTk):
 
     # SEEDKEEPER MENU SELECTION
     #@log_method
-    def show_view_my_secrets(self):  #todo rename show_seedkeeper_list_secrets
+    def show_seedkeeper_list_secrets(self):  #todo rename show_seedkeeper_list_secrets
         try:
             logger.debug("show_view_my_secrets start")
 

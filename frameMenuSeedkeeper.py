@@ -46,7 +46,7 @@ class FrameMenuSeedkeeper(customtkinter.CTkFrame):
                 "secrets.png",
                 0.26, 0.05,
                 state="normal",
-                command=lambda: master.show_view_my_secrets(),
+                command=lambda: master.show_seedkeeper_list_secrets(),
             )
 
             self.button_generate = master.create_button_for_main_menu_item(

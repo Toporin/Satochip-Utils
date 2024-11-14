@@ -82,7 +82,7 @@ class FrameSeedkeeperImportSimpleSecret(customtkinter.CTkFrame):
                             "SUCCESS",
                             f"Secret imported successfully\nID: {sid}",
                             "Ok",
-                            master.show_view_my_secrets,
+                            master.show_seedkeeper_list_secrets,
                             "./pictures_db/generate_popup.png"  # todo change icon
                         )
                     else:

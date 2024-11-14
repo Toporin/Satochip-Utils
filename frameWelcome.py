@@ -26,7 +26,7 @@ class FrameWelcome(customtkinter.CTkFrame):
         self.canvas.create_image(0, 0, image=self.background_photo, anchor="nw")
         logger.debug(f"FrameWelcome canvas created")
 
-        master.create_an_header_for_welcome(frame=self)
+        master.create_header_for_welcome(frame=self)
 
         # Setting up labels
         label1 = master.create_label(

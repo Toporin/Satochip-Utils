@@ -376,7 +376,7 @@ class View(customtkinter.CTk):
         except Exception as e:
             logger.error(f"An unexpected error occurred in create_an_header: {e}", exc_info=True)
 
-    def create_an_header_for_welcome(self, frame=None):
+    def create_header_for_welcome(self, frame=None):
         if frame is None:
             frame = self.welcome_frame
 

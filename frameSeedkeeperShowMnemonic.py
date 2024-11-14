@@ -76,7 +76,7 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
 
             # Create action buttons
 
-            # delete #todo in red?
+            # delete
             self.delete_button = master.create_button(
                 text="Delete secret",
                 command=lambda: None,  # will be updated in update

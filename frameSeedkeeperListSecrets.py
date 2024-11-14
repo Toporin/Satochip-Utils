@@ -81,7 +81,6 @@ class FrameSeedkeeperListSecrets(customtkinter.CTkFrame):
             logger.error(error_msg, exc_info=True)
 
     def update_frame(self, secret_headers):
-        # todo: add flag to skip update
 
         # def _on_mouse_on_secret(event, buttons):
         #     for button in buttons:

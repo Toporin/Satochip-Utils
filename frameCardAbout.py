@@ -158,7 +158,7 @@ class FrameCardAbout(customtkinter.CTkFrame):
                         text=f"PIN counter: [{card_status['PIN0_remaining_tries']}] tries remaining",
                     )
                 else:
-                    self.pin_information.configure(text="Card requires setup")  # todo use another label
+                    self.pin_information.configure(text="Card requires setup")
 
             # for a next implementation of 2FA functionality you have the code below
             if self.master.controller.cc.card_type == "Satochip":

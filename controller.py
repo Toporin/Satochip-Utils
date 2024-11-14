@@ -27,7 +27,7 @@ logger.setLevel(logging.DEBUG)
 
 class Controller:
 
-    dic_type = {  # todo: move in pysatochip?
+    dic_type = {
         0x10: 'Masterseed',
         0x30: 'BIP39 mnemonic',
         0x40: 'Electrum mnemonic',
@@ -1043,7 +1043,7 @@ class Controller:
             export_rights = 0x01  # SECRET_EXPORT_ALLOWED
 
             # Encode the pubkey
-            # todo: pubkey_bytes should be in uncompressed format
+            # pubkey_bytes should be in uncompressed format
             secret_encoded = bytes([len(pubkey_bytes)]) + pubkey_bytes
 
             # Prepare the secret dictionary

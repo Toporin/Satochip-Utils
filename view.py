@@ -572,15 +572,6 @@ class View(customtkinter.CTk):
         )
         return entry
 
-    # def _create_entry(self, show_option: str = "")-> customtkinter.CTkEntry: # todo merge with create_entry
-    #     logger.debug("create_entry start")
-    #     entry = customtkinter.CTkEntry(
-    #         self.current_frame, width=555, height=37, corner_radius=10,
-    #         bg_color='white', fg_color=BUTTON_COLOR, border_color=BUTTON_COLOR,
-    #         show=show_option, text_color='grey'
-    #     )
-    #     return entry
-
     def create_textbox(self, frame, width=555, height=37) -> customtkinter.CTkTextbox:
         # Créer la textbox avec les mêmes dimensions et styles que l'entrée
         textbox = customtkinter.CTkTextbox(
@@ -658,7 +649,7 @@ class View(customtkinter.CTk):
             logger.debug("View.create_canvas() start")
             if frame is None:
                 frame = self.main_frame
-            canvas = customtkinter.CTkCanvas(frame, bg="whitesmoke", width=width, height=height)# todo: 599 or 600?
+            canvas = customtkinter.CTkCanvas(frame, bg="whitesmoke", width=width, height=height)
             return canvas
         except Exception as e:
             logger.error(f"An unexpected error occurred in create_canvas: {e}", exc_info=True)

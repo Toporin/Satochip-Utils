@@ -68,9 +68,6 @@ class FrameCardImportSeed(customtkinter.CTkFrame):
                 master.update_textbox(self.text_box, mnemonic)
 
             def update_radio_selection():
-                #nonlocal generate_with_passphrase
-                #self.import_seed = False  # todo
-
                 if self.radio_value.get() == "import":
                     #self.import_seed = True
                     logger.debug("Import seed")

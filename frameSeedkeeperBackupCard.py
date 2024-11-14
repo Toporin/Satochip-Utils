@@ -57,7 +57,7 @@ class FrameSeedkeeperBackupCard(customtkinter.CTkFrame):
                 "Cancel", command=lambda: on_cancel_button(), frame=self)
             self.cancel_button.place(relx=0.75, rely=0.95, anchor="se")
 
-            # backup state # todo reset state on cancel/finish
+            # backup state
             self.master_pin = None
             self.master_authentikey = None
             self.master_authentikey_id = None
@@ -115,7 +115,7 @@ class FrameSeedkeeperBackupCard(customtkinter.CTkFrame):
             self.master_pin = bytes(self.master.controller.cc.pin)
             logger.debug(f"self.master_pin: {self.master_pin}")
 
-            # get authentikey # todo check with masterview
+            # get authentikey
             self.master_authentikey = self.master.controller.cc.card_bip32_get_authentikey()
             logger.debug(f"self.master_authentikey: {self.master_authentikey}")
             logger.debug(f"self.master_authentikey bytes: {self.master_authentikey.get_public_key_bytes(compressed=False)}")
@@ -126,13 +126,9 @@ class FrameSeedkeeperBackupCard(customtkinter.CTkFrame):
             logger.debug(
                 f"self.master_authentikey.get_public_key_hex(compressed=False): {self.master_authentikey.get_public_key_hex(compressed=False)}")
 
-            # get list of headers if needed
-            # if self.master.secrets_data is None:
             # get list of secret headers
             self.master_secret_headers = self.master.controller.retrieve_secrets_stored_into_the_card()
             logger.debug(f"Fetched {len(self.master_secret_headers)} headers from card")
-            # else:
-            #     self.master_secrets_headers = self.master.secrets_data
 
             # proceed to next screen
             self.backup_pairing()
@@ -377,43 +373,6 @@ class FrameSeedkeeperBackupCard(customtkinter.CTkFrame):
             self.master.show_backup_result(is_backup_error, backup_logs)
 
         self.next_button.configure(command=lambda: on_next_button())
-
-    # def backup_success(self):
-    #     # configure frame
-    #     self.label_step.configure(text="Backup terminated successfully!")
-    #     self.label_description.configure(
-    #         text="Your secrets have been successfully saved on your backup card!"
-    #              "\n TODO secrets have been saved."
-    #     )
-    #     self.next_button.configure(text="End")
-    #     logger.debug(f"self.backup_logs: {self.backup_logs}")
-    #
-    #     def on_next_button():
-    #         # switch app mode to normal
-    #         self.master.appMode = ApplicationMode.Normal
-    #         # back to start screen
-    #         self.master.show_start_frame()
-    #
-    #     self.next_button.configure(command=lambda: on_next_button())
-    #
-    # def backup_failure(self):
-    #     # configure frame
-    #     self.label_step.configure(text="There were some issues during backup")
-    #     self.label_description.configure(
-    #         text="Some or all secrets may not have been saved on your backup card."
-    #              "\nHere is a list of issues encountered:"
-    #              "\nTODO"
-    #     )
-    #     self.next_button.configure(text="End")
-    #     logger.debug(f"self.backup_logs: {self.backup_logs}")
-    #
-    #     def on_next_button():
-    #         # switch app mode to normal
-    #         self.master.appMode = ApplicationMode.Normal
-    #         # back to start screen
-    #         self.master.show_start_frame()
-    #
-    #     self.next_button.configure(command=lambda: on_next_button())
 
     def reset_backup_state(self):
         # backup state

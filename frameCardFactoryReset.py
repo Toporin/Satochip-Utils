@@ -165,7 +165,7 @@ class FrameCardFactoryReset(customtkinter.CTkFrame):
         except Exception as e:
             logger.error(f"An unexpected error occurred in FrameCardImportSeed init: {e}", exc_info=True)
 
-    def click_reset_button(self):  # todo implement reset factory v1 & v2
+    def click_reset_button(self):
         if self.master.appMode == ApplicationMode.FactoryResetV1:
             try:
                 logger.info("click_reset_button attempting to reset the card (V1)")

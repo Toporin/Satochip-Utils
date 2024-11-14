@@ -114,7 +114,7 @@ class FrameCardAuthenticity(customtkinter.CTkFrame):
 
             # update frame with card data then show
             self.txt_ca = self.txt_subca = self.txt_device = self.txt_error = ""
-            self.update()
+            self.update_frame()
             self.place(relx=1.0, rely=0.5, anchor="e")
 
         except Exception as e:
@@ -132,10 +132,10 @@ class FrameCardAuthenticity(customtkinter.CTkFrame):
             self.master.update_textbox(self.text_box, self.txt_device)
             self.text_box.place(relx=0.05, rely=0.4, anchor="nw")
 
-    def update(self):
+    def update_frame(self):
 
         if self.master.controller.cc.card_present:
-            logger.info("FrameCardAuthenticity update() Card detected: checking authenticity")
+            logger.info("FrameCardAuthenticity update_frame() Card detected: checking authenticity")
             is_authentic, self.txt_ca, self.txt_subca, self.txt_device, self.txt_error = self.master.controller.cc.card_verify_authenticity()
             if self.txt_error != "":
                 self.txt_device = self.txt_error + "\n------------------\n" + self.txt_device

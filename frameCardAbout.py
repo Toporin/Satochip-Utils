@@ -105,7 +105,7 @@ class FrameCardAbout(customtkinter.CTkFrame):
             # )
             # self.back_button.place(relx=0.8, rely=0.9, anchor="w")
 
-            self.update()
+            self.update_frame()
             self.place(relx=1.0, rely=0.5, anchor="e")
 
         except Exception as e:
@@ -113,12 +113,12 @@ class FrameCardAbout(customtkinter.CTkFrame):
 
     def unlock(self):
         self.master.update_verify_pin()
-        self.update()
+        self.update_frame()
 
-    def update(self):
+    def update_frame(self):
 
         if self.master.controller.cc.card_present:
-            logger.info("FrameCardAbout update() card detected")
+            logger.info("FrameCardAbout update_frame() card detected")
             # get card data
             response, sw1, sw2, card_status = self.master.controller.cc.card_get_status()
             applet_full_version_string = f"{card_status['protocol_major_version']}.{card_status['protocol_minor_version']}-{card_status['applet_major_version']}.{card_status['applet_minor_version']}"

@@ -83,7 +83,7 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
             # seed_qr button #todo use icons on the side?
             self.qr_button = master.create_button(
                 text="QR code",
-                command=lambda: None,  # will be updated in update()
+                command=lambda: None,  # will be updated in update_frame()
                 frame=self
             )
             self.qr_button.place(relx=0.75, rely=0.95, anchor="e")
@@ -100,7 +100,7 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
         except Exception as e:
             logger.error(f"init error: {e}", exc_info=True)
 
-    def update(self, secret):
+    def update_frame(self, secret):
         # Decode secret
         secret = self.master.controller.decode_password(secret)
         # update label

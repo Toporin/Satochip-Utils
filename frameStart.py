@@ -44,7 +44,7 @@ class FrameStart(customtkinter.CTkFrame):
             # else:
             #     master.show_settings_menu()
 
-            self.update()
+            self.update_frame()
             self.place(relx=1, rely=0.5, anchor="e")
 
 
@@ -52,8 +52,8 @@ class FrameStart(customtkinter.CTkFrame):
             message = f"An unexpected error occurred in create_start_frame: {e}"
             logger.error(message, exc_info=True)
 
-    def update(self):
-        logger.debug("FrameStart update() start")
+    def update_frame(self):
+        logger.debug("FrameStart update_frame() start")
         if self.master.controller.cc.card_present:
             logger.info(f"card type: {self.master.controller.cc.card_type}")
             self.label1.configure(text=f"Your {self.master.controller.cc.card_type} is connected.")

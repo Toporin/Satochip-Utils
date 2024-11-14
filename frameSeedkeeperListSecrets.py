@@ -80,7 +80,7 @@ class FrameSeedkeeperListSecrets(customtkinter.CTkFrame):
             error_msg = f"FrameSeedkeeperListSecrets init: Failed to create secrets frame: {e}"
             logger.error(error_msg, exc_info=True)
 
-    def update(self, secret_headers):
+    def update_frame(self, secret_headers):
         # todo: add flag to skip update
 
         # def _on_mouse_on_secret(event, buttons):

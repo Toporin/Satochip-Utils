@@ -85,7 +85,7 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
             # seed_qr button #todo use icons on the side?
             self.qr_button = master.create_button(
                 text="SeedQR",
-                command=lambda: None,  # will be updated in update()
+                command=lambda: None,  # will be updated in update_frame()
                 frame=self
             )
             self.qr_button.place(relx=0.75, rely=0.95, anchor="e")
@@ -104,7 +104,7 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
             logger.error(f"init error: {e}", exc_info=True)
 
     def update_frame(self, secret):
-        logger.debug(f"update() secret: {secret}")
+        logger.debug(f"update_frame() secret: {secret}")
         self.label_entry.delete(0, "end")
         self.label_entry.insert(0, secret['label'])
 

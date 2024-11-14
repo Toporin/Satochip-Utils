@@ -751,7 +751,7 @@ class View(customtkinter.CTk):
         logger.info("IN View.show_settings_menu start")
         if self.settings_menu_frame is None:
             self.settings_menu_frame = FrameMenuSettings(self)
-        self.settings_menu_frame.update()
+        self.settings_menu_frame.update_frame()
         logger.info("IN View.show_settings_menu before tkraise")
         self.settings_menu_frame.tkraise()
         logger.info("IN View.show_settings_menu after tkraise")
@@ -928,7 +928,7 @@ class View(customtkinter.CTk):
         if self.start_frame is None:
             self.start_frame = FrameStart(self)
         else:
-            self.start_frame.update()
+            self.start_frame.update_frame()
             self.start_frame.tkraise()
 
         # show menu
@@ -981,7 +981,7 @@ class View(customtkinter.CTk):
         if self.about_frame is None:
             logger.info("show_about_frame self.about_frame is None")
             self.about_frame = FrameCardAbout(self)
-        self.about_frame.update()
+        self.about_frame.update_frame()
         self.about_frame.tkraise()
 
     ####################################################################################################################
@@ -1004,7 +1004,7 @@ class View(customtkinter.CTk):
             if self.list_secrets_frame is None:
                 self.list_secrets_frame = FrameSeedkeeperListSecrets(self)
             if self.seedkeeper_secret_headers_need_update is True:
-                self.list_secrets_frame.update(self.secret_headers)
+                self.list_secrets_frame.update_frame(self.secret_headers)
             self.list_secrets_frame.tkraise()
 
         except Exception as e:
@@ -1054,7 +1054,7 @@ class View(customtkinter.CTk):
     def show_password_secret(self, secret):
         if self.seedkeeper_show_password_frame is None:
             self.seedkeeper_show_password_frame = FrameSeedkeeperShowPasswordSecret(self)
-        self.seedkeeper_show_password_frame.update(secret)
+        self.seedkeeper_show_password_frame.update_frame(secret)
         self.seedkeeper_show_password_frame.tkraise()
 
     def show_mnemonic_secret(self, secret):
@@ -1066,7 +1066,7 @@ class View(customtkinter.CTk):
     def show_simple_secret(self, secret):
         if self.seedkeeper_show_simple_secret_frame is None:
             self.seedkeeper_show_simple_secret_frame = FrameSeedkeeperShowSecret(self)
-        self.seedkeeper_show_simple_secret_frame.update(secret)
+        self.seedkeeper_show_simple_secret_frame.update_frame(secret)
         self.seedkeeper_show_simple_secret_frame.tkraise()
 
     """ Generate Secret"""

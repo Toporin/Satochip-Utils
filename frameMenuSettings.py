@@ -119,12 +119,12 @@ class FrameMenuSettings(customtkinter.CTkFrame):
             logger.error(f"An error occurred in main_menu: {e}", exc_info=True)
 
 
-    def update(self, require_redraw: bool = True):
-        logger.debug("FrameMenuSetting update() start")
-        logger.debug(f"FrameMenuSetting update() card_present: {self.master.controller.cc.card_present}")
-        logger.debug(f"FrameMenuSetting update() card_type: {self.master.controller.cc.card_type}")
-        logger.debug(f"FrameMenuSetting update() setup_done: {self.master.controller.cc.setup_done}")
-        logger.debug(f"FrameMenuSetting update() is_seeded: {self.master.controller.cc.is_seeded}")
+    def update_frame(self, require_redraw: bool = True):
+        logger.debug("FrameMenuSetting update_frame() start")
+        logger.debug(f"FrameMenuSetting update_frame() card_present: {self.master.controller.cc.card_present}")
+        logger.debug(f"FrameMenuSetting update_frame() card_type: {self.master.controller.cc.card_type}")
+        logger.debug(f"FrameMenuSetting update_frame() setup_done: {self.master.controller.cc.setup_done}")
+        logger.debug(f"FrameMenuSetting update_frame() is_seeded: {self.master.controller.cc.is_seeded}")
 
         if self.master.controller.cc.card_present:
             if self.master.controller.cc.card_type == "Satochip":

@@ -1,7 +1,6 @@
 import customtkinter
 import logging
 
-from exceptions import ControllerError, SeedkeeperError
 from frameWidgetHeader import FrameWidgetHeader
 
 logger = logging.getLogger(__name__)
@@ -108,11 +107,10 @@ class FrameSeedkeeperGenerateMnemonic(customtkinter.CTkFrame):
                 command=lambda: toggle_descriptor()
             )
             self.descriptor_checkbox.place(relx=0.05, rely=0.68, anchor="nw")
-
             self.descriptor_textbox = master.create_textbox(frame=self)
 
-
             # action buttons
+
             def import_mnemonic_on_card():
                 try:
                     logger.info("Saving mnemonic to card")
@@ -121,43 +119,24 @@ class FrameSeedkeeperGenerateMnemonic(customtkinter.CTkFrame):
                     passphrase = self.passphrase_entry.get() if self.use_passphrase.get() else None
                     descriptor = self.descriptor_textbox.get("1.0", "end") if self.use_descriptor.get() else None
 
-                    if not mnemonic:
-                        raise ValueError("Mnemonic field is mandatory")
-                    if not label:
-                        raise ValueError("Label field is mandatory")
-                    if self.use_passphrase.get() and not passphrase:
-                        raise ValueError("Passphrase checked but not provided.")
-
-                    # verify PIN
-                    master.update_verify_pin()
                     # import
-                    sid, fingerprint = master.controller.import_masterseed(label, mnemonic, passphrase, descriptor)
-
+                    sid, fingerprint = master.controller.import_masterseed_mnemonic(label, mnemonic, passphrase, descriptor)
                     master.show(
                         "SUCCESS",
-                        f"Masterseed saved successfully with id: {sid}",
+                        f"Mnemonic saved successfully with id: {sid}",
                         "Ok",
                         master.show_seedkeeper_list_secrets,
                         "./pictures_db/generate_popup.png"
                     )
 
-                # todo clean exceptions
-                except ValueError as e:
-                    logger.error(f"Validation error saving mnemonic to card: {str(e)}")
-                    master.show("ERROR", str(e), "Ok", None,
-                              "./pictures_db/generate_popup.png")
-                except ControllerError as e:
-                    logger.error(f"Controller error saving mnemonic to card: {str(e)}")
-                    master.show("ERROR", f"Failed to save mnemonic: {str(e)}", "Ok", None,
-                              "./pictures_db/generate_popup.png")
-                except SeedkeeperError as e:
-                    logger.error(f"SeedKeeper error saving mnemonic to card: {str(e)}")
-                    master.show("ERROR", f"Failed to save mnemonic: {str(e)}", "Ok", None,
-                              "./pictures_db/generate_popup.png")
-                except Exception as e:
-                    logger.error(f"Unexpected error saving mnemonic to card: {str(e)}")
-                    master.show("ERROR", "An unexpected error occurred while saving the mnemonic",
-                              "Ok", None, "./pictures_db/generate_popup.png")
+                except Exception as ex:
+                    logger.error(f"Failed to import mnemonic to card: {ex}", exc_info=True)
+                    master.show(
+                        "Error",
+                        f"Failed to import mnemonic: \n{ex}",
+                        "Ok", None,
+                        "./pictures_db/about_popup.jpg"  # todo change icon
+                    )
 
             self.save_button = master.create_button(
                 "Save on card",

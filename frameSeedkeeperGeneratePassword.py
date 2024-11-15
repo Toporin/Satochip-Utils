@@ -228,7 +228,7 @@ class FrameSeedkeeperGeneratePassword(customtkinter.CTkFrame):
                     logger.error(f"Failed to save password to card: {e}", exc_info=True)
                     master.show(
                         "Error",
-                        f"Failed to import secret: {e}",
+                        f"Failed to import password: {e}",
                         "Ok", None,
                         "./pictures_db/about_popup.jpg"  # todo change icon
                     )

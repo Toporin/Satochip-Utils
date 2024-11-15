@@ -851,86 +851,103 @@ class Controller:
         return sid, fingerprint
 
     @log_method
-    def import_masterseed(self, label: str, mnemonic: str, passphrase: Optional[str] = None, descriptor: Optional[str] = None):
-        try:
-            logger.info("001 Starting masterseed import process")
+    def import_masterseed_mnemonic(self, label: str, mnemonic: str, passphrase: Optional[str] = None, descriptor: Optional[str] = None):
+        logger.info("001 Starting masterseed import process")
 
-            # Validate the mnemonic
-            mnemonic = mnemonic.strip()
-            word_count = len(mnemonic.split())
-            if word_count not in [12, 24]:
-                raise ValueError(f"002 Invalid mnemonic word count: {word_count}. Must be 12 or 24.")
+        # perform some checks
+        # exceptions should be managed in the calling method
+        if not label:
+            raise ValueError("The label field is mandatory.")
+        if not mnemonic:
+            raise ValueError("No mnemonic provided!")
 
-            # Verify mnemonic validity
-            MNEMONIC = Mnemonic("english")
-            if not MNEMONIC.check(mnemonic):
-                raise ValueError("003 Invalid mnemonic")
+        if len(label.encode('utf-8')) > 127:
+            raise ValueError("Label is too long (max 127 bytes)!")
 
-            # Generate entropy from mnemonic
-            entropy = MNEMONIC.to_entropy(mnemonic)
+        if passphrase:
+            if len(passphrase.encode('utf-8')) > 255:
+                raise ValueError("Passphrase is too long (max 255 bytes)!")
 
-            # Generate seed
-            salt = "mnemonic" + (passphrase or "")
-            seed = hashlib.pbkdf2_hmac("sha512", mnemonic.encode("utf-8"), salt.encode("utf-8"), 2048)
+        if descriptor:
+            if len(descriptor.encode('utf-8')) > 65535:
+                raise ValueError("descriptor is too long (max 65535 bytes)!")
 
-            # Prepare the secret data
-            wordlist_selector = 0x00  # english
-            entropy_list = list(entropy)
-            seed_list = list(seed)
-            passphrase_list = list(passphrase.encode('utf-8')) if passphrase else []
-            descriptor_list = list(descriptor.encode('utf-8')) if descriptor else []
-            descriptor_size = len(descriptor_list)
+        # Validate the mnemonic
+        # mnemonic = mnemonic.strip()
+        # word_count = len(mnemonic.split())
+        # if word_count not in [12, 24]:
+        #     raise ValueError(f"002 Invalid mnemonic word count: {word_count}. Must be 12 or 24.")
 
-            secret_list = (
-                    [len(seed_list)] +
-                    seed_list +
-                    [wordlist_selector] +
-                    [len(entropy_list)] +
-                    entropy_list +
-                    [len(passphrase_list)] +
-                    passphrase_list +
-                    list(len(descriptor_list).to_bytes(2, byteorder='big')) +
-                    #[len(descriptor_list)] +
-                    descriptor_list
-            )
+        # Verify mnemonic validity
+        MNEMONIC = Mnemonic("english")
+        if not MNEMONIC.check(mnemonic):
+            raise ValueError("Invalid mnemonic")
 
-            # Prepare the header
-            secret_type = 0x10  # SECRET_TYPE_MASTER_SEED
-            export_rights = 0x01  # SECRET_EXPORT_ALLOWED
-            subtype = 0x01  # SECRET_SUBTYPE_BIP39
+        # Generate entropy from mnemonic
+        entropy = MNEMONIC.to_entropy(mnemonic)
 
-            secret_dic = {
-                'header': self.cc.make_header(secret_type, export_rights, label, subtype=subtype),
-                'secret_list': secret_list
+        # Generate seed
+        salt = "mnemonic" + (passphrase or "")
+        seed = hashlib.pbkdf2_hmac("sha512", mnemonic.encode("utf-8"), salt.encode("utf-8"), 2048)
+
+        # Prepare the secret data
+        wordlist_selector = 0x00  # english
+        entropy_list = list(entropy)
+        seed_list = list(seed)
+        passphrase_list = list(passphrase.encode('utf-8')) if passphrase else []
+        descriptor_list = list(descriptor.encode('utf-8')) if descriptor else []
+
+        secret_list = (
+                [len(seed_list)] +
+                seed_list +
+                [wordlist_selector] +
+                [len(entropy_list)] +
+                entropy_list +
+                [len(passphrase_list)] +
+                passphrase_list +
+                list(len(descriptor_list).to_bytes(2, byteorder='big')) +
+                descriptor_list
+        )
+
+        # for v1, secret size is limited to 255 bytes
+        if self.card_status.get('protocol_version') < 2:
+            if len(secret_list) > 255:
+                raise ValueError("Payload is too long for Seedkeeper v1 (max 255 bytes)!")
+
+        # Prepare the header
+        secret_type = 0x10  # SECRET_TYPE_MASTER_SEED
+        export_rights = 0x01  # SECRET_EXPORT_ALLOWED
+        subtype = 0x01  # SECRET_SUBTYPE_BIP39
+
+        secret_dic = {
+            'header': self.cc.make_header(secret_type, export_rights, label, subtype=subtype),
+            'secret_list': secret_list
+        }
+
+        # verify PIN
+        self.view.update_verify_pin()
+
+        # Import the secret
+        sid, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
+
+        # update secret_headers if it is already populated and set flag
+        # if secret_headers is None, we will have to regenerate it completely
+        if self.view.secret_headers is not None:
+            secret_header = {
+                'label': label,
+                'type': "Masterseed",  # todo unify 'type' entry (either str or byte)
+                'subtype': '0x1', # todo unify entry (either str or byte)
+                'export_rights': export_rights,
+                'id': sid,
+                'fingerprint': fingerprint
             }
+            self.view.secret_headers = [secret_header] + self.view.secret_headers  # prepend
+            self.view.seedkeeper_secret_headers_need_update = True
 
-            # Import the secret
-            sid, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
+        logger.log(SUCCESS,
+                   f"004 Masterseed imported successfully with id: {sid} and fingerprint: {fingerprint}")
+        return sid, fingerprint
 
-            # update secret_headers if it is already populated and set flag
-            # if secret_headers is None, we will have to regenerate it completely
-            if self.view.secret_headers is not None:
-                secret_header = {
-                    'label': label,
-                    'type': "Masterseed",  # todo unify 'type' entry (either str or byte)
-                    'subtype': '0x1', # todo unify entry (either str or byte)
-                    'export_rights': export_rights,
-                    'id': sid,
-                    'fingerprint': fingerprint
-                }
-                self.view.secret_headers = [secret_header] + self.view.secret_headers  # prepend
-                self.view.seedkeeper_secret_headers_need_update = True
-
-            logger.log(SUCCESS,
-                       f"004 Masterseed imported successfully with id: {sid} and fingerprint: {fingerprint}")
-            return sid, fingerprint
-
-        except ValueError as e:
-            logger.error(f"005 Validation error during masterseed import: {str(e)}")
-            raise
-        except Exception as e:
-            logger.error(f"006 Unexpected error during masterseed import: {str(e)}")
-            raise ControllerError(f"007 Failed to import masterseed: {str(e)}") from e
 
     @log_method
     def import_data(self, label: str, data: str):

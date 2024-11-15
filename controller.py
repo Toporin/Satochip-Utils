@@ -58,6 +58,8 @@ class Controller:
 
         # card infos
         self.card_status = None
+        self.seedkeeper_status = None
+        self.satodime_status = None # todo
 
     def get_card_status(self):
         if self.cc.card_present:
@@ -71,6 +73,19 @@ class Controller:
         else:
             self.card_status = None
         return self.card_status
+
+    def get_seedkeeper_status(self):
+        if self.cc.card_present:
+            logger.info("In get_seedkeeper_status")
+            try:
+                response, sw1, sw2, self.seedkeeper_status = self.cc.seedkeeper_get_status()
+                logger.debug(f"Seedkeeper satus: {self.seedkeeper_status}")
+            except Exception as e:
+                logger.error(f"Failed to retrieve seedkeeper status: {e}")
+                self.seedkeeper_status = None
+        else:
+            self.seedkeeper_status = None
+        return self.seedkeeper_status
 
     def request(self, request_type, *args):
         logger.info(str(request_type))
@@ -836,7 +851,13 @@ class Controller:
         self.view.update_verify_pin()
 
         # import encoded secret into card
-        sid, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
+        try:
+            sid, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
+        except UnexpectedSW12Error as ex:
+            if "0x9c01" in str(ex):  # no memory left
+                raise ValueError("Not enough memory available!")
+            else:
+                raise
 
         # update secret_headers if it is already populated and set flag
         # if secret_headers is None, we will have to regenerate it completely
@@ -934,7 +955,13 @@ class Controller:
         self.view.update_verify_pin()
 
         # Import the secret
-        sid, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
+        try:
+            sid, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
+        except UnexpectedSW12Error as ex:
+            if "0x9c01" in str(ex):  # no memory left
+                raise ValueError("Not enough memory available!")
+            else:
+                raise
 
         # update secret_headers if it is already populated and set flag
         # if secret_headers is None, we will have to regenerate it completely
@@ -955,7 +982,7 @@ class Controller:
         return sid, fingerprint
 
 
-    @log_method
+    #@log_method
     def import_data(self, label: str, data: str):
         logger.info("import_data start")
 
@@ -987,7 +1014,13 @@ class Controller:
         }
 
         # Import the secret
-        sid, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
+        try:
+            sid, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
+        except UnexpectedSW12Error as ex:
+            if "0x9c01" in str(ex): # no memory left
+                raise ValueError("Not enough memory available!")
+            else:
+                raise
 
         # update secret_headers if it is already populated and set flag
         # if secret_headers is None, we will have to regenerate it completely
@@ -1041,7 +1074,13 @@ class Controller:
         }
 
         # Import the secret
-        sid, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
+        try:
+            sid, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
+        except UnexpectedSW12Error as ex:
+            if "0x9c01" in str(ex):  # no memory left
+                raise ValueError("Not enough memory available!")
+            else:
+                raise
 
         # update secret_headers if it is already populated and set flag
         if self.view.secret_headers is not None:
@@ -1094,7 +1133,13 @@ class Controller:
             }
 
             # Import the secret
-            sid, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
+            try:
+                sid, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
+            except UnexpectedSW12Error as ex:
+                if "0x9c01" in str(ex):  # no memory left
+                    raise ValueError("Not enough memory available!")
+                else:
+                    raise
 
             # update secret_headers if it is already populated and set flag
             # if secret_headers is None, we will have to regenerate it completely

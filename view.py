@@ -621,7 +621,11 @@ class View(customtkinter.CTk):
                 logger.info("View.update_status start (normal mode)")
                 if isConnected is True:
                     # get card status (cached in controller)
-                    self.controller.get_card_status()
+                    card_status = self.controller.get_card_status()
+                    # if seedkeeper 0.2+, get seedkeeperstatus
+                    if self.controller.cc.card_type == "SeedKeeper":
+                        if card_status.get('protocol_version', 0) >= 2:
+                            self.controller.get_seedkeeper_status()
 
                     try:
                         if self.start_frame is not None:  # do not create frame now as it is not main thread

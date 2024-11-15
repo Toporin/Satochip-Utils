@@ -35,75 +35,75 @@ class FrameCardAbout(customtkinter.CTkFrame):
             )
             self.header.place(relx=0.05, rely=0.05, anchor="nw")
 
-            # card infos
-            # using default values,
-            self.card_information = master.create_label("Card information", frame=self)
-            self.card_information.place(relx=0.05, rely=0.25, anchor="w")
-            self.card_information.configure(font=master.make_text_bold())
-
-            self.applet_version = master.create_label(
-                f"Applet version: [UNKNOWN]",  # to update later
-                frame=self
-            )
-            self.applet_version.place(relx=0.05, rely=0.33)
-
-            self.card_label_named = master.create_label(
-                f"Label: [UNKNOWN]",
-                frame=self
-            )
-            self.card_label_named.place(relx=0.05, rely=0.28)
-
-            self.card_genuine = master.create_label(
-                f"Genuine: [UNKNOWN]",
-                frame=self
-            )
-            self.card_genuine.place(relx=0.05, rely=0.38)
-
-            self.watch_all = master.create_label("card status [UNKNOWN]", frame=self)  # updated later
-            self.watch_all.place(relx=0.05, rely=0.17)
-
-            self.unlock_button = master.create_button("Verify PIN", lambda: [self.unlock()], frame=self)
-            self.unlock_button.configure(font=master.make_text_size_at(15))
-            self.unlock_button.place(relx=0.66, rely=0.17)
-            # self.unlock_button.place_forget()
-
-            # card configuration
-            self.card_configuration = master.create_label("Card configuration", frame=self)
-            self.card_configuration.place(relx=0.05, rely=0.48, anchor="w")
-            self.card_configuration.configure(font=master.make_text_bold())
-
-            self.pin_information = master.create_label("PIN status", frame=self)  # updated later
-            self.pin_information.place(relx=0.05, rely=0.52)
-
-            self.two_FA = master.create_label("2FA status", frame=self)  # updated later
-            self.two_FA.place(relx=0.05, rely=0.58)
-
-            # card connectivity # todo remove as part of card info?
-            self.card_connectivity = master.create_label("Card connectivity", frame=self)
-            self.card_connectivity.place(relx=0.05, rely=0.68, anchor="w")
-            self.card_connectivity.configure(font=master.make_text_bold())
-
-            self.nfc = master.create_label(f"NFC status: [UNKNOWN]", frame=self)  # updated later
-            self.nfc.place(relx=0.05, rely=0.715)
-            # self.button_nfc = self.create_button("Disable NFC")
-            # self.button_nfc.place(relx=0.5, rely=0.71)
+            rely = 0.15
 
             # software information
             self.software_information = master.create_label("Software information", frame=self)
-            self.software_information.place(relx=0.05, rely=0.81, anchor="w")
             self.software_information.configure(font=master.make_text_bold())
-
+            self.software_information.place(relx=0.05, rely=rely, anchor="nw")
+            rely += 0.05
+            # software version
             self.app_version = master.create_label(f"Satochip-utils version: {VERSION}", frame=self)
-            self.app_version.place(relx=0.05, rely=0.83)
+            self.app_version.place(relx=0.05, rely=rely, anchor="nw")
+            rely += 0.05
             self.pysatochip_version = master.create_label(f"Pysatochip version: {PYSATOCHIP_VERSION}", frame=self)
-            self.pysatochip_version.place(relx=0.05, rely=0.88)
+            self.pysatochip_version.place(relx=0.05, rely=rely, anchor="nw")
+            rely += 0.08
 
-            # self.back_button = master.create_button(
-            #     'Back',
-            #     lambda: master.show_start_frame(),
-            #     frame=self
-            # )
-            # self.back_button.place(relx=0.8, rely=0.9, anchor="w")
+            # card infos (using default values)
+            self.card_information = master.create_label("Card information", frame=self)
+            self.card_information.configure(font=master.make_text_bold())
+            self.card_information.place(relx=0.05, rely=rely, anchor="nw")
+            # verify PIN button
+            self.unlock_button = master.create_button("Verify PIN", lambda: [self.unlock()], frame=self)
+            self.unlock_button.configure(font=master.make_text_size_at(15))
+            self.rely_button = rely
+            rely += 0.05
+            # card applet version
+            self.applet_version = master.create_label(f"Applet version",  frame=self)
+            self.applet_version.place(relx=0.05, rely=rely, anchor="nw")
+            rely += 0.05
+            # label
+            self.card_label = master.create_label(f"Label: [PIN required]", frame=self)
+            self.card_label.place(relx=0.05, rely=rely, anchor="nw")
+            rely += 0.05
+            # authenticity
+            self.card_genuine = master.create_label(f"Genuine: [PIN required]", frame=self)
+            self.card_genuine.place(relx=0.05, rely=rely, anchor="nw")
+            rely += 0.05
+            # status
+            self.card_status = master.create_label("card status", frame=self)  # updated later
+            self.card_status.place(relx=0.05, rely=rely, anchor="nw")
+            rely += 0.05
+            # NFC
+            self.nfc = master.create_label(f"NFC status", frame=self)  # updated later
+            self.nfc.place(relx=0.05, rely=rely, anchor="nw")
+            rely += 0.08
+
+            # TODO authentikey?
+
+            #################
+            # Card type specific info
+            self.card_configuration = master.create_label("Specific configuration", frame=self)
+            self.card_configuration.configure(font=master.make_text_bold())
+            self.card_configuration.place(relx=0.05, rely=rely, anchor="nw")
+            rely += 0.05
+            self.rely = rely
+
+            # SATOCHIP specific
+            # card seeded
+            self.satochip_seeded = master.create_label("Card seeded", frame=self)  # updated later
+            # 2FA
+            self.satochip_2FA = master.create_label("2FA status", frame=self)  # updated later
+
+            # SEEDKEEPER specific
+            # memory
+            self.seedkeeper_memory = master.create_label("Memory available", frame=self)  # updated later
+            # nb secrets
+            self.seedkeeper_nb_secrets = master.create_label("Secret stored", frame=self)  # updated later
+
+            # SATODIME specific
+            # TODO
 
             self.update_frame()
             self.place(relx=1.0, rely=0.5, anchor="e")
@@ -116,56 +116,112 @@ class FrameCardAbout(customtkinter.CTkFrame):
         self.update_frame()
 
     def update_frame(self):
-
+        logger.debug("FrameCardAbout update_frame start")
         if self.master.controller.cc.card_present:
-            logger.info("FrameCardAbout update_frame() card detected")
+
             # get card data
             response, sw1, sw2, card_status = self.master.controller.cc.card_get_status()
             applet_full_version_string = f"{card_status['protocol_major_version']}.{card_status['protocol_minor_version']}-{card_status['applet_major_version']}.{card_status['applet_minor_version']}"
+            protocol_version = card_status['protocol_version']
 
             # generic info no pin needed
-            self.applet_version.configure(text=f"Applet version: {applet_full_version_string}")
 
+            # applet version
+            self.applet_version.configure(text=f"Applet version: {applet_full_version_string}")
+            # nfc
             if self.master.controller.cc.nfc_policy == 0:
-                self.nfc.configure(text=f"NFC enabled")
+                self.nfc.configure(text=f"NFC: [enabled]")
             elif self.master.controller.cc.nfc_policy == 1:
-                self.nfc.configure(text=f"NFC disabled")
+                self.nfc.configure(text=f"NFC: [disabled]")
             else:
-                self.nfc.configure(text=f"NFC blocked")
+                self.nfc.configure(text=f"NFC: [blocked]")
 
             # requires PIN (or satodime)
+
             if self.master.controller.cc.card_type == "Satodime" or self.master.controller.cc.is_pin_set():
                 if self.master.controller.cc.card_type != "Satodime":
                     self.master.controller.cc.card_verify_PIN_simple()
 
-                self.watch_all.configure(text="")
                 self.unlock_button.place_forget()
 
-                self.card_label_named.configure(text=f"Label: [{self.master.controller.get_card_label_infos()}]")
+                self.card_label.configure(text=f"Label: [{self.master.controller.get_card_label_infos()}]")
 
                 is_authentic, txt_ca, txt_subca, txt_device, txt_error = self.master.controller.cc.card_verify_authenticity()
-                self.card_genuine.configure(text=f"Genuine: YES" if is_authentic else "Genuine: NO")
+                self.card_genuine.configure(text=f"Genuine: [YES]" if is_authentic else "Genuine: [NO]")
             else:
-                self.watch_all.configure(text="PIN required to look at complete information")
-                self.unlock_button.place()
+                # pin needed from user
+                self.card_label.configure(text=f"Label: [PIN required]")
+                self.card_genuine.configure(text=f"Genuine: [PIN required]")
+                self.unlock_button.place(relx=0.65, rely=self.rely_button, anchor="nw")
 
-            # pin status
+            # card status
             if self.master.controller.cc.card_type == "Satodime":
-                self.pin_information.configure(text="No PIN required")
+                self.card_status.configure(
+                    text="Card setup" if self.master.controller.cc.setup_done else "Card not setup"
+                )
             else:
                 if self.master.controller.cc.setup_done:
-                    self.pin_information.configure(
-                        text=f"PIN counter: [{card_status['PIN0_remaining_tries']}] tries remaining",
+                    self.card_status.configure(
+                        text=f"Card setup, PIN counter: [{card_status['PIN0_remaining_tries']}] tries remaining",
                     )
                 else:
-                    self.pin_information.configure(text="Card requires setup")
+                    self.card_status.configure(text="Card requires setup")
 
-            # for a next implementation of 2FA functionality you have the code below
+            # Satochip Specific
             if self.master.controller.cc.card_type == "Satochip":
-                self.two_FA.configure(text=f"2FA enabled" if self.master.controller.cc.needs_2FA else f"2FA disabled")
-                # if self.controller.cc.needs_2FA:
-                #     self.button_2FA = self.create_button("Disable 2FA", None)
-                # else:
-                #     self.button_2FA = self.create_button("Enable 2FA")
-                # self.button_2FA.configure(font=self.make_text_size_at(15), state='disabled')
-                # self.button_2FA.place(relx=0.5, rely=0.58)
+                rely = self.rely
+                self.seedkeeper_memory.place_forget()
+                self.seedkeeper_nb_secrets.place_forget()
+                self.card_configuration.configure(text="Satochip configuration")
+                # seeded
+                self.satochip_seeded.configure(
+                    text=f"Card seeded" if self.master.controller.cc.is_seeded else f"Card not seeded"
+                )
+                self.satochip_seeded.place(relx=0.05, rely=rely, anchor="nw")
+                rely += 0.05
+                # 2FA
+                self.satochip_2FA.configure(
+                    text=f"2FA enabled" if self.master.controller.cc.needs_2FA else f"2FA disabled"
+                )
+                self.satochip_2FA.place(relx=0.05, rely=rely, anchor="nw")
+                rely += 0.05
+
+            # Seedkeeper Specific
+            elif self.master.controller.cc.card_type == "SeedKeeper":
+                self.satochip_seeded.place_forget()
+                self.satochip_2FA.place_forget()
+                self.card_configuration.configure(text="Seedkeeper configuration")
+                # get seedkeeper status (seedkeeper v0.2+ and PIN required!)
+                if protocol_version >= 2:
+                    if self.master.controller.cc.is_pin_set():
+                        self.master.controller.cc.card_verify_PIN_simple()
+                        response, sw1, sw2, seedkeeper_status = self.master.controller.cc.seedkeeper_get_status()
+                        logger.debug(f"seedkeeper_status: {seedkeeper_status}")
+                        # memory
+                        self.seedkeeper_memory.configure(
+                            text=f"Memory available:  {seedkeeper_status.get('free_memory')}/{seedkeeper_status.get('total_memory')} bytes"
+                        )
+                        # nb secrets
+                        self.seedkeeper_nb_secrets.configure(
+                            text=f"Number of secrets: {seedkeeper_status.get('nb_secrets')}"
+                        )
+                    else:
+                        # memory
+                        self.seedkeeper_memory.configure(text="Memory available: [PIN required]")
+                        # nb secrets
+                        self.seedkeeper_nb_secrets.configure(text="Number of secrets: [PIN required]")
+
+                    # place info fields
+                    rely = self.rely
+                    self.seedkeeper_memory.place(relx=0.05, rely=rely, anchor="nw")
+                    rely += 0.05
+                    self.seedkeeper_nb_secrets.place(relx=0.05, rely=rely, anchor="nw")
+                    rely += 0.05
+                else:
+                    # no info available for seedkeeper v0.1
+                    pass
+
+            # Satodime Specific
+            if self.master.controller.cc.card_type == "Satodime":
+                # TODO
+                pass

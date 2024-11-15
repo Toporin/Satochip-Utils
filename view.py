@@ -622,16 +622,13 @@ class View(customtkinter.CTk):
                 if isConnected is True:
                     # get card status (cached in controller)
                     card_status = self.controller.get_card_status()
-                    # if seedkeeper 0.2+, get seedkeeperstatus
-                    if self.controller.cc.card_type == "SeedKeeper":
-                        if card_status.get('protocol_version', 0) >= 2:
-                            self.controller.get_seedkeeper_status()
 
+                    # show start screen
                     try:
                         if self.start_frame is not None:  # do not create frame now as it is not main thread
                             self.show_start_frame()
                     except Exception as e:
-                        logger.error(f"An error occurred while getting card status: {e}", exc_info=True)
+                        logger.error(f"An error occurred: {e}", exc_info=True)
 
                 elif isConnected is False:
                     try:
@@ -645,7 +642,7 @@ class View(customtkinter.CTk):
                             self.show_nocard_menu()
 
                     except Exception as e:
-                        logger.error(f"An error occurred while resetting card status: {e}", exc_info=True)
+                        logger.error(f"An error occurred: {e}", exc_info=True)
 
                 else:  # isConnected is None
                     logger.error("View.update_status isConnected is None (should not happen!)", exc_info=True)
@@ -794,7 +791,6 @@ class View(customtkinter.CTk):
     def show_about_frame(self):
         logger.info("show_about_frame start")
         if self.about_frame is None:
-            logger.info("show_about_frame self.about_frame is None")
             self.about_frame = FrameCardAbout(self)
         self.about_frame.update_frame()
         self.about_frame.tkraise()

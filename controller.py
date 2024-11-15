@@ -5,7 +5,7 @@ import logging
 from os import urandom
 from typing import Dict, Any, List, Optional
 from mnemonic import Mnemonic
-from pysatochip.CardConnector import (CardConnector, UninitializedSeedError, SeedKeeperError, UnexpectedSW12Error)
+from pysatochip.CardConnector import (CardConnector, UninitializedSeedError, UnexpectedSW12Error)
 
 from constants import INS_DIC, RES_DIC
 from exceptions import ControllerError, SecretRetrievalError
@@ -58,7 +58,6 @@ class Controller:
 
         # card infos
         self.card_status = None
-        self.seedkeeper_status = None
         self.satodime_status = None # todo
 
     def get_card_status(self):
@@ -73,19 +72,6 @@ class Controller:
         else:
             self.card_status = None
         return self.card_status
-
-    def get_seedkeeper_status(self):
-        if self.cc.card_present:
-            logger.info("In get_seedkeeper_status")
-            try:
-                response, sw1, sw2, self.seedkeeper_status = self.cc.seedkeeper_get_status()
-                logger.debug(f"Seedkeeper satus: {self.seedkeeper_status}")
-            except Exception as e:
-                logger.error(f"Failed to retrieve seedkeeper status: {e}")
-                self.seedkeeper_status = None
-        else:
-            self.seedkeeper_status = None
-        return self.seedkeeper_status
 
     def request(self, request_type, *args):
         logger.info(str(request_type))

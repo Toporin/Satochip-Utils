@@ -462,6 +462,12 @@ class Controller:
     def seedkeeper_reset_secret(self, sid):
         logger.debug(f"delete secret with id: {sid}")
         try:
+
+            # for v1, secret deletion is not supported
+            if self.card_status.get('protocol_version') < 2:
+                raise ValueError("Secret deletion is not supported on Seedkeeper v0.1!")
+
+            # no need to verify PIN, it has already be done previously
             response, sw1, sw2, dic = self.cc.seedkeeper_reset_secret(sid)
             if sw1 == 0x90 and sw2 == 0x00:
                 # remove secret from secret_headers

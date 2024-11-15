@@ -61,12 +61,16 @@ class FrameSeedkeeperImportSimpleSecret(customtkinter.CTkFrame):
                     label = self.label_entry.get()
                     secret = self.secret_textbox.get("1.0", "end").strip()
 
-                    if not label:
-                        logger.warning("No label provided for password encryption.")
+                    if label:
+                        if len(label.encode('utf-8')) > 127:
+                            raise ValueError("Label is too long (max 127 bytes)!")
+                    else:
                         raise ValueError("The label field is mandatory.")
 
                     if secret:
-                        # todo clean exception mgmt
+                        if len(secret.encode('utf-8')) > 65535:
+                            raise ValueError("Secret is too long (max 65535 bytes)!")
+
                         # verify PIN
                         master.update_verify_pin()
                         # import
@@ -86,13 +90,13 @@ class FrameSeedkeeperImportSimpleSecret(customtkinter.CTkFrame):
                             "./pictures_db/generate_popup.png"  # todo change icon
                         )
                     else:
-                        logger.warning("No secret to save")
-                        raise ValueError("No secret generated")
-                except Exception as e:
-                    logger.error(f"Failed to save {secret_type} to card: {e}", exc_info=True)
+                        raise ValueError("No secret provided")
+
+                except Exception as ex:
+                    logger.error(f"Failed to save {secret_type} to card: {ex}", exc_info=True)
                     master.show(
                         "Error",
-                        f"Failed to import secret: {e}",
+                        f"Failed to import secret: \n{ex}",
                         "Ok", None,
                         "./pictures_db/about_popup.jpg"  # todo change icon
                     )

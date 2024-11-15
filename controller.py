@@ -951,122 +951,125 @@ class Controller:
 
     @log_method
     def import_data(self, label: str, data: str):
-        try:
-            logger.info("Starting import of data")
+        logger.info("import_data start")
 
-            # Validate input
-            if not label:
-                raise ValueError("Label is required")
-            if not data:
-                raise ValueError("Data is required")
+        # Validate input
+        if not label:
+            raise ValueError("Label is required")
+        if not data:
+            raise ValueError("Data is required")
 
-            # Prepare the secret data
-            secret_type = 0xC0  # SECRET_TYPE_FREE_TEXT
-            secret_subtype = 0x00  # SECRET_SUBTYPE_DEFAULT
-            export_rights = 0x01  # SECRET_EXPORT_ALLOWED
+        # Prepare the secret data
+        secret_type = 0xC0  # SECRET_TYPE_FREE_TEXT
+        secret_subtype = 0x00  # SECRET_SUBTYPE_DEFAULT
+        export_rights = 0x01  # SECRET_EXPORT_ALLOWED
 
-            # Encode the data
-            raw_text_bytes = data.encode('utf-8')
-            text_size = len(raw_text_bytes)
+        # Encode the data
+        data_bytes = data.encode('utf-8')
+        data_size = len(data_bytes)
+        secret_list = list(data_size.to_bytes(2, byteorder='big')) + list(data_bytes)
 
-            # Prepare the secret dictionary
-            secret_dic = {
-                'header': self.cc.make_header(secret_type, export_rights, label, subtype=secret_subtype),
-                'secret_list': list(text_size.to_bytes(2, byteorder='big')) + list(raw_text_bytes)
+        # for v1, secret size is limited to 255 bytes
+        if self.card_status.get('protocol_version') < 2:
+            if len(secret_list) > 255:
+                raise ValueError("Payload is too long for Seedkeeper v1 (max 255 bytes)!")
+
+        # Prepare the secret dictionary
+        secret_dic = {
+            'header': self.cc.make_header(secret_type, export_rights, label, subtype=secret_subtype),
+            'secret_list': secret_list
+        }
+
+        # Import the secret
+        sid, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
+
+        # update secret_headers if it is already populated and set flag
+        # if secret_headers is None, we will have to regenerate it completely
+        if self.view.secret_headers is not None:
+            secret_header = {
+                'label': label,
+                'type': "Data",  # todo unify 'type' entry (either str or byte)
+                'subtype': secret_subtype,
+                'export_rights': export_rights,
+                'id': sid,
+                'fingerprint': fingerprint
             }
+            self.view.secret_headers = [secret_header] + self.view.secret_headers # prepend
+            self.view.seedkeeper_secret_headers_need_update = True
 
-            # Import the secret
-            sid, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
-
-            # update secret_headers if it is already populated and set flag
-            # if secret_headers is None, we will have to regenerate it completely
-            if self.view.secret_headers is not None:
-                secret_header = {
-                    'label': label,
-                    'type': "Data",  # todo unify 'type' entry (either str or byte)
-                    'subtype': secret_subtype,
-                    'export_rights': export_rights,
-                    'id': sid,
-                    'fingerprint': fingerprint
-                }
-                self.view.secret_headers = [secret_header] + self.view.secret_headers # prepend
-                self.view.seedkeeper_secret_headers_need_update = True
-
-            logger.log(SUCCESS, f"Data imported successfully with id: {sid} and fingerprint: {fingerprint}")
-            return sid, fingerprint
-
-        except ValueError as e:
-            logger.error(f"Validation error during free text import: {str(e)}")
-            raise
-        except Exception as e:
-            logger.error(f"Unexpected error during data import: {str(e)}")
-            raise ControllerError(f"Failed to import data: {str(e)}") from e
+        logger.log(SUCCESS, f"Data imported successfully with id: {sid} and fingerprint: {fingerprint}")
+        return sid, fingerprint
 
     @log_method
     def import_wallet_descriptor(self, label: str, wallet_descriptor: str):
-        try:
-            logger.info("Starting import of wallet descriptor")
+        logger.info("Starting import of wallet descriptor")
 
-            # Validate input
-            if not label:
-                raise ValueError("Label is required")
-            if not wallet_descriptor:
-                raise ValueError("Wallet descriptor is required")
+        # Validate input
+        if not label:
+            raise ValueError("Label is required")
+        if not wallet_descriptor:
+            raise ValueError("Wallet descriptor is required")
 
-            # Prepare the secret data
-            secret_type = 0xC1  # SECRET_TYPE_WALLET_DESCRIPTOR
-            secret_subtype = 0x00  # SECRET_SUBTYPE_DEFAULT
-            export_rights = 0x01  # SECRET_EXPORT_ALLOWED
+        # Prepare the secret data
+        secret_type = 0xC1  # SECRET_TYPE_WALLET_DESCRIPTOR
+        secret_subtype = 0x00  # SECRET_SUBTYPE_DEFAULT
+        export_rights = 0x01  # SECRET_EXPORT_ALLOWED
 
-            # Encode the wallet descriptor
-            raw_descriptor_bytes = wallet_descriptor.encode('utf-8')
-            descriptor_size = len(raw_descriptor_bytes)
+        # Encode the wallet descriptor
+        descriptor_bytes = wallet_descriptor.encode('utf-8')
+        descriptor_size = len(descriptor_bytes)
+        secret_list = list(descriptor_size.to_bytes(2, byteorder='big')) + list(descriptor_bytes)
 
-            if descriptor_size > 65535:  # 2^16 - 1, max value for 2 bytes
-                raise ValueError("Wallet descriptor is too long (max 65535 bytes)")
+        if descriptor_size > 65535:  # 2^16 - 1, max value for 2 bytes
+            raise ValueError("Wallet descriptor is too long (max 65535 bytes)")
 
-            # Prepare the secret dictionary
-            secret_dic = {
-                'header': self.cc.make_header(secret_type, export_rights, label, subtype=secret_subtype),
-                'secret_list': list(descriptor_size.to_bytes(2, byteorder='big')) + list(raw_descriptor_bytes)
+        # for v1, secret size is limited to 255 bytes
+        if self.card_status.get('protocol_version') < 2:
+            if len(secret_list) > 255:
+                raise ValueError("Payload is too long for Seedkeeper v1 (max 255 bytes)!")
+
+        # Prepare the secret dictionary
+        secret_dic = {
+            'header': self.cc.make_header(secret_type, export_rights, label, subtype=secret_subtype),
+            'secret_list': secret_list
+        }
+
+        # Import the secret
+        sid, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
+
+        # update secret_headers if it is already populated and set flag
+        if self.view.secret_headers is not None:
+            # if secret_headers is None, we will have to regenerate it completely
+            secret_header = {
+                'label': label,
+                'type': "Wallet descriptor",  # todo unify 'type' entry (either str or byte)
+                'subtype': secret_subtype,
+                'export_rights': export_rights,
+                'id': sid,
+                'fingerprint': fingerprint
             }
+            self.view.secret_headers = [secret_header] + self.view.secret_headers  # prepend
+            self.view.seedkeeper_secret_headers_need_update = True
 
-            # Import the secret
-            sid, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
-
-            # update secret_headers if it is already populated and set flag
-            if self.view.secret_headers is not None:
-                # if secret_headers is None, we will have to regenerate it completely
-                secret_header = {
-                    'label': label,
-                    'type': "Wallet descriptor",  # todo unify 'type' entry (either str or byte)
-                    'subtype': secret_subtype,
-                    'export_rights': export_rights,
-                    'id': sid,
-                    'fingerprint': fingerprint
-                }
-                self.view.secret_headers = [secret_header] + self.view.secret_headers  # prepend
-                self.view.seedkeeper_secret_headers_need_update = True
-
-            logger.log(SUCCESS,
-                       f"Wallet descriptor imported successfully with id: {sid} and fingerprint: {fingerprint}")
-            return id, fingerprint
-
-        except ValueError as e:
-            logger.error(f"Validation error during wallet descriptor import: {str(e)}")
-            raise
-        except Exception as e:
-            logger.error(f"Unexpected error during wallet descriptor import: {str(e)}")
-            raise ControllerError(f"Failed to import wallet descriptor: {str(e)}") from e
+        logger.log(SUCCESS,
+                   f"Wallet descriptor imported successfully with id: {sid} and fingerprint: {fingerprint}")
+        return id, fingerprint
 
     def import_pubkey(self, label: str, pubkey_bytes: bytes):
         try:
             logger.info("Starting import of pubkey")
 
             # Validate input
-            if not label:
-                raise ValueError("Label is required")
-            if not pubkey_bytes:
+            if label:
+                if len(label.encode('utf-8')) > 127:
+                    raise ValueError("Label is too long (max 127 bytes)!")
+            else:
+                raise ValueError("The label field is mandatory")
+
+            if pubkey_bytes:
+                if len(pubkey_bytes) > 255:
+                    raise ValueError("Pubkey is too long (max 255 bytes)!")
+            else:
                 raise ValueError("Pubkey is required")
 
             # Prepare the secret data

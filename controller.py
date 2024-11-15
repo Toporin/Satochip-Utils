@@ -12,14 +12,6 @@ from exceptions import ControllerError, SecretRetrievalError
 from log_config import log_method, SUCCESS
 
 seed = None
-# if (len(sys.argv) >= 2) and (sys.argv[1] in ['-v', '--verbose']):
-#     logging.basicConfig(level=logging.DEBUG,
-#                         format='%(asctime)s - [%(filename)s:%(lineno)d] - %(levelname)s - %(name)s - %(funcName)s() - %(message)s',
-#                         datefmt='%Y-%m-%d %H:%M:%S')
-# else:
-#     logging.basicConfig(level=logging.INFO,
-#                         format='%(asctime)s - [%(filename)s:%(lineno)d] - %(levelname)s - %(name)s - %(funcName)s() - %(message)s',
-#                         datefmt='%Y-%m-%d %H:%M:%S')
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -395,7 +387,7 @@ class Controller:
 
         return nbtotal_logs, nbavail_logs, json_logs
 
-    @log_method
+    #@log_method
     def retrieve_secrets_stored_into_the_card(self) -> List[Dict[str, Any]]:
         try:
             headers = self.cc.seedkeeper_list_secret_headers()
@@ -427,7 +419,7 @@ class Controller:
         #     'headers': formatted_headers
         # }
 
-    @log_method
+    #@log_method
     def retrieve_details_about_secret_selected(self, secret_id):
 
         def process_secret(secret_type, secret_value): #todo: purpose?
@@ -775,7 +767,7 @@ class Controller:
     """ IMPORTING SECRETS """
     ##########################
 
-    @log_method
+    #@log_method
     def generate_random_seed(self, mnemonic_length):
         try:
             logger.info(f"Generating random seed of length {mnemonic_length}")
@@ -787,7 +779,7 @@ class Controller:
             logger.error(f"Error generating random seed: {e}", exc_info=True)
             raise ControllerError(f"Failed to generate random seed: {e}")
 
-    @log_method
+    #@log_method
     def import_password(self, label: str, password: str, login: str, url: str = None):
         logger.info("import_password start")
 
@@ -863,7 +855,7 @@ class Controller:
 
         return sid, fingerprint
 
-    @log_method
+    #@log_method
     def import_masterseed_mnemonic(self, label: str, mnemonic: str, passphrase: Optional[str] = None, descriptor: Optional[str] = None):
         logger.info("001 Starting masterseed import process")
 
@@ -1025,7 +1017,7 @@ class Controller:
         logger.log(SUCCESS, f"Data imported successfully with id: {sid} and fingerprint: {fingerprint}")
         return sid, fingerprint
 
-    @log_method
+    #@log_method
     def import_wallet_descriptor(self, label: str, wallet_descriptor: str):
         logger.info("Starting import of wallet descriptor")
 

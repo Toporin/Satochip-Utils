@@ -59,23 +59,18 @@ class Controller:
         # card infos
         self.card_status = None
 
-    def get_card_status(self):  #todo deprecate?
+    def get_card_status(self):
         if self.cc.card_present:
             logger.info("In get_card_status")
             try:
                 response, sw1, sw2, self.card_status = self.cc.card_get_status()
-                if self.card_status:
-                    logger.debug(f"Card satus: {self.card_status}")
-                else:
-                    logger.error(f"Failed to retrieve card_status")
-
-                self.card_status['applet_full_version_string'] = f"{self.card_status['protocol_major_version']}.{self.card_status['protocol_minor_version']}-{self.card_status['applet_major_version']}.{self.card_status['applet_minor_version']}"
-                return self.card_status
-
+                logger.debug(f"Card satus: {self.card_status}")
             except Exception as e:
                 logger.error(f"Failed to retrieve card status: {e}")
                 self.card_status = None
-                return None
+        else:
+            self.card_status = None
+        return self.card_status
 
     def request(self, request_type, *args):
         logger.info(str(request_type))
@@ -787,53 +782,73 @@ class Controller:
 
     @log_method
     def import_password(self, label: str, password: str, login: str, url: str = None):
-        try:
-            logger.info("import_password start")
+        logger.info("import_password start")
 
-            # Prepare datas for the importation
-            secret_type = 0x90  # password
-            export_rights = 0x01 # export in plaintext allowed by default
+        # perform some checks
+        # exceptions should be managed in the calling method
+        if not label:
+            raise ValueError("The label field is mandatory.")
+        if not password:
+            raise ValueError("No password provided!")
 
-            # encode secret
-            secret_encoded = bytes([len(password.encode('utf-8'))]) + password.encode('utf-8')
-            if login != "":
-                secret_encoded += bytes([len(login.encode('utf-8'))]) + login.encode('utf-8')
-            if url != "":
-                secret_encoded += bytes([len(url.encode('utf-8'))]) + url.encode('utf-8')
+        if len(label.encode('utf-8')) > 127:
+            logger.debug(f"Label is too long (max 127 bytes):  {len(label.encode('utf-8'))}")
+            raise ValueError("Label is too long (max 127 bytes)!")
 
-            # create dict object for import
-            secret_dic = {
-                'header': self.cc.make_header(secret_type, export_rights, label),
-                'secret_list': list(secret_encoded)
+        if len(password.encode('utf-8')) > 255:
+            raise ValueError("Password is too long (max 255 bytes)!")
+
+        if login:
+            if len(login.encode('utf-8')) > 255:
+                raise ValueError("Login is too long (max 255 bytes)!")
+
+        if url:
+            if len(url.encode('utf-8')) > 255:
+                raise ValueError("Url is too long (max 255 bytes)!")
+
+        # encode secret
+        secret_encoded = bytes([len(password.encode('utf-8'))]) + password.encode('utf-8')
+        if login != "":
+            secret_encoded += bytes([len(login.encode('utf-8'))]) + login.encode('utf-8')
+        if url != "":
+            secret_encoded += bytes([len(url.encode('utf-8'))]) + url.encode('utf-8')
+
+        # for v1, secret size is limited to 255 bytes
+        if self.card_status.get('protocol_version') < 2:
+            if len(secret_encoded) > 255:
+                raise ValueError("Payload is too long for Seedkeeper v1 (max 255 bytes)!")
+
+        # create dict object for import
+        secret_type = 0x90  # password
+        export_rights = 0x01  # export in plaintext allowed by default
+        secret_dic = {
+            'header': self.cc.make_header(secret_type, export_rights, label),
+            'secret_list': list(secret_encoded)
+        }
+
+        # verify PIN
+        self.view.update_verify_pin()
+
+        # import encoded secret into card
+        sid, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
+
+        # update secret_headers if it is already populated and set flag
+        # if secret_headers is None, we will have to regenerate it completely
+        if self.view.secret_headers is not None:
+            secret_header = {
+                'label': label,
+                'type': "Password",  # todo unify 'type' entry (either str or byte)
+                'subtype': 0x00,
+                'export_rights': export_rights,
+                'id': sid,
+                'fingerprint': fingerprint
             }
+            self.view.secret_headers = [secret_header] + self.view.secret_headers  # prepend
+            self.view.seedkeeper_secret_headers_need_update = True
 
-            # import encoded secret into card
-            sid, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
+        logger.info(f"Password imported successfully with id: {sid} and fingerprint: {fingerprint}")
 
-            # update secret_headers if it is already populated and set flag
-            # if secret_headers is None, we will have to regenerate it completely
-            if self.view.secret_headers is not None:
-                secret_header = {
-                    'label': label,
-                    'type': "Password",  # todo unify 'type' entry (either str or byte)
-                    'subtype': 0x00,
-                    'export_rights': export_rights,
-                    'id': sid,
-                    'fingerprint': fingerprint
-                }
-                self.view.secret_headers = [secret_header] + self.view.secret_headers  # prepend
-                self.view.seedkeeper_secret_headers_need_update = True
-
-            logger.info(f"Password imported successfully with id: {sid} and fingerprint: {fingerprint}")
-
-            return sid, fingerprint
-
-        except SeedKeeperError as e:
-            logger.error(f"SeedKeeper error during password import: {str(e)}")
-            raise
-        except Exception as e:
-            logger.error(f"Unexpected error during password import: {str(e)}")
-            raise ControllerError(f"Failed to import password: {str(e)}") from e
+        return sid, fingerprint
 
     @log_method
     def import_masterseed(self, label: str, mnemonic: str, passphrase: Optional[str] = None, descriptor: Optional[str] = None):

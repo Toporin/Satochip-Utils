@@ -620,6 +620,9 @@ class View(customtkinter.CTk):
                 # normal mode
                 logger.info("View.update_status start (normal mode)")
                 if isConnected is True:
+                    # get card status (cached in controller)
+                    self.controller.get_card_status()
+
                     try:
                         if self.start_frame is not None:  # do not create frame now as it is not main thread
                             self.show_start_frame()
@@ -646,7 +649,7 @@ class View(customtkinter.CTk):
         except Exception as e:
             logger.error(f"An unexpected error occurred in update_status method: {e}", exc_info=True)
 
-    def update_verify_pin(self):
+    def update_verify_pin(self): # todo: move in controller
         if self.controller.cc.card_type != "Satodime":
             if self.controller.cc.is_pin_set():
                 self.controller.cc.card_verify_PIN_simple()

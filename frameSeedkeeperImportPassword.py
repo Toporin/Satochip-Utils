@@ -77,29 +77,20 @@ class FrameSeedkeeperImportPassword(customtkinter.CTkFrame):
                     url = self.url_entry.get()
                     password = self.password_text_box.get("1.0", "end").strip()
 
-                    if not label:
-                        logger.warning("No label provided for password encryption.")
-                        raise ValueError("The label field is mandatory.")
+                    # import secret
+                    sid, fingerprint = master.controller.import_password(label, password, login, url)
+                    master.show(
+                        "SUCCESS",
+                        f"Password saved successfully!\nID: {sid}",
+                        "Ok", master.show_seedkeeper_list_secrets,
+                        "./pictures_db/generate_popup.png"
+                    )
 
-                    if password:
-                        # verify PIN
-                        master.update_verify_pin()
-                        # import
-                        sid, fingerprint = master.controller.import_password(label, password, login, url)
-                        master.show(
-                            "SUCCESS",
-                            f"Password saved successfully!\nID: {sid}",
-                            "Ok", master.show_seedkeeper_list_secrets,
-                            "./pictures_db/generate_popup.png"
-                        )
-                    else:
-                        logger.warning("No password to save")
-                        raise ValueError("No password generated")
                 except Exception as e:
                     logger.error(f"Failed to save password to card: {e}", exc_info=True)
                     master.show(
                         "Error",
-                        f"Failed to import secret: {e}",
+                        f"Failed to import secret: \n{e}",
                         "Ok", None,
                         "./pictures_db/about_popup.jpg"  # todo change icon
                     )

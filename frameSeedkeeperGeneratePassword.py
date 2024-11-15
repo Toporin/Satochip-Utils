@@ -218,21 +218,12 @@ class FrameSeedkeeperGeneratePassword(customtkinter.CTkFrame):
                     url = self.url_entry.get()
                     password = self.password_textbox.get("1.0", "end").strip()
 
-                    if not label:
-                        logger.warning("No label provided for password encryption.")
-                        raise ValueError("The label field is mandatory.")
+                    # import
+                    sid, fingerprint = master.controller.import_password(label, password, login, url)
+                    master.show("SUCCESS",
+                              f"Password saved successfully with id: {sid}",
+                              "Ok", master.show_seedkeeper_list_secrets, "./pictures_db/generate_popup.png")
 
-                    if password:
-                        # verify PIN
-                        master.update_verify_pin()
-                        # import
-                        sid, fingerprint = master.controller.import_password(label, password, login, url)
-                        master.show("SUCCESS",
-                                  f"Password saved successfully with id: {sid}",
-                                  "Ok", master.show_seedkeeper_list_secrets, "./pictures_db/generate_popup.png")
-                    else:
-                        logger.warning("No password to save")
-                        raise ValueError("No password generated")
                 except Exception as e:
                     logger.error(f"Failed to save password to card: {e}", exc_info=True)
                     master.show(

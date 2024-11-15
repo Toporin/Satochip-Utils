@@ -1,6 +1,7 @@
 import customtkinter
 import logging
 
+from constants import TYPE_MASTERSEED, TYPE_DIC
 from frameWidgetHeader import FrameWidgetHeader
 from utils import (show_qr_code, toggle_entry_visibility, toggle_textbox_visibility, reset_qr_code,
                    update_textbox, mnemonic_to_entropy_string)
@@ -115,21 +116,22 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
             logger.error(f"init error: {e}", exc_info=True)
 
     def update_frame(self, secret):
-        logger.debug(f"update_frame() secret: {secret}")
+        logger.debug(f"update_frame() start")
+        # update label
         self.label_entry.delete(0, "end")
         self.label_entry.insert(0, secret['label'])
 
         # update header
-        if secret.get('type') == "Masterseed":
+        if secret.get('type') == TYPE_MASTERSEED:
             if secret.get('subtype') == 0x00:
                 self.header.button.configure(text="   Masterseed details")  # should not happen here
             else:
                 self.header.button.configure(text="   Bip39 mnemonic details")
         else:
-            self.header.button.configure(text=f"   {secret.get('type')} details")
+            self.header.button.configure(text=f"   {TYPE_DIC.get(secret.get('type'), 'Mnemonic')} details")
 
         # Decode seed to mnemonic
-        if secret.get('type') == "Masterseed":
+        if secret.get('type') == TYPE_MASTERSEED:
             if secret.get('subtype') == 0x00:
                 secret = self.master.controller.decode_masterseed(secret)  # should not happen here
             else:

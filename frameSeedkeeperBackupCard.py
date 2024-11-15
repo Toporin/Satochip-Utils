@@ -117,17 +117,10 @@ class FrameSeedkeeperBackupCard(customtkinter.CTkFrame):
 
             # get authentikey
             self.master_authentikey = self.master.controller.cc.card_bip32_get_authentikey()
-            logger.debug(f"self.master_authentikey: {self.master_authentikey}")
-            logger.debug(f"self.master_authentikey bytes: {self.master_authentikey.get_public_key_bytes(compressed=False)}")
-            logger.debug(
-                f"self.master_authentikey hex: {self.master_authentikey.get_public_key_bytes(compressed=False).hex()}")
-            logger.debug(
-                f"self.master_authentikey.get_public_key_hex(): {self.master_authentikey.get_public_key_hex()}")
-            logger.debug(
-                f"self.master_authentikey.get_public_key_hex(compressed=False): {self.master_authentikey.get_public_key_hex(compressed=False)}")
+            logger.debug(f"master_authentikey: {self.master_authentikey.get_public_key_hex(compressed=False)}")
 
             # get list of secret headers
-            self.master_secret_headers = self.master.controller.retrieve_secrets_stored_into_the_card()
+            self.master_secret_headers = self.master.controller.cc.seedkeeper_list_secret_headers()
             logger.debug(f"Fetched {len(self.master_secret_headers)} headers from card")
 
             # proceed to next screen
@@ -154,14 +147,7 @@ class FrameSeedkeeperBackupCard(customtkinter.CTkFrame):
 
             # get authentikey
             self.backup_authentikey = self.master.controller.cc.card_bip32_get_authentikey()
-            logger.debug(f"self.backup_authentikey: {self.backup_authentikey}")
-            logger.debug(f"self.backup_authentikey bytes: {self.backup_authentikey.get_public_key_bytes(compressed=False)}")
-            logger.debug(
-                f"self.backup_authentikey hex: {self.backup_authentikey.get_public_key_bytes(compressed=False).hex()}")
-            logger.debug(
-                f"self.backup_authentikey.get_public_key_hex(): {self.backup_authentikey.get_public_key_hex()}")
-            logger.debug(
-                f"self.backup_authentikey.get_public_key_hex(compressed=False): {self.backup_authentikey.get_public_key_hex(compressed=False)}")
+            logger.debug(f"backup_authentikey: {self.backup_authentikey.get_public_key_hex(compressed=False)}")
 
             # check it is different from master
             if (self.backup_authentikey.get_public_key_bytes(compressed=False) ==
@@ -176,7 +162,7 @@ class FrameSeedkeeperBackupCard(customtkinter.CTkFrame):
                 return
 
             # get list of headers from backup
-            self.backup_secret_headers = self.master.controller.retrieve_secrets_stored_into_the_card()
+            self.backup_secret_headers = self.master.controller.cc.seedkeeper_list_secret_headers()
             logger.debug(f"Fetched {len(self.backup_secret_headers)} headers from backup card")
 
             # find secrets that are on master but not yet on backup, based on fingerprint

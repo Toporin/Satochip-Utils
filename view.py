@@ -10,6 +10,8 @@ from customtkinter import CTkOptionMenu
 
 from FrameSeedkeeperGenerateSecretSelectType import FrameSeedkeeperGenerateSecretSelectType
 from applicationMode import ApplicationMode
+from constants import TYPE_PUBKEY, TYPE_DATA, TYPE_DESCRIPTOR, TYPE_2FA_SECRET, TYPE_ELECTRUM_MNEMONIC, \
+    TYPE_BIP39_MNEMONIC, TYPE_MASTERSEED, TYPE_PASSWORD
 from controller import Controller
 from exceptions import FrameCreationError
 from frameCardAbout import FrameCardAbout
@@ -121,7 +123,7 @@ class View(customtkinter.CTk):
             self.appMode = ApplicationMode.Normal
 
             # Initializing controller
-            self.controller = Controller(None, self, loglevel=loglevel)
+            self.controller = Controller(self, loglevel=loglevel)
 
             # Initializing main window
             self.main_window()
@@ -650,7 +652,7 @@ class View(customtkinter.CTk):
         except Exception as e:
             logger.error(f"An unexpected error occurred in update_status method: {e}", exc_info=True)
 
-    def update_verify_pin(self): # todo: move in controller
+    def update_verify_pin(self):  # todo: move in controller
         if self.controller.cc.card_type != "Satodime":
             if self.controller.cc.is_pin_set():
                 self.controller.cc.card_verify_PIN_simple()
@@ -807,7 +809,7 @@ class View(customtkinter.CTk):
                 # verify PIN
                 self.update_verify_pin()
                 # get list of secret headers
-                self.secret_headers = self.controller.retrieve_secrets_stored_into_the_card()
+                self.secret_headers = self.controller.cc.seedkeeper_list_secret_headers()
                 self.seedkeeper_secret_headers_need_update = True
                 logger.debug(f"Fetched {len(self.secret_headers)} headers from card")
 
@@ -817,46 +819,55 @@ class View(customtkinter.CTk):
                 self.list_secrets_frame.update_frame(self.secret_headers)
             self.list_secrets_frame.tkraise()
 
-        except Exception as e:
-            logger.error(f"Error in show_secrets: {e}", exc_info=True)
+        except Exception as ex:
+            logger.error(f"Error in show_secrets: {ex}", exc_info=True)
+            self.show(
+                "ERROR",
+                f"Failed to list secrets!\n{ex}",
+                "Ok",
+                None,
+                "./pictures_db/about_popup.jpg"  # todo change icon
+            )
 
     def show_seedkeeper_secret(self, secret_header):
         logger.debug("show_view_secret start")
         # Managing export rights control
-        secret_details = {}
-        if secret_header['export_rights'] == '0x2':
-            secret_details['type'] = secret_header['type']
-            secret_details['label'] = secret_header['label']
-            secret_details['secret'] = 'Export failed: export not allowed by SeedKeeper policy.'
-            secret_details['subtype'] = 0x0 if secret_header['subtype'] == '0x0' else '0x1'
-            logger.debug(f"Export_rights: Not allowed for {secret_header} with id {secret_header['id']}")
+        secret = {}
+        if secret_header['export_rights'] == 0x02:
+            logger.warning(f"Export_rights: Not allowed for secret with id {secret_header['id']}")
+            secret = secret_header
+            secret['secret'] = 'Export failed: export not allowed by SeedKeeper policy.'
         else:
-            logger.debug(f"Export rights allowed for {secret_header} with id {secret_header['id']}")
-            secret_details = self.controller.retrieve_details_about_secret_selected(secret_header['id'])
-            secret_details['id'] = secret_header['id']
-            logger.debug(f"secret id details: {secret_details} for id: {secret_details['id']}")
+            logger.debug(f"Export rights allowed for secret with id {secret_header['id']}")
+            try:
+                secret = self.controller.cc.seedkeeper_export_secret(secret_header['id'])
+            except Exception as ex:
+                secret = secret_header
+                secret['secret'] = f"Export failed: {str(ex)}"
 
         # show secret according to type
-        if secret_header['type'] == 'Password':
-            self.show_password_secret(secret_details)
-        elif secret_header['type'] == 'Masterseed':
-            if secret_details['subtype'] > 0 or secret_details['subtype'] == '0x1':
-                self.show_mnemonic_secret(secret_details)
+        if secret_header['type'] == TYPE_PASSWORD:
+            self.show_password_secret(secret)
+        elif secret_header['type'] == TYPE_MASTERSEED:
+            if secret['subtype'] == 0x00:
+                # masterseed only (no mnemonic provided)
+                self.show_simple_secret(secret)
             else:
-                self.show_simple_secret(secret_details)
-        elif secret_header['type'] == "BIP39 mnemonic":
-            self.show_mnemonic_secret(secret_details)
-        elif secret_header['type'] == 'Electrum mnemonic':
-            self.show_mnemonic_secret(secret_details)
-        elif (secret_header['type'] == 'Wallet descriptor' or
-              secret_header['type'] == 'Data' or
-              secret_header['type'] == '2FA secret' or
-              secret_header['type'] == 'Public Key'
+                # masterseed-mnemonic (bip39)
+                self.show_mnemonic_secret(secret)
+        elif secret_header['type'] == TYPE_BIP39_MNEMONIC:
+            self.show_mnemonic_secret(secret)
+        elif secret_header['type'] == TYPE_ELECTRUM_MNEMONIC:
+            self.show_mnemonic_secret(secret)
+        elif (secret_header['type'] == TYPE_DESCRIPTOR or
+              secret_header['type'] == TYPE_DATA or
+              secret_header['type'] == TYPE_2FA_SECRET or
+              secret_header['type'] == TYPE_PUBKEY
         ):
-            self.show_simple_secret(secret_details)
+            self.show_simple_secret(secret)
         else:
             # default for unsupported type is to show raw secret in hex
-            self.show_simple_secret(secret_details)
+            self.show_simple_secret(secret)
 
     def show_password_secret(self, secret):
         if self.seedkeeper_show_password_frame is None:

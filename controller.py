@@ -3,15 +3,12 @@ import hashlib
 import json
 import logging
 from os import urandom
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 from mnemonic import Mnemonic
 from pysatochip.CardConnector import (CardConnector, UninitializedSeedError, UnexpectedSW12Error)
 
-from constants import INS_DIC, RES_DIC
-from exceptions import ControllerError, SecretRetrievalError
-from log_config import log_method, SUCCESS
-
-seed = None
+from constants import INS_DIC, RES_DIC, TYPE_PASSWORD, TYPE_MASTERSEED, TYPE_DATA, TYPE_DESCRIPTOR, TYPE_PUBKEY, \
+    TYPE_BIP39_MNEMONIC, TYPE_ELECTRUM_MNEMONIC, TYPE_2FA_SECRET, TYPE_DIC
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -19,24 +16,7 @@ logger.setLevel(logging.DEBUG)
 
 class Controller:
 
-    dic_type = {
-        0x10: 'Masterseed',
-        0x30: 'BIP39 mnemonic',
-        0x40: 'Electrum mnemonic',
-        0x50: 'Shamir Secret Share',
-        0x60: 'Private Key',
-        0x70: 'Public Key',
-        0x71: 'Authenticated Public Key',
-        0x80: 'Symmetric Key',
-        0x90: 'Password',
-        0x91: 'Master Password',
-        0xA0: 'Certificate',
-        0xB0: '2FA secret',
-        0xC0: 'Data',
-        0xC1: 'Wallet descriptor'
-    }
-
-    def __init__(self, cc, view, loglevel=logging.INFO):
+    def __init__(self, view, loglevel=logging.DEBUG):
         logger.setLevel(loglevel)
         self.view = view
         self.view.controller = self
@@ -44,13 +24,13 @@ class Controller:
         try:
             self.cc = CardConnector(self, loglevel=loglevel)
             logger.info("CardConnector initialized successfully.")
-        except Exception as e:
-            logger.error("Failed to initialize CardConnector.", exc_info=True)
+        except Exception as ex:
+            logger.error(f"Failed to initialize CardConnector {ex}", exc_info=True)
             raise
 
         # card infos
         self.card_status = None
-        self.satodime_status = None # todo
+        self.satodime_status = None  # todo
 
     def get_card_status(self):
         if self.cc.card_present:
@@ -131,31 +111,14 @@ class Controller:
             self.view.show("ERROR", "Failed to change PIN.", "Ok",
                            None, "./pictures_db/change_pin_popup.jpg")
 
-    def generate_random_seed(self, mnemonic_length):
-        try:
-            logger.info(f"In generate_random_seed(), mnemonic_length: {mnemonic_length}")
-            strength = 128 if mnemonic_length == 12 else 256 if mnemonic_length == 24 else None
-
-            if strength:
-                MNEMONIC = Mnemonic(language="english")
-                mnemonic = MNEMONIC.generate(strength=strength)
-                return mnemonic
-            else:
-                logger.warning(f"generate_random_seed: invalid mnemonic length {mnemonic_length}")
-                return f"Error: invalid mnemonic length {mnemonic_length}"
-
-        except Exception as e:
-            logger.error(f"generate_random_seed: Error generating seed: {e}")
-            return f"Exception: {e}"
-
-    def import_seed(self, mnemonic, passphrase =None):
+    def import_seed(self, mnemonic, passphrase=None):
         """Import a seed (and optional passphrase) into a Satochip"""
         try:
             MNEMONIC = Mnemonic(language="english")
             if MNEMONIC.check(mnemonic):  # check that seed is valid
                 logger.info("Imported seed is valid.")
                 if passphrase is not None:
-                    if passphrase in ["", " ", "Type your passphrase here"]:
+                    if passphrase in ["", " ", "Type your passphrase here"]:  # todo?
                         logger.error("Passphrase is blank or empy")
                         self.view.show('WARNING', 'Wrong passphrase: incorrect or blank', 'Ok')
                     else:
@@ -297,7 +260,6 @@ class Controller:
                 return False
             else:
                 logger.info("Applet setup successfully")
-                self.setup_done = True
                 self.view.update_status()
                 self.view.show_start_frame()
                 self.view.show_menu_frame()
@@ -319,7 +281,6 @@ class Controller:
             authentikey = self.cc.card_bip32_import_seed(seed)
             logger.info(f"authentikey: {authentikey}")
             if authentikey:
-                self.is_seeded = True
                 self.view.show('SUCCESS',
                                'Your card is now seeded!',
                                'Ok',
@@ -334,7 +295,6 @@ class Controller:
             else:
                 self.view.show('ERROR', 'Error when importing seed to Satochip!', 'Ok', None,
                                "./pictures_db/seed_popup.jpg")
-
 
     ####################################################################################################################
     """MY SECRETS MANAGEMENT"""
@@ -387,71 +347,6 @@ class Controller:
 
         return nbtotal_logs, nbavail_logs, json_logs
 
-    #@log_method
-    def retrieve_secrets_stored_into_the_card(self) -> List[Dict[str, Any]]:
-        try:
-            headers = self.cc.seedkeeper_list_secret_headers()
-            logger.log(SUCCESS, f"Secrets retrieved successfully: {headers}")
-            return self._format_secret_headers(headers)
-        except Exception as e:
-            logger.error(f"Error retrieving secrets: {e}")
-            raise ControllerError(f"Failed to retrieve secrets: {e}")
-
-    def _format_secret_headers(self, headers: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        # todo refactor & clean
-        formatted_headers = []
-        for header in headers:
-            formatted_header = {
-                'id': int(header['id']),  # Convertir l'ID en entier
-                'type': Controller.dic_type.get(header['type'], hex(header['type'])),
-                'subtype': Controller.dic_type.get(header['subtype'], hex(header['subtype'])),
-                'origin': Controller.dic_type.get(header['origin'], hex(header['origin'])),
-                'export_rights': Controller.dic_type.get(header['export_rights'], hex(header['export_rights'])),
-                'label': header['label'],
-                'fingerprint': header['fingerprint'],
-            }
-            formatted_headers.append(formatted_header)
-
-        logger.debug(f"Formated headers: {formatted_headers}")
-        return formatted_headers
-        # return {
-        #     'num_secrets': len(headers),
-        #     'headers': formatted_headers
-        # }
-
-    #@log_method
-    def retrieve_details_about_secret_selected(self, secret_id):
-
-        def process_secret(secret_type, secret_value): #todo: purpose?
-            logger.info("Processing secret")
-            for type in Controller.dic_type:
-                if type == secret_type:
-                    return f"{secret_value}"
-
-        try:
-            logger.info(f"Retrieving details for secret ID: {secret_id}")
-            secret_details = self.cc.seedkeeper_export_secret(secret_id)
-            logger.debug(f"secret details: {secret_details}")
-            logger.debug("Secret details exported from card")
-
-            processed_secret = process_secret(secret_details['type'], secret_details['secret'])
-            logger.info(f"Processed secret: {processed_secret}")
-
-            formatted_details = {
-                'label': secret_details['label'],
-                'type': Controller.dic_type.get(secret_details['type'], hex(secret_details['type'])),
-                'subtype': secret_details['subtype'],
-                'export_rights': hex(secret_details['export_rights']),
-                'secret': processed_secret
-            }
-
-            logger.log(SUCCESS, f"Secret details retrieved and processed successfully: {formatted_details}")
-            return formatted_details
-
-        except Exception as e:
-            logger.error(f"Error retrieving secret details: {e}", exc_info=True)
-            raise SecretRetrievalError(f"Failed to retrieve secret details: {e}") from e
-
     def seedkeeper_reset_secret(self, sid):
         logger.debug(f"delete secret with id: {sid}")
         try:
@@ -460,7 +355,7 @@ class Controller:
             if self.card_status.get('protocol_version') < 2:
                 raise ValueError("Secret deletion is not supported on Seedkeeper v0.1!")
 
-            # no need to verify PIN, it has already be done previously
+            # no need to verify PIN, it has already been done previously
             response, sw1, sw2, dic = self.cc.seedkeeper_reset_secret(sid)
             if sw1 == 0x90 and sw2 == 0x00:
                 # remove secret from secret_headers
@@ -502,25 +397,25 @@ class Controller:
 
     # generic method
     def decode_secret(self, secret: Dict[str, Any]) -> Dict[str, Any]:
-        logger.debug(f"Secret type: {secret['type']} and subtype: {secret['subtype']}")
-        if secret['type'] == 'Password':
+        logger.debug(f"Secret type: {TYPE_DIC.get(secret['type'], 'Unknown type')} and subtype: {secret['subtype']}")
+        if secret['type'] == TYPE_PASSWORD:
             return self.decode_password(secret)
-        elif secret['type'] == 'Masterseed':
-            if secret['subtype'] > 0 or secret['subtype'] == '0x1':
-                return self.decode_masterseed_mnemonic(secret)
-            else:
+        elif secret['type'] == TYPE_MASTERSEED:
+            if secret['subtype'] == 0x00:
                 return self.decode_masterseed(secret)
-        elif secret['type'] == "BIP39 mnemonic":
+            else:
+                return self.decode_masterseed_mnemonic(secret)
+        elif secret['type'] == TYPE_BIP39_MNEMONIC:
             return self.decode_mnemonic(secret)
-        elif secret['type'] == 'Electrum mnemonic':
+        elif secret['type'] == TYPE_ELECTRUM_MNEMONIC:
             return self.decode_mnemonic(secret)
-        elif secret['type'] == 'Wallet descriptor':
+        elif secret['type'] == TYPE_DESCRIPTOR:
             return self.decode_descriptor(secret)
-        elif secret['type'] == 'Data':
+        elif secret['type'] == TYPE_DATA:
             return self.decode_data(secret)
-        elif secret['type'] == '2FA secret':
+        elif secret['type'] == TYPE_2FA_SECRET:
             return self.decode_2fa(secret)
-        elif secret['type'] == 'Public Key':
+        elif secret['type'] == TYPE_PUBKEY:
             return self.decode_pubkey(secret)
         else:
             return self.decode_default(secret)
@@ -536,7 +431,7 @@ class Controller:
 
             # raw secret field
             # [password_size(1b) | password_bytes | login_size(1b) | login_bytes | url_size(1b) | url_bytes ]
-            secret_bytes= binascii.unhexlify(secret_dict['secret'])
+            secret_bytes = binascii.unhexlify(secret_dict['secret'])
             offset = 0
             password_size = secret_bytes[offset]
             offset += 1
@@ -574,7 +469,7 @@ class Controller:
             return result
 
         except Exception as e:
-            error_msg=f"Error decoding password secret: {str(e)}"
+            error_msg = f"Error decoding password secret: {str(e)}"
             logger.error(error_msg)
             return result
 
@@ -587,7 +482,7 @@ class Controller:
             offset = 0
             mnemonic_size = secret_bytes[offset]
             offset += 1
-            mnemonic_bytes= secret_bytes[offset:offset + mnemonic_size]
+            mnemonic_bytes = secret_bytes[offset:offset + mnemonic_size]
             result['mnemonic'] = result['secret_decoded'] = mnemonic_bytes.decode('utf-8')
             offset += mnemonic_size
             passphrase_size = secret_bytes[offset] if offset < len(secret_bytes) else 0
@@ -600,7 +495,7 @@ class Controller:
 
             return result
         except Exception as e:
-            error_msg= f"Error decoding password secret: {str(e)}"
+            error_msg = f"Error decoding password secret: {str(e)}"
             logger.error(error_msg)
             return result
 
@@ -666,7 +561,7 @@ class Controller:
 
             return result
         except Exception as e:
-            error_msg=f"Error decoding password secret: {str(e)}"
+            error_msg = f"Error decoding password secret: {str(e)}"
             logger.error(error_msg)
             return result
 
@@ -767,19 +662,12 @@ class Controller:
     """ IMPORTING SECRETS """
     ##########################
 
-    #@log_method
     def generate_random_seed(self, mnemonic_length):
-        try:
-            logger.info(f"Generating random seed of length {mnemonic_length}")
-            strength = 128 if mnemonic_length == 12 else 256
-            mnemonic = Mnemonic("english").generate(strength=strength)
-            logger.log(SUCCESS, f"Random seed of length {mnemonic_length} generated successfully")
-            return mnemonic
-        except Exception as e:
-            logger.error(f"Error generating random seed: {e}", exc_info=True)
-            raise ControllerError(f"Failed to generate random seed: {e}")
+        logger.info(f"generate_random_seed length {mnemonic_length}")
+        strength = 128 if mnemonic_length == 12 else 256
+        mnemonic = Mnemonic("english").generate(strength=strength)
+        return mnemonic
 
-    #@log_method
     def import_password(self, label: str, password: str, login: str, url: str = None):
         logger.info("import_password start")
 
@@ -818,7 +706,7 @@ class Controller:
                 raise ValueError("Payload is too long for Seedkeeper v1 (max 255 bytes)!")
 
         # create dict object for import
-        secret_type = 0x90  # password
+        secret_type = TYPE_PASSWORD  # password
         export_rights = 0x01  # export in plaintext allowed by default
         secret_dic = {
             'header': self.cc.make_header(secret_type, export_rights, label),
@@ -842,7 +730,7 @@ class Controller:
         if self.view.secret_headers is not None:
             secret_header = {
                 'label': label,
-                'type': "Password",  # todo unify 'type' entry (either str or byte)
+                'type': secret_type,
                 'subtype': 0x00,
                 'export_rights': export_rights,
                 'id': sid,
@@ -855,7 +743,6 @@ class Controller:
 
         return sid, fingerprint
 
-    #@log_method
     def import_masterseed_mnemonic(self, label: str, mnemonic: str, passphrase: Optional[str] = None, descriptor: Optional[str] = None):
         logger.info("001 Starting masterseed import process")
 
@@ -920,7 +807,7 @@ class Controller:
                 raise ValueError("Payload is too long for Seedkeeper v1 (max 255 bytes)!")
 
         # Prepare the header
-        secret_type = 0x10  # SECRET_TYPE_MASTER_SEED
+        secret_type = TYPE_MASTERSEED
         export_rights = 0x01  # SECRET_EXPORT_ALLOWED
         subtype = 0x01  # SECRET_SUBTYPE_BIP39
 
@@ -946,8 +833,8 @@ class Controller:
         if self.view.secret_headers is not None:
             secret_header = {
                 'label': label,
-                'type': "Masterseed",  # todo unify 'type' entry (either str or byte)
-                'subtype': '0x1', # todo unify entry (either str or byte)
+                'type': secret_type,
+                'subtype': 0x01,
                 'export_rights': export_rights,
                 'id': sid,
                 'fingerprint': fingerprint
@@ -955,12 +842,9 @@ class Controller:
             self.view.secret_headers = [secret_header] + self.view.secret_headers  # prepend
             self.view.seedkeeper_secret_headers_need_update = True
 
-        logger.log(SUCCESS,
-                   f"004 Masterseed imported successfully with id: {sid} and fingerprint: {fingerprint}")
+        logger.info(f"Masterseed imported successfully with id: {sid} and fingerprint: {fingerprint}")
         return sid, fingerprint
 
-
-    #@log_method
     def import_data(self, label: str, data: str):
         logger.info("import_data start")
 
@@ -971,7 +855,7 @@ class Controller:
             raise ValueError("Data is required")
 
         # Prepare the secret data
-        secret_type = 0xC0  # SECRET_TYPE_FREE_TEXT
+        secret_type = TYPE_DATA
         secret_subtype = 0x00  # SECRET_SUBTYPE_DEFAULT
         export_rights = 0x01  # SECRET_EXPORT_ALLOWED
 
@@ -995,7 +879,7 @@ class Controller:
         try:
             sid, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
         except UnexpectedSW12Error as ex:
-            if "0x9c01" in str(ex): # no memory left
+            if "0x9c01" in str(ex):  # no memory left
                 raise ValueError("Not enough memory available!")
             else:
                 raise
@@ -1005,19 +889,18 @@ class Controller:
         if self.view.secret_headers is not None:
             secret_header = {
                 'label': label,
-                'type': "Data",  # todo unify 'type' entry (either str or byte)
+                'type': secret_type,
                 'subtype': secret_subtype,
                 'export_rights': export_rights,
                 'id': sid,
                 'fingerprint': fingerprint
             }
-            self.view.secret_headers = [secret_header] + self.view.secret_headers # prepend
+            self.view.secret_headers = [secret_header] + self.view.secret_headers  # prepend
             self.view.seedkeeper_secret_headers_need_update = True
 
-        logger.log(SUCCESS, f"Data imported successfully with id: {sid} and fingerprint: {fingerprint}")
+        logger.info(f"Data imported successfully with id: {sid} and fingerprint: {fingerprint}")
         return sid, fingerprint
 
-    #@log_method
     def import_wallet_descriptor(self, label: str, wallet_descriptor: str):
         logger.info("Starting import of wallet descriptor")
 
@@ -1028,7 +911,7 @@ class Controller:
             raise ValueError("Wallet descriptor is required")
 
         # Prepare the secret data
-        secret_type = 0xC1  # SECRET_TYPE_WALLET_DESCRIPTOR
+        secret_type = TYPE_DESCRIPTOR
         secret_subtype = 0x00  # SECRET_SUBTYPE_DEFAULT
         export_rights = 0x01  # SECRET_EXPORT_ALLOWED
 
@@ -1065,7 +948,7 @@ class Controller:
             # if secret_headers is None, we will have to regenerate it completely
             secret_header = {
                 'label': label,
-                'type': "Wallet descriptor",  # todo unify 'type' entry (either str or byte)
+                'type': secret_type,  # todo unify 'type' entry (either str or byte)
                 'subtype': secret_subtype,
                 'export_rights': export_rights,
                 'id': sid,
@@ -1074,71 +957,63 @@ class Controller:
             self.view.secret_headers = [secret_header] + self.view.secret_headers  # prepend
             self.view.seedkeeper_secret_headers_need_update = True
 
-        logger.log(SUCCESS,
-                   f"Wallet descriptor imported successfully with id: {sid} and fingerprint: {fingerprint}")
+        logger.info(f"Wallet descriptor imported successfully with id: {sid} and fingerprint: {fingerprint}")
         return id, fingerprint
 
     def import_pubkey(self, label: str, pubkey_bytes: bytes):
+        logger.info("import_pubkey start")
+
+        # Validate input
+        if label:
+            if len(label.encode('utf-8')) > 127:
+                raise ValueError("Label is too long (max 127 bytes)!")
+        else:
+            raise ValueError("The label field is mandatory")
+
+        if pubkey_bytes:
+            if len(pubkey_bytes) > 255:
+                raise ValueError("Pubkey is too long (max 255 bytes)!")
+        else:
+            raise ValueError("Pubkey is required")
+
+        # Prepare the secret data
+        secret_type = TYPE_PUBKEY
+        secret_subtype = 0x00  # SECRET_SUBTYPE_DEFAULT
+        export_rights = 0x01  # SECRET_EXPORT_ALLOWED
+
+        # Encode the pubkey
+        # pubkey_bytes should be in uncompressed format
+        secret_encoded = bytes([len(pubkey_bytes)]) + pubkey_bytes
+
+        # Prepare the secret dictionary
+        secret_dic = {
+            'header': self.cc.make_header(secret_type, export_rights, label, subtype=secret_subtype),
+            'secret_list': list(secret_encoded)
+        }
+
+        # Import the secret
         try:
-            logger.info("Starting import of pubkey")
-
-            # Validate input
-            if label:
-                if len(label.encode('utf-8')) > 127:
-                    raise ValueError("Label is too long (max 127 bytes)!")
+            sid, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
+        except UnexpectedSW12Error as ex:
+            if "0x9c01" in str(ex):  # no memory left
+                raise ValueError("Not enough memory available!")
             else:
-                raise ValueError("The label field is mandatory")
+                raise
 
-            if pubkey_bytes:
-                if len(pubkey_bytes) > 255:
-                    raise ValueError("Pubkey is too long (max 255 bytes)!")
-            else:
-                raise ValueError("Pubkey is required")
-
-            # Prepare the secret data
-            secret_type = 0x70  # SECRET_TYPE_PRIVKEY
-            secret_subtype = 0x00  # SECRET_SUBTYPE_DEFAULT
-            export_rights = 0x01  # SECRET_EXPORT_ALLOWED
-
-            # Encode the pubkey
-            # pubkey_bytes should be in uncompressed format
-            secret_encoded = bytes([len(pubkey_bytes)]) + pubkey_bytes
-
-            # Prepare the secret dictionary
-            secret_dic = {
-                'header': self.cc.make_header(secret_type, export_rights, label, subtype=secret_subtype),
-                'secret_list': list(secret_encoded)
+        # update secret_headers if it is already populated and set flag
+        # if secret_headers is None, we will have to regenerate it completely
+        if self.view.secret_headers is not None:
+            secret_header = {
+                'label': label,
+                'type': secret_type,
+                'subtype': secret_subtype,
+                'export_rights': export_rights,
+                'id': sid,
+                'fingerprint': fingerprint
             }
+            self.view.secret_headers = [secret_header] + self.view.secret_headers  # prepend
+            self.view.seedkeeper_secret_headers_need_update = True
 
-            # Import the secret
-            try:
-                sid, fingerprint = self.cc.seedkeeper_import_secret(secret_dic)
-            except UnexpectedSW12Error as ex:
-                if "0x9c01" in str(ex):  # no memory left
-                    raise ValueError("Not enough memory available!")
-                else:
-                    raise
+        logger.info(f"Pubkey imported successfully with id: {sid} and fingerprint: {fingerprint}")
+        return sid, fingerprint
 
-            # update secret_headers if it is already populated and set flag
-            # if secret_headers is None, we will have to regenerate it completely
-            if self.view.secret_headers is not None:
-                secret_header = {
-                    'label': label,
-                    'type': "Public Key",  # todo unify 'type' entry (either str or byte)
-                    'subtype': secret_subtype,
-                    'export_rights': export_rights,
-                    'id': sid,
-                    'fingerprint': fingerprint
-                }
-                self.view.secret_headers = [secret_header] + self.view.secret_headers  # prepend
-                self.view.seedkeeper_secret_headers_need_update = True
-
-            logger.log(SUCCESS, f"Pubkey imported successfully with id: {sid} and fingerprint: {fingerprint}")
-            return sid, fingerprint
-
-        except ValueError as e:
-            logger.error(f"Validation error during pubkey import: {str(e)}")
-            raise
-        except Exception as e:
-            logger.error(f"Unexpected error during pubkey import: {str(e)}")
-            raise ControllerError(f"Failed to import pubkey: {str(e)}") from e

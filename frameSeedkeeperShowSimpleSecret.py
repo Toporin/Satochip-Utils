@@ -1,6 +1,7 @@
 import customtkinter
 import logging
 
+from constants import TYPE_DIC
 from frameWidgetHeader import FrameWidgetHeader
 from utils import show_qr_code, toggle_entry_visibility, toggle_textbox_visibility, reset_qr_code, update_textbox
 
@@ -88,7 +89,7 @@ class FrameSeedkeeperShowSecret(customtkinter.CTkFrame):
         self.label_entry.insert(0, secret['label'])
 
         # update header
-        self.header.button.configure(text=f"   {secret.get('type')} details")
+        self.header.button.configure(text=f"   {TYPE_DIC.get(secret.get('type'), 'Unknown secret')} details")
 
         # Decode secret and update textbox
         secret = self.master.controller.decode_secret(secret)

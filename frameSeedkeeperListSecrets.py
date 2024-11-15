@@ -4,7 +4,7 @@ import customtkinter
 import logging
 
 from constants import (DEFAULT_BG_COLOR, BG_MAIN_MENU, BG_HOVER_BUTTON,
-                       TEXT_COLOR, BUTTON_TEXT_COLOR, HIGHLIGHT_COLOR)
+                       TEXT_COLOR, BUTTON_TEXT_COLOR, HIGHLIGHT_COLOR, TYPE_MASTERSEED, TYPE_DIC)
 from frameWidgetHeader import FrameWidgetHeader
 
 logger = logging.getLogger(__name__)
@@ -114,9 +114,11 @@ class FrameSeedkeeperListSecrets(customtkinter.CTkFrame):
 
                 #buttons = []
                 secret_type = None
-                if secret['type'] == "Masterseed" and secret['subtype'] == '0x1':
-                    secret_type = "Mnemonic seedphrase"
-                values = [secret['id'], secret['type'] if not secret_type else secret_type, secret['label']]
+                if secret['type'] == TYPE_MASTERSEED and secret['subtype'] == 0x01:
+                    secret_type = "Mnemonic"
+                else:
+                    secret_type = TYPE_DIC.get(secret['type'], "Unknown type")
+                values = [secret['id'], secret_type, secret['label']]
                 for value, width in zip(values, self.header_widths):
                     cell_button = customtkinter.CTkButton(
                         row_frame, text=value,

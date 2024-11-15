@@ -15,6 +15,32 @@ ICON_PATH = "./pictures_db/"
 
 """Seedkeeper"""
 
+TYPE_MASTERSEED = 0x10
+TYPE_BIP39_MNEMONIC = 0x30
+TYPE_ELECTRUM_MNEMONIC = 0x40
+TYPE_PUBKEY = 0x70
+TYPE_PASSWORD = 0x90
+TYPE_2FA_SECRET = 0xB0
+TYPE_DATA = 0xC0
+TYPE_DESCRIPTOR = 0xC1
+
+TYPE_DIC = {
+    0x10: 'Masterseed',
+    0x30: 'BIP39 mnemonic',
+    0x40: 'Electrum mnemonic',
+    0x50: 'Shamir Secret Share',
+    0x60: 'Private Key',
+    0x70: 'Public Key',
+    0x71: 'Authenticated Public Key',
+    0x80: 'Symmetric Key',
+    0x90: 'Password',
+    0x91: 'Master Password',
+    0xA0: 'Certificate',
+    0xB0: '2FA secret',
+    0xC0: 'Data',
+    0xC1: 'Wallet descriptor'
+}
+
 INS_DIC = {
     0x40: 'Create PIN',
     0x42: 'Verify PIN',

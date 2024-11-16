@@ -13,7 +13,6 @@ from applicationMode import ApplicationMode
 from constants import TYPE_PUBKEY, TYPE_DATA, TYPE_DESCRIPTOR, TYPE_2FA_SECRET, TYPE_ELECTRUM_MNEMONIC, \
     TYPE_BIP39_MNEMONIC, TYPE_MASTERSEED, TYPE_PASSWORD
 from controller import Controller
-from exceptions import FrameCreationError
 from frameCardAbout import FrameCardAbout
 from frameCardAuthenticity import FrameCardAuthenticity
 from frameCardChangePin import FrameCardChangePin
@@ -258,69 +257,66 @@ class View(customtkinter.CTk):
             x,
             y
     ) -> customtkinter.CTkFrame:
-        try:
-            logger.info("_create_scrollable_frame start")
+        logger.info("_create_scrollable_frame start")
 
-            # Create a frame to hold the canvas and scrollbar
-            container = customtkinter.CTkFrame(parent_frame, width=width, height=height, fg_color=DEFAULT_BG_COLOR)
-            container.place(x=x, y=y)
-            container.pack_propagate(False)  # Prevent the frame from shrinking to fit its contents
+        # Create a frame to hold the canvas and scrollbar
+        container = customtkinter.CTkFrame(parent_frame, width=width, height=height, fg_color=DEFAULT_BG_COLOR)
+        container.place(x=x, y=y)
+        container.pack_propagate(False)  # Prevent the frame from shrinking to fit its contents
 
-            # Create a canvas with specific dimensions
-            canvas = customtkinter.CTkCanvas(container, bg=DEFAULT_BG_COLOR, highlightthickness=0)
-            canvas.pack(side="left", fill="both", expand=True)
+        # Create a canvas with specific dimensions
+        canvas = customtkinter.CTkCanvas(container, bg=DEFAULT_BG_COLOR, highlightthickness=0)
+        canvas.pack(side="left", fill="both", expand=True)
 
-            # Add a scrollbar to the canvas
-            scrollbar = customtkinter.CTkScrollbar(container, orientation="vertical", command=canvas.yview)
-            scrollbar.pack(side="right", fill="y")
+        # Add a scrollbar to the canvas
+        scrollbar = customtkinter.CTkScrollbar(container, orientation="vertical", command=canvas.yview)
+        scrollbar.pack(side="right", fill="y")
 
-            # Configure scrollbar colors
-            # scrollbar.configure(fg_color=DEFAULT_BG_COLOR, button_color=DEFAULT_BG_COLOR,
-            #                    button_hover_color=BG_HOVER_BUTTON)
-            scrollbar.configure(fg_color=DEFAULT_BG_COLOR, button_color=BG_HOVER_BUTTON,
-                                button_hover_color=BG_HOVER_BUTTON)
+        # Configure scrollbar colors
+        # scrollbar.configure(fg_color=DEFAULT_BG_COLOR, button_color=DEFAULT_BG_COLOR,
+        #                    button_hover_color=BG_HOVER_BUTTON)
+        scrollbar.configure(fg_color=DEFAULT_BG_COLOR, button_color=BG_HOVER_BUTTON,
+                            button_hover_color=BG_HOVER_BUTTON)
 
-            # Configure the canvas
-            canvas.configure(yscrollcommand=scrollbar.set)
+        # Configure the canvas
+        canvas.configure(yscrollcommand=scrollbar.set)
 
-            # Create a frame inside the canvas
-            inner_frame = customtkinter.CTkFrame(canvas, fg_color=DEFAULT_BG_COLOR)
+        # Create a frame inside the canvas
+        inner_frame = customtkinter.CTkFrame(canvas, fg_color=DEFAULT_BG_COLOR)
 
-            # Add that frame to a window in the canvas
-            canvas_window = canvas.create_window((0, 0), window=inner_frame, anchor="nw")
+        # Add that frame to a window in the canvas
+        canvas_window = canvas.create_window((0, 0), window=inner_frame, anchor="nw")
 
-            def _configure_inner_frame(event):
-                # Update the scrollregion to encompass the inner frame
-                canvas.configure(scrollregion=canvas.bbox("all"))
+        def _configure_inner_frame(event):
+            # Update the scrollregion to encompass the inner frame
+            canvas.configure(scrollregion=canvas.bbox("all"))
 
-                # Resize the inner frame to fit the canvas width
-                canvas.itemconfig(canvas_window, width=canvas.winfo_width())
+            # Resize the inner frame to fit the canvas width
+            canvas.itemconfig(canvas_window, width=canvas.winfo_width())
 
-            inner_frame.bind("<Configure>", _configure_inner_frame)
+        inner_frame.bind("<Configure>", _configure_inner_frame)
 
-            def _configure_canvas(event):
-                # Resize the inner frame to fit the canvas width
-                canvas.itemconfig(canvas_window, width=event.width)
+        def _configure_canvas(event):
+            # Resize the inner frame to fit the canvas width
+            canvas.itemconfig(canvas_window, width=event.width)
 
-            canvas.bind("<Configure>", _configure_canvas)
+        canvas.bind("<Configure>", _configure_canvas)
 
-            def _on_mousewheel(event):
-                # Check if there's actually something to scroll
-                if canvas.bbox("all")[3] <= canvas.winfo_height():
-                    return  # No scrolling needed, so do nothing
+        def _on_mousewheel(event):
+            # Check if there's actually something to scroll
+            if canvas.bbox("all")[3] <= canvas.winfo_height():
+                return  # No scrolling needed, so do nothing
 
-                if event.delta > 0:
-                    canvas.yview_scroll(-1, "units")
-                elif event.delta < 0:
-                    canvas.yview_scroll(1, "units")
+            if event.delta > 0:
+                canvas.yview_scroll(-1, "units")
+            elif event.delta < 0:
+                canvas.yview_scroll(1, "units")
 
-            # Bind mouse wheel to the canvas
-            canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        # Bind mouse wheel to the canvas
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
 
-            return inner_frame
-        except Exception as e:
-            logger.error(f"003 Error in _create_scrollable_frame: {e}", exc_info=True)
-            raise FrameCreationError(f"004 Failed to create scrollable frame: {e}") from e
+        return inner_frame
+
 
     def create_label(self, text, bg_fg_color: str = "whitesmoke", frame=None) -> customtkinter.CTkLabel:
         logger.debug("view.create_label start")
@@ -599,18 +595,12 @@ class View(customtkinter.CTk):
                 # we are in factory reset mode
                 if isConnected is True:
                     logger.info(f"Card inserted for Reset Factory!")
-                    try:
-                        self.show_button.configure(text='Click to reset', state='normal')
-                    except Exception as e:
-                        logger.error(f"An error occurred while updating labels and button for card insertion: {e}",
-                                     exc_info=True)
+                    self.show_button.configure(text='Click to reset', state='normal')
+
                 elif isConnected is False:
                     logger.info(f"Card removed for Reset Factory!")
-                    try:
-                        self.show_button.configure(text='Insert card', state='disabled')
-                    except Exception as e:
-                        logger.error(f"An error occurred while updating labels and button for card removal: {e}",
-                                     exc_info=True)
+                    self.show_button.configure(text='Insert card', state='disabled')
+
                 else:  # None
                     pass
 
@@ -626,25 +616,19 @@ class View(customtkinter.CTk):
                     card_status = self.controller.get_card_status()
 
                     # show start screen
-                    try:
-                        if self.start_frame is not None:  # do not create frame now as it is not main thread
-                            self.show_start_frame()
-                    except Exception as e:
-                        logger.error(f"An error occurred: {e}", exc_info=True)
+                    if self.start_frame is not None:  # do not create frame now as it is not main thread
+                        self.show_start_frame()
+
 
                 elif isConnected is False:
-                    try:
-                        # update state
-                        # Seedkeeper: reset secret_headers to force update on reconnection
-                        self.secret_headers = None
-                        self.seedkeeper_secret_headers_need_update = True
+                    # update state
+                    # Seedkeeper: reset secret_headers to force update on reconnection
+                    self.secret_headers = None
+                    self.seedkeeper_secret_headers_need_update = True
 
-                        if self.start_frame is not None:  # do not create frame now as it is not main thread
-                            self.show_start_frame()
-                            self.show_nocard_menu()
-
-                    except Exception as e:
-                        logger.error(f"An error occurred: {e}", exc_info=True)
+                    if self.start_frame is not None:  # do not create frame now as it is not main thread
+                        self.show_start_frame()
+                        self.show_nocard_menu()
 
                 else:  # isConnected is None
                     logger.error("View.update_status isConnected is None (should not happen!)", exc_info=True)

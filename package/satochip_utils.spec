@@ -40,7 +40,9 @@ pkgs_remove = [
 datai = [
     (ICON, "gui/"),
     ("../pysatochip/cert/*", "pysatochip/cert/"),
+    ("../wordlist/*", "wordlist/"),
     ("../pictures_db/*", "pictures_db/"),
+    ("../*.png", "/"),
 ]
 
 hiddeni = []

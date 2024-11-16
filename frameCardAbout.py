@@ -206,20 +206,28 @@ class FrameCardAbout(customtkinter.CTkFrame):
                             text=f"Number of secrets: {seedkeeper_status.get('nb_secrets')}"
                         )
                     else:
-                        # memory
                         self.seedkeeper_memory.configure(text="Memory available: [PIN required]")
-                        # nb secrets
                         self.seedkeeper_nb_secrets.configure(text="Number of secrets: [PIN required]")
 
-                    # place info fields
-                    rely = self.rely
-                    self.seedkeeper_memory.place(relx=0.05, rely=rely, anchor="nw")
-                    rely += 0.05
-                    self.seedkeeper_nb_secrets.place(relx=0.05, rely=rely, anchor="nw")
-                    rely += 0.05
+                    # # place info fields
+                    # rely = self.rely
+                    # self.seedkeeper_memory.place(relx=0.05, rely=rely, anchor="nw")
+                    # rely += 0.05
+                    # self.seedkeeper_nb_secrets.place(relx=0.05, rely=rely, anchor="nw")
+                    # rely += 0.05
                 else:
                     # no info available for seedkeeper v0.1
-                    pass
+                    self.seedkeeper_memory.configure(text="Memory available: [not available on v0.1]")
+                    self.seedkeeper_nb_secrets.configure(text="Number of secrets: [not available on v0.1]")
+                # place info fields
+                rely = self.rely
+                self.seedkeeper_memory.place(relx=0.05, rely=rely, anchor="nw")
+                rely += 0.05
+                self.seedkeeper_nb_secrets.place(relx=0.05, rely=rely, anchor="nw")
+                rely += 0.05
+
+
+
 
             # Satodime Specific
             if self.master.controller.cc.card_type == "Satodime":

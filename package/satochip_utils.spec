@@ -42,7 +42,7 @@ datai = [
     ("../pysatochip/cert/*", "pysatochip/cert/"),
     ("../wordlist/*", "wordlist/"),
     ("../pictures_db/*", "pictures_db/"),
-    ("../*.png", ""),
+    ("../*.png", "."),
 ]
 
 hiddeni = []

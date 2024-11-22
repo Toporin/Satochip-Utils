@@ -2,13 +2,14 @@
 
 Your one stop shop to manage your Satochip cards, including Satodime and Seedkeeper.
 Change your PIN code, reset your card, setup your hardware wallet and many more...
+Manage your crypto-related secrets using your Seedkeeper card, generate password like a pro. Backup your seedphrases and many more...
 
 _________________
 
 ## Setup and manage your Satochip hardware wallet
 
 > 🛒 [Buy your Satochip hardware wallet here 🔗](https://satochip.io/product/satochip/).
-🛒 [Buy your smart card reader here 🔗](https://satochip.io/product/chip-card-reader/).
+> 🛒 [Buy your smart card reader here 🔗](https://satochip.io/product/chip-card-reader/).
 
 ### Setup your card
 Satochip-Utils allows you to setup your **Satochip hardware wallet** by:
@@ -39,7 +40,7 @@ _________________
 ## Setup and manage your Seedkeeper
 
 > 🛒 [Buy your Seedkeeper here 🔗](https://satochip.io/product/seedkeeper/).
-🛒 [Buy your smart card reader here 🔗](https://satochip.io/product/chip-card-reader/).
+> 🛒 [Buy your smart card reader here 🔗](https://satochip.io/product/chip-card-reader/).
 
 ### Setup your card
 Satochip-Utils allows you to setup your **Seedkeeper** by:
@@ -54,12 +55,22 @@ You can also:
 - Factory reset your card
 - Check the card's information
 
+### Manage your secrets
+Regarding your secrets, you can: 
+- Generate and import strong passwords like a pro
+- Generate and import BIP39 mnemonic seedphrases
+- Import your existing seedphrases including the passphrase
+- Manage your Bitcoin wallet descriptors
+- Import some raw text into your Seedkeeper's secure memory
+
+### Backup your Seedkeeper to another one
+Create a carbon copy of your main Seedkeeper card to another one in just a few clicks.
 _________________
 
 ## Manage your Satodime
 
 > 🛒 [Buy your Satodime here 🔗](https://satochip.io/product/satodime/).
-🛒 [Buy your smart card reader here 🔗](https://satochip.io/product/chip-card-reader/).
+> 🛒 [Buy your smart card reader here 🔗](https://satochip.io/product/chip-card-reader/).
 
 ### Manage your card
 You can: 
@@ -84,6 +95,9 @@ _________________
 ## More information…
 
 💮 Join us on [Telegram](https://t.me/Satochip)
+
 🐦 Follow us on [Twitter](https://twitter.com/satochip)
+
 👾 Check out our [website](https://satochip.io/)
+
 🔨 Take a look at the sources [GitHub](https://github.com/Toporin)

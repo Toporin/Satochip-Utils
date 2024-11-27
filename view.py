@@ -323,6 +323,7 @@ class View(customtkinter.CTk):
         label = customtkinter.CTkLabel(
             frame,
             text=text,
+            text_color="black",
             bg_color=bg_fg_color,
             fg_color=bg_fg_color,
             font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal")

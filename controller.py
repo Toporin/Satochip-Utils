@@ -120,7 +120,10 @@ class Controller:
                 if passphrase is not None:
                     if passphrase in ["", " ", "Type your passphrase here"]:  # todo?
                         logger.error("Passphrase is blank or empy")
-                        self.view.show('WARNING', 'Wrong passphrase: incorrect or blank', 'Ok')
+                        self.view.show('WARNING',
+                                       'Wrong passphrase: incorrect or blank',
+                                       'Ok', None,
+                                       "./pictures_db/seed_popup.jpg")
                     else:
                         seed = Mnemonic.to_seed(mnemonic, passphrase)
                         self.card_setup_native_seed(seed)

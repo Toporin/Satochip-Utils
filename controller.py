@@ -142,6 +142,10 @@ class Controller:
     def edit_label(self, label):
         try:
             logger.info(f"New label to set: {label}")
+
+            if len(label.encode('utf8')) > 64:
+                raise ValueError("Label should be max 64 bytes")
+
             (response, sw1, sw2) = self.cc.card_set_label(label)
             if sw1 == 0x90 and sw2 == 0x00:
                 logger.info(f"New label set successfully: {label}")

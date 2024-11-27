@@ -101,8 +101,12 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
             logger.error(f"init error: {e}", exc_info=True)
 
     def update_frame(self, secret):
-        # Decode secret
-        secret = self.master.controller.decode_password(secret)
+        # Decode secret (if export allowed)
+        if secret['export_rights'] == 0x02:
+            secret['password'] = 'Export failed: export not allowed by SeedKeeper policy.'
+        else:
+            secret = self.master.controller.decode_password(secret)
+
         # update label
         label = secret.get('label', "")
         self.label_entry.delete(0, "end")

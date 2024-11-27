@@ -91,9 +91,12 @@ class FrameSeedkeeperShowSecret(customtkinter.CTkFrame):
         # update header
         self.header.button.configure(text=f"   {TYPE_DIC.get(secret.get('type'), 'Unknown secret')} details")
 
-        # Decode secret and update textbox
-        secret = self.master.controller.decode_secret(secret)
-        secret_decoded = secret['secret_decoded']
+        # Decode secret and update textbox (if export allowed)
+        if secret['export_rights'] == 0x02:
+            secret_decoded = 'Export failed: export not allowed by SeedKeeper policy.'
+        else:
+            secret = self.master.controller.decode_secret(secret)
+            secret_decoded = secret['secret_decoded']
         update_textbox(self.secret_textbox, secret_decoded)
 
         # qr-code

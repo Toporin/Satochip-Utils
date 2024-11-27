@@ -130,14 +130,17 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
         else:
             self.header.button.configure(text=f"   {TYPE_DIC.get(secret.get('type'), 'Mnemonic')} details")
 
-        # Decode seed to mnemonic
-        if secret.get('type') == TYPE_MASTERSEED:
-            if secret.get('subtype') == 0x00:
-                secret = self.master.controller.decode_masterseed(secret)  # should not happen here
-            else:
-                secret = self.master.controller.decode_masterseed_mnemonic(secret)
+        # Decode secret to mnemonic (if export allowed)
+        if secret['export_rights'] == 0x02:
+            secret['mnemonic'] = 'Export failed: export not allowed by SeedKeeper policy.'
         else:
-            secret = self.master.controller.decode_mnemonic(secret)
+            if secret.get('type') == TYPE_MASTERSEED:
+                if secret.get('subtype') == 0x00:
+                    secret = self.master.controller.decode_masterseed(secret)  # should not happen here
+                else:
+                    secret = self.master.controller.decode_masterseed_mnemonic(secret)
+            else:
+                secret = self.master.controller.decode_mnemonic(secret)
         # update passphrase
         passphrase = secret.get('passphrase', "")
         if passphrase == "":

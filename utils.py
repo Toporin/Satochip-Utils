@@ -29,6 +29,12 @@ def toggle_entry_visibility(entry: customtkinter.CTkEntry):
     except Exception as e:
         logger.error(f"018 Error toggling passphrase visibility: {e}", exc_info=True)
 
+def reset_entry_visibility(entry: customtkinter.CTkEntry):
+    try:
+        new_state = ""
+        entry.configure(show=new_state)
+    except Exception as e:
+        logger.error(f"018 Error toggling passphrase visibility: {e}", exc_info=True)
 
 def toggle_textbox_visibility(textbox: customtkinter.CTkTextbox, original_text):
     try:

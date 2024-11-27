@@ -4,7 +4,7 @@ import logging
 from constants import TYPE_MASTERSEED, TYPE_DIC
 from frameWidgetHeader import FrameWidgetHeader
 from utils import (show_qr_code, toggle_entry_visibility, toggle_textbox_visibility, reset_qr_code,
-                   update_textbox, mnemonic_to_entropy_string)
+                   update_textbox, mnemonic_to_entropy_string, reset_entry_visibility)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -151,6 +151,7 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
             self.passphrase_entry.place(relx=0.05, rely=self.passphrase_entry_rely, anchor="nw")
             self.passphrase_entry.delete(0, "end")
             self.passphrase_entry.insert(0, passphrase)
+            reset_entry_visibility(self.passphrase_entry) # always show in plaintext to start
         # update mnemonic
         mnemonic = secret.get('mnemonic', "")
         update_textbox(self.mnemonic_textbox, mnemonic)
@@ -175,6 +176,7 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
             command=lambda params=(mnemonic, self.qr_label): show_qr_code(params[0], params[1])
         )
 
+        # show/hide button
         self.show_button.configure(
             command=lambda txt=mnemonic: [
                 self.show_button.configure(

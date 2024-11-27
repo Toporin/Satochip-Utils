@@ -5,7 +5,7 @@ import logging
 from os import urandom
 from typing import Dict, Any, Optional
 from mnemonic import Mnemonic
-from pysatochip.CardConnector import (CardConnector, UninitializedSeedError, UnexpectedSW12Error)
+from pysatochip.CardConnector import (CardConnector, UninitializedSeedError, UnexpectedSW12Error, PinBlockedError)
 
 from constants import INS_DIC, RES_DIC, TYPE_PASSWORD, TYPE_MASTERSEED, TYPE_DATA, TYPE_DESCRIPTOR, TYPE_PUBKEY, \
     TYPE_BIP39_MNEMONIC, TYPE_ELECTRUM_MNEMONIC, TYPE_2FA_SECRET, TYPE_DIC
@@ -185,54 +185,57 @@ class Controller:
 
     # for PIN
     def PIN_dialog(self, msg):
-        try:
-            logger.info("Entering PIN_dialog method")
+        logger.info("Entering PIN_dialog method")
 
-            def switch_unlock_to_false_and_quit():
-                self.view.show_start_frame()
-                self.view.update_status()
+        def back_to_start_frame():
+            self.view.show_start_frame()
+            self.view.update_status()
 
-            while True:
-                try:
-                    logger.debug("Requesting PIN")
-                    pin = self.view.get_pin(msg)
-                    logger.debug(f"PIN received: pin={'***' if pin else None}")
+        while True:
+            try:
+                logger.debug("Requesting PIN")
+                pin = self.view.get_pin(msg)
+                logger.debug(f"PIN received: pin={'***' if pin else None}")
 
-                    if pin is None:
-                        logger.info("PIN request cancelled or window closed")
-                        self.view.show("INFO",
-                                       'Device cannot be unlocked without PIN code!',
-                                       'Ok',
-                                       lambda: switch_unlock_to_false_and_quit(),
-                                       "./pictures_db/change_pin_popup.jpg")
-                        break
+                # check pin
+                if not pin:
+                    logger.info("PIN request cancelled or window closed")
+                    #raise ValueError("Device cannot be unlocked without PIN code!")
+                    self.view.show(
+                        'ERROR', "Device cannot be unlocked without PIN code!", 'Ok',
+                        lambda: None,
+                        "./pictures_db/change_pin_popup.jpg"
+                    )
+                    return
+                elif len(pin) < 4:
+                    logger.warning("PIN length is less than 4 characters")
+                    raise ValueError("PIN must have at least 4 characters.")
+                elif len(pin) > 16:
+                    logger.warning("PIN length is more than 16 characters")
+                    raise ValueError("PIN must have maximum 16 characters.")
 
-                    elif len(pin) < 4:
-                        logger.warning("PIN length is less than 4 characters")
-                        msg = "PIN must have at least 4 characters."
-                        self.view.show("INFO", msg, 'Ok', None,
-                                       "./pictures_db/change_pin_popup.jpg")
-                    elif len(pin) > 16:
-                        logger.warning("PIN length is more than 16 characters")
-                        msg = "PIN must have maximum 16 characters."
-                        self.view.show("INFO", msg, 'Ok', None,
-                                       "./pictures_db/change_pin_popup.jpg")
-                    else:
-                        logger.info("PIN length is valid")
-                        pin = pin.encode('utf8')
-                        try:
-                            self.cc.card_verify_PIN_simple(pin)
-                            break
-                        except Exception as e:
-                            logger.info(f"exception from PIN dialog: {e}")
-                            self.view.show('ERROR', str(e), 'Ok', None,
-                                           "./pictures_db/change_pin_popup.jpg")
+                # verify pin (can throw PinBlockedError or WrongPinError)
+                pin = pin.encode('utf8')
+                self.cc.card_verify_PIN_simple(pin)
+                return
 
-                except Exception as e:
-                    logger.error(f"An error occurred while requesting PIN: {e}", exc_info=True)
+            except PinBlockedError as e:
+                logger.error(f"Critical error: Pin blocked: {e}")
+                self.view.show(
+                    'ERROR',
+                    "Too many wrong PIN! \nYour card has been blocked.",
+                    'Ok', lambda: back_to_start_frame(),
+                    "./pictures_db/change_pin_popup.jpg"
+                )
+                return
 
-        except Exception as e:
-            logger.critical(f"An unexpected error occurred in PIN_dialog: {e}", exc_info=True)
+            except Exception as e:
+                logger.info(f"Exception from PIN dialog: {e}")
+                self.view.show(
+                    'ERROR', str(e), 'Ok',
+                    lambda: None,
+                    "./pictures_db/change_pin_popup.jpg"
+                )
 
     # only for satochip and seedkeeper
     def card_setup_native_pin(self, pin):

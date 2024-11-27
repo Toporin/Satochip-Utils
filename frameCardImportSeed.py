@@ -49,11 +49,10 @@ class FrameCardImportSeed(customtkinter.CTkFrame):
             self.text3.place(relx=0.05, rely=0.27, anchor="w")
 
             self.radio_value = customtkinter.StringVar(value="")
-            self.value_checkbox_passphrase = customtkinter.StringVar(value="off")
+            self.checkbox_passphrase_value = customtkinter.StringVar(value="off")
             self.radio_value_mnemonic = customtkinter.StringVar(value="")
-            self.generate_with_passphrase = False  # use a passphrase?
             logger.debug(
-                f"Settings radio_value: {self.radio_value}, generate_with_passphrase: {self.generate_with_passphrase}")
+                f"Settings radio_value: {self.radio_value}, checkbox_passphrase_value: {self.checkbox_passphrase_value}")
 
             def on_text_box_click(event):
                 if self.text_box.get("1.0", "end-1c") == "Type your existing seedphrase here":
@@ -70,16 +69,13 @@ class FrameCardImportSeed(customtkinter.CTkFrame):
 
             def update_radio_selection():
                 if self.radio_value.get() == "import":
-                    #self.import_seed = True
                     logger.debug("Import seed")
-                    # self.cancel_button.place_forget()
                     self.finish_button.place(relx=0.8, rely=0.9, anchor="w")
                     self.cancel_button.place(relx=0.6, rely=0.9, anchor="w")
                     self.radio_button_generate_seed.place_forget()
                     self.radio_button_import_seed.place_forget()
                     self.radio_button_generate_12_words.place_forget()
                     self.radio_button_generate_24_words.place_forget()
-                    self.passphrase_entry.place_forget()
                     self.text_box.place_forget()
                     self.warning_label.place_forget()
                     self.radio_button_import_seed.place(relx=0.05, rely=0.35, anchor="w")
@@ -89,10 +85,10 @@ class FrameCardImportSeed(customtkinter.CTkFrame):
                     self.text_box.bind("<FocusIn>", on_text_box_click)
                     self.text_box.place(relx=0.13, rely=0.45, anchor="w")
                     self.checkbox_passphrase.place(relx=0.13, rely=0.58, anchor="w")
+                    update_checkbox_passphrase()
                     self.radio_button_generate_seed.place(relx=0.05, rely=0.75, anchor="w")
 
                 elif self.radio_value.get() == "generate":
-                    #self.import_seed = False
                     logger.debug("Generate seed")
                     self.cancel_button.place_forget()
                     self.finish_button.place(relx=0.8, rely=0.9, anchor="w")
@@ -100,7 +96,6 @@ class FrameCardImportSeed(customtkinter.CTkFrame):
                     self.radio_button_import_seed.place_forget()
                     self.radio_button_generate_seed.place_forget()
                     self.checkbox_passphrase.place_forget()
-                    self.passphrase_entry.place_forget()
                     self.text_box.delete(1.0, "end")
                     self.text_box.place_forget()
                     self.warning_label.place_forget()
@@ -112,29 +107,25 @@ class FrameCardImportSeed(customtkinter.CTkFrame):
                     self.text_box.place(relx=0.16, rely=0.58, anchor="w")
                     self.warning_label.place(relx=0.36, rely=0.69, anchor="w") # rely=0.64
                     self.checkbox_passphrase.place(relx=0.17, rely=0.75, anchor="w")
+                    update_checkbox_passphrase()
 
             def update_checkbox_passphrase():
-                #nonlocal generate_with_passphrase
                 if self.radio_value.get() == "import":
-                    if self.value_checkbox_passphrase.get() == "on":
+                    if self.checkbox_passphrase_value.get() == "on":
                         logger.debug("Generate seed with passphrase")
-                        self.generate_with_passphrase = True
                         self.passphrase_entry.place_forget()
                         self.passphrase_entry.place(relx=0.13, rely=0.65, anchor="w")
                         self.passphrase_entry.configure(placeholder_text="Type your passphrase here")
                     else:
-                        self.generate_with_passphrase = False
                         self.passphrase_entry.place_forget()
 
                 elif self.radio_value.get() == "generate":
-                    if self.value_checkbox_passphrase.get() == "on":
+                    if self.checkbox_passphrase_value.get() == "on":
                         logger.debug("Generate seed with passphrase")
-                        self.generate_with_passphrase = True
                         self.passphrase_entry.place_forget()
                         self.passphrase_entry.place(relx=0.16, rely=0.82, anchor="w") #rely=0.76
                         self.passphrase_entry.configure(placeholder_text="Type your passphrase here")
                     else:
-                        self.generate_with_passphrase = False
                         self.passphrase_entry.place_forget()
 
             # Setting up radio buttons and entry fields
@@ -184,7 +175,7 @@ class FrameCardImportSeed(customtkinter.CTkFrame):
                 self,
                 text="Use a passphrase (optional)",
                 command=update_checkbox_passphrase,
-                variable=self.value_checkbox_passphrase,
+                variable=self.checkbox_passphrase_value,
                 onvalue="on",
                 offvalue="off"
             )
@@ -196,7 +187,7 @@ class FrameCardImportSeed(customtkinter.CTkFrame):
                 bg_color="whitesmoke", fg_color=BUTTON_COLOR,
                 border_color=BUTTON_COLOR, border_width=1,
                 width=557, height=83, border_spacing=0,
-                text_color="grey",
+                text_color="grey", wrap="word",
                 font=customtkinter.CTkFont(family="Outfit", size=13, weight="normal")
             )
 
@@ -217,10 +208,9 @@ class FrameCardImportSeed(customtkinter.CTkFrame):
             self.finish_button = master.create_button(  # will be placed after mnemonic is generated
                 "Import",
                 command=lambda: [
-                    master.update_verify_pin(),
                     master.controller.import_seed(
                         self.text_box.get(1.0, "end-1c"),
-                        self.passphrase_entry.get() if self.generate_with_passphrase else None,
+                        self.passphrase_entry.get() if (self.checkbox_passphrase_value.get() == "on") else None,
                     ),
                 ],
                 frame=self

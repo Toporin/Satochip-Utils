@@ -283,6 +283,8 @@ class Controller:
 
     # only for satochip
     def card_setup_native_seed(self, seed):
+        # verify pin
+        self.view.update_verify_pin()
         # get authentikey
         try:
             authentikey = self.cc.card_bip32_get_authentikey()

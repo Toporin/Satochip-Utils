@@ -607,13 +607,14 @@ class View(customtkinter.CTk):
 
             elif self.appMode == ApplicationMode.SeedkeeperBackup:
                 logger.debug("View.update_status start (seedkeeper backup mode)")
-                # nothing to do here
+                # get card status (also cached in controller)
+                card_status = self.controller.get_card_status()
 
             else:
                 # normal mode
                 logger.info("View.update_status start (normal mode)")
                 if isConnected is True:
-                    # get card status (cached in controller)
+                    # get card status (also cached in controller)
                     card_status = self.controller.get_card_status()
 
                     # show start screen

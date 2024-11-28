@@ -1,6 +1,7 @@
 import customtkinter
 import logging
 
+from framePopup import FramePopup
 from frameWidgetHeader import FrameWidgetHeader
 from utils import toggle_entry_visibility, show_qr_code, reset_qr_code
 
@@ -151,13 +152,17 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
             ]
         )
 
+        # delete button
         self.delete_button.configure(
             command=lambda:
-                self.master.show(
+                FramePopup(
+                    self.master,
                     "WARNING",
-                    "Are you sure to delete this secret ?!\n Click Yes for delete the secret or close popup",
+                    "Do you really want to delete this secret? \nThis operation is irreversible!",
                     "Yes",
                     lambda sid=secret['id']: self.master.controller.seedkeeper_reset_secret(sid),
-                    './pictures_db/secrets_popup.png'
-                ),
+                    './pictures_db/secrets_popup.png',
+                    button2_txt="Cancel",
+                    cmd2=lambda: None,
+                )
         )

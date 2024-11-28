@@ -492,7 +492,7 @@ class View(customtkinter.CTk):
             popup.protocol("WM_DELETE_WINDOW", lambda: close_no_execute())
             logger.debug("Popup close button disabled")
 
-            popup_width = 400
+            popup_width = 600
             popup_height = 200
 
             # Rendre la fenêtre modale

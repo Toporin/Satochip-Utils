@@ -1,8 +1,33 @@
 import logging
 import sys
 import os
+import tkinter
 
 from view import View
+
+
+def get_application_path() -> str:
+    """Determine and return the application path."""
+    if getattr(sys, 'frozen', False):
+        return sys._MEIPASS
+    return os.path.dirname(os.path.abspath(__file__))
+
+
+def configure_view(view: View) -> None:
+    """Configure the view properties."""
+    logger.info("Setting window properties")
+    view.resizable(False, False)
+    view.title("Satochip Tools")
+
+    # Add these lines to set the window icon
+    #icon_path = os.path.join(get_application_path(), "satochip_utils.ico")
+    icon_path = os.path.join(get_application_path(), "satochip_utils.png")
+    if os.path.exists(icon_path):
+        #view.iconbitmap(icon_path)
+        view.iconphoto(False, tkinter.PhotoImage(file=icon_path))
+    else:
+        logger.warning(f"Icon file not found: {icon_path}")
+
 
 if (len(sys.argv) >= 2) and (sys.argv[1] in ['-v', '--verbose']):
     logging.basicConfig(level=logging.DEBUG,
@@ -45,6 +70,6 @@ else:
 
 if __name__ == '__main__':
     view = View(logger.getEffectiveLevel())
-
     view.resizable(False, False)
+    configure_view(view)
     view.mainloop()

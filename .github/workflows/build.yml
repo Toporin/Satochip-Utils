@@ -5,7 +5,7 @@ name: Building Satochip-Utils binaries
 on:
   push:
     tags: '*'
-    branches: [ master, dev, test_*]
+    branches: [ master, dev, test_*, integrate-seedkeeper-tool]
 
 
 jobs:

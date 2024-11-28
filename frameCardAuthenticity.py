@@ -29,7 +29,7 @@ class FrameCardAuthenticity(customtkinter.CTkFrame):
             )
             self.header.place(relx=0.05, rely=0.05, anchor="nw")
 
-            self.certificate_radio_value = customtkinter.StringVar(value="")
+            self.certificate_radio_value = customtkinter.StringVar(value="device_certificate")
 
             #
             self.text1 = master.create_label(
@@ -98,7 +98,7 @@ class FrameCardAuthenticity(customtkinter.CTkFrame):
                 bg_color="whitesmoke", fg_color="green", hover_color="green",
                 command=self.update_radio_selection
             )
-            self.device_certificate.place(relx=0.56, rely=0.35, anchor="w")
+            self.device_certificate.place(relx=0.61, rely=0.35, anchor="w")
 
             # Setting up text box
             self.text_box = customtkinter.CTkTextbox(
@@ -163,3 +163,6 @@ class FrameCardAuthenticity(customtkinter.CTkFrame):
                 self.text_warning2.configure(text="We could not authenticate the issuer of this card.")
                 self.text_warning3.configure(text="If you did not load the card applet by yourself, be extremely careful!")
                 self.text_warning4.configure(text="Contact support@satochip.io to report any suspicious device.")
+
+            # update text_box content
+            self.update_radio_selection()

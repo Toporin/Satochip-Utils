@@ -226,9 +226,6 @@ class FrameCardAbout(customtkinter.CTkFrame):
                 self.seedkeeper_nb_secrets.place(relx=0.05, rely=rely, anchor="nw")
                 rely += 0.05
 
-
-
-
             # Satodime Specific
             if self.master.controller.cc.card_type == "Satodime":
                 # TODO

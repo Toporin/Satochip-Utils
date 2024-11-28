@@ -2,6 +2,7 @@ import customtkinter
 import logging
 
 from applicationMode import ApplicationMode
+from framePopup import FramePopup
 from frameWidgetHeader import FrameWidgetHeader
 from utils import get_fingerprint_from_authentikey_bytes
 from constants import BG_MAIN_MENU, BG_HOVER_BUTTON
@@ -113,7 +114,6 @@ class FrameSeedkeeperBackupCard(customtkinter.CTkFrame):
             self.master.update_verify_pin()
             # hack: recover master pin from cc
             self.master_pin = bytes(self.master.controller.cc.pin)
-            logger.debug(f"self.master_pin: {self.master_pin}")
 
             # get authentikey
             self.master_authentikey = self.master.controller.cc.card_bip32_get_authentikey()
@@ -139,11 +139,41 @@ class FrameSeedkeeperBackupCard(customtkinter.CTkFrame):
         self.next_button.configure(text="Next")
 
         def on_next_button():
+
+            # check card is already setup:
+            def on_setup_required_button():
+                self.master.appMode = ApplicationMode.Normal  # reset application mode
+                self.reset_backup_state()  # reset state
+                self.master.show_setup_card_frame()
+                self.master.show_menu_frame()
+                #self.master.show_start_frame()
+
+            if self.master.controller.cc.card_present:
+                if not self.master.controller.cc.setup_done:
+                    FramePopup(
+                        self.master,
+                        'ERROR',
+                        'This card has not been setup. \nExit backup process, setup the card then start again!',
+                        'Ok',
+                        lambda: on_setup_required_button(),
+                        "./pictures_db/change_pin_popup.jpg"
+                    )
+                    return
+            else:
+                FramePopup(
+                    self.master,
+                    'ERROR',
+                    'No card found! \nPlease insert backup card then try again.',
+                    'Ok',
+                    None,
+                    "./pictures_db/change_pin_popup.jpg"
+                )
+                return
+
             # verify PIN
             self.master.controller.PIN_dialog(f'Enter the PIN of your BACKUP card')
             # hack: recover master pin from cc
             self.backup_pin = bytes(self.master.controller.cc.pin)
-            logger.debug(f"self.backup_pin: {self.backup_pin}")
 
             # get authentikey
             self.backup_authentikey = self.master.controller.cc.card_bip32_get_authentikey()

@@ -29,14 +29,14 @@ class FrameWelcome(customtkinter.CTkFrame):
         master.create_header_for_welcome(frame=self)
 
         # Setting up labels
-        label1 = master.create_label(
-            'Satochip-Utils\n______________',
-            MAIN_MENU_COLOR,
-            frame=self
-        )
-        label1.configure(text_color='white')
-        label1.configure(font=master.make_text_size_at(18))
-        label1.place(relx=0.05, rely=0.4, anchor="w")
+        # label1 = master.create_label(
+        #     'Satochip-Utils\n______________',
+        #     MAIN_MENU_COLOR,
+        #     frame=self
+        # )
+        # label1.configure(text_color='white')
+        # label1.configure(font=master.make_text_size_at(18))
+        # label1.place(relx=0.05, rely=0.4, anchor="w")
 
         label2 = master.create_label(
             'Your one stop shop to manage your Satochip cards,',

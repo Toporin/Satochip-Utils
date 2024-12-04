@@ -21,9 +21,11 @@ from frameCardFactoryReset import FrameCardFactoryReset
 from frameCardImportSeed import FrameCardImportSeed
 from frameCardSetupPin import FrameCardSetupPin
 from frameMenuNoCard import FrameMenuNoCard
+from frameMenuSatodime import FrameMenuSatodime
 from frameMenuSeedkeeper import FrameMenuSeedkeeper
 from frameMenuSeedkeeperBackup import FrameMenuSeedkeeperBackup
 from frameMenuSettings import FrameMenuSettings
+from frameSatodimeVaults import FrameSatodimeVaults
 from frameSeedkeeperBackupCard import FrameSeedkeeperBackupCard
 from frameSeedkeeperBackupResult import FrameSeedkeeperBackupResult
 from frameSeedkeeperCardLogs import FrameSeedkeeperCardLogs
@@ -84,6 +86,7 @@ class View(customtkinter.CTk):
             self.settings_menu_frame = None
             self.seedkeeper_menu_frame = None
             self.seedkeeper_backup_menu_frame = None
+            self.satodime_menu_frame = None
             # settings frames
             self.setup_card_frame = None
             self.about_frame = None
@@ -92,6 +95,7 @@ class View(customtkinter.CTk):
             self.change_pin_frame = None
             self.seed_import_frame = None
             self.factory_reset_frame = None
+
             # seedkeeper secret frames
             self.list_secrets_frame = None
             self.seedkeeper_show_password_frame = None
@@ -113,11 +117,17 @@ class View(customtkinter.CTk):
             self.seedkeeper_backup_card_frame = None
             self.seedkeeper_backup_result_frame = None
 
+            # Satodime vaults
+            self.satodime_vaults_frame = None
+
+
             # state
             # store seedkeeper secret headers
             self.secret_headers = None
             # should we update the list of headers?
             self.seedkeeper_secret_headers_need_update = True
+            # should we update the list of vaults?
+            self.satodime_vaults_need_update = True
             # app is in seedbackup mode (inserting/removing card should not trigger start screen!)
             self.appMode = ApplicationMode.Normal
 
@@ -556,6 +566,8 @@ class View(customtkinter.CTk):
         if self.controller.cc.card_present:
             if self.controller.cc.card_type == "SeedKeeper" and self.controller.cc.setup_done:
                 self.show_seedkeeper_menu()
+            elif self.controller.cc.card_type == "Satodime":
+                self.show_satodime_menu()
             else:
                 self.show_settings_menu()
         else:  # no card
@@ -579,6 +591,13 @@ class View(customtkinter.CTk):
         else:
             logger.info("show_seedkeeper_menu seedkeeper_menu_frame is not None, show it")
             self.seedkeeper_menu_frame.tkraise()
+
+    def show_satodime_menu(self):
+        logger.info("show_satodime_menu start")
+        if self.satodime_menu_frame is None:
+            self.satodime_menu_frame = FrameMenuSatodime(self)
+        else:
+            self.satodime_menu_frame.tkraise()
 
     def show_seedkeeper_backup_menu(self):
         logger.info("show_seedkeeper_backup_menu start")
@@ -951,3 +970,31 @@ class View(customtkinter.CTk):
             self.seedkeeper_card_logs_frame = FrameSeedkeeperCardLogs(self)
         self.seedkeeper_card_logs_frame.update_frame(logs)
         self.seedkeeper_card_logs_frame.tkraise()
+
+
+    ####################################################################################################################
+    """ METHODS TO DISPLAY A VIEW FROM SATODIME MENU SELECTION """
+
+    # SEEDKEEPER MENU SELECTION
+    def show_satodime_vaults(self):
+        try:
+            logger.debug("show_satodime_vaults start")
+
+            # todo: get satodime info
+
+            if self.satodime_vaults_frame is None:
+                self.satodime_vaults_frame = FrameSatodimeVaults(self)
+            if self.satodime_vaults_need_update is True:
+                self.satodime_vaults_frame.update_frame()
+            self.satodime_vaults_frame.tkraise()
+
+        except Exception as ex:
+            logger.error(f"Error in show_satodime_vaults: {ex}", exc_info=True)
+            self.show(
+                "ERROR",
+                f"Failed to list vaults!\n{ex}",
+                "Ok",
+                None,
+                "./pictures_db/about_popup.jpg"  # todo change icon
+            )
+

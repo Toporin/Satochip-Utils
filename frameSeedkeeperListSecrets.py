@@ -1,5 +1,3 @@
-import time
-
 import customtkinter
 import logging
 

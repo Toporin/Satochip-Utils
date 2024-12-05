@@ -25,6 +25,7 @@ from frameMenuSatodime import FrameMenuSatodime
 from frameMenuSeedkeeper import FrameMenuSeedkeeper
 from frameMenuSeedkeeperBackup import FrameMenuSeedkeeperBackup
 from frameMenuSettings import FrameMenuSettings
+from frameSatodimeVault import FrameSatodimeVault
 from frameSatodimeVaults import FrameSatodimeVaults
 from frameSeedkeeperBackupCard import FrameSeedkeeperBackupCard
 from frameSeedkeeperBackupResult import FrameSeedkeeperBackupResult
@@ -70,13 +71,15 @@ ICON_PATH = "./pictures_db/"
 
 
 class View(customtkinter.CTk):
-    def __init__(self, loglevel=logging.INFO):
+    def __init__(self, loop, loglevel=logging.INFO):
         try:
             # logger.setLevel(loglevel)
             logger.setLevel(logging.DEBUG)
             logger.debug("Log level set to INFO")
             logger.info("Starting View.__init__()")
             super().__init__()
+
+            self.loop = loop
 
             # frame declaration
             # these frames will be created when needed using show_* methods
@@ -119,7 +122,7 @@ class View(customtkinter.CTk):
 
             # Satodime vaults
             self.satodime_vaults_frame = None
-
+            self.satodime_vault_frame = None
 
             # state
             # store seedkeeper secret headers
@@ -596,8 +599,8 @@ class View(customtkinter.CTk):
         logger.info("show_satodime_menu start")
         if self.satodime_menu_frame is None:
             self.satodime_menu_frame = FrameMenuSatodime(self)
-        else:
-            self.satodime_menu_frame.tkraise()
+        self.satodime_menu_frame.update_frame()
+        self.satodime_menu_frame.tkraise()
 
     def show_seedkeeper_backup_menu(self):
         logger.info("show_seedkeeper_backup_menu start")
@@ -636,10 +639,18 @@ class View(customtkinter.CTk):
                     # get card status (also cached in controller)
                     card_status = self.controller.get_card_status()
 
+                    logger.info(f"View.update_status card_type: {self.controller.cc.card_type}")
+
+                    # do some actions according to card type
+                    if self.controller.cc.card_type == "Satodime":
+                        logger.info("View.update_status satodime card inserted (normal mode)")
+                        self.controller.satodime_on_connect()
+                        logger.info("View.update_status satodime satodime_get_vaults_info...")
+                        self.controller.satodime_get_vaults_info()
+
                     # show start screen
                     if self.start_frame is not None:  # do not create frame now as it is not main thread
                         self.show_start_frame()
-
 
                 elif isConnected is False:
                     # update state
@@ -998,3 +1009,21 @@ class View(customtkinter.CTk):
                 "./pictures_db/about_popup.jpg"  # todo change icon
             )
 
+    def show_satodime_vault(self, vault_nbr):
+        try:
+            logger.debug(f"show_satodime_vault start vault: {vault_nbr}")
+
+            if self.satodime_vault_frame is None:
+                self.satodime_vault_frame = FrameSatodimeVault(self)
+            self.satodime_vault_frame.update_frame(vault_nbr)
+            self.satodime_vault_frame.tkraise()
+
+        except Exception as ex:
+            logger.error(f"Error in show_satodime_vaults: {ex}", exc_info=True)
+            self.show(
+                "ERROR",
+                f"Failed to list vaults!\n{ex}",
+                "Ok",
+                None,
+                "./pictures_db/about_popup.jpg"  # todo change icon
+            )

@@ -40,7 +40,7 @@ class FrameMenuSatodime(customtkinter.CTkFrame):
             # create default widgets, use update method to update state
 
             # Menu items
-            self.button_my_secrets = master.create_menu_button(
+            self.button_my_vaults = master.create_menu_button(
                 self,
                 "My vaults",
                 "secrets.png",
@@ -48,6 +48,20 @@ class FrameMenuSatodime(customtkinter.CTkFrame):
                 state="normal",
                 command=lambda: master.show_satodime_vaults(),
             )
+
+            rely = 0.33
+            self.button_vaults_array = []
+            for vault_nbr in range(3): # TODO: currently max 3 vaults supported
+                button_vault = self.master.create_menu_button(
+                    self,
+                    f"Vault #{vault_nbr}",
+                    "secrets.png",
+                    rely, 0.05,
+                    state="normal",
+                    command=lambda index=vault_nbr: self.master.show_satodime_vault(index),
+                )
+                self.button_vaults_array += [button_vault]
+                rely += 0.07
 
             # self.button_generate = master.create_menu_button(
             #     self,
@@ -113,3 +127,28 @@ class FrameMenuSatodime(customtkinter.CTkFrame):
 
         except Exception as e:
             logger.error(f"010 Unexpected error in FrameMenuSatodime init(): {e}", exc_info=True)
+
+
+    def update_frame(self):
+
+        # rely = 0.33
+        # for vault_nbr in range(3):  # TODO: currently max 3 vaults supported
+        #
+        #     # show/hide vaults that are not supported by the card
+        #     if vault_nbr < self.master.controller.satodime_nb_vaults:
+        #         self.button_vaults_array[vault_nbr].place(relx=0.05, rely=rely, anchor="w")
+        #     else:
+        #         self.button_vaults_array[vault_nbr].place_forget()
+        #     rely += 0.07
+
+        pass
+
+
+
+
+
+
+
+
+
+

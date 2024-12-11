@@ -42,7 +42,7 @@ class FrameMenuSatodime(customtkinter.CTkFrame):
             # Menu items
             self.button_my_vaults = master.create_menu_button(
                 self,
-                "My vaults",
+                "Overview",
                 "secrets.png",
                 0.26, 0.05,
                 state="normal",

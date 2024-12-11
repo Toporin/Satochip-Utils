@@ -1,3 +1,4 @@
+from pysatochip.JCconstants import STATE_UNINITIALIZED, STATE_SEALED, STATE_UNSEALED
 
 # Constants
 BG_MAIN_MENU = "#21283b"
@@ -12,6 +13,17 @@ HOVER_COLOR = "grey"
 TEXT_COLOR = "black"
 
 ICON_PATH = "./pictures_db/"
+
+
+"""Satodime"""
+
+STATUS_DIC = {
+STATE_UNINITIALIZED: "uninitialized",
+STATE_SEALED: "sealed",
+STATE_UNSEALED: "unsealed"
+}
+
+
 
 """Seedkeeper"""
 

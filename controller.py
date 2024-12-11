@@ -9,7 +9,7 @@ from pysatochip.CardConnector import (CardConnector, UninitializedSeedError, Une
 from pysatochip.JCconstants import STATE_SEALED, STATE_UNSEALED
 from pysatochip.version import SATODIME_PROTOCOL_VERSION, SATODIME_PROTOCOL_MAJOR_VERSION, \
     SATODIME_PROTOCOL_MINOR_VERSION
-from pycryptotools.coins import UnsupportedCoin, Bitcoin, BitcoinCash, Litecoin, Doge, Dash, Ethereum, BinanceSmartChain, EthereumClassic, xDai, RSK, Counterparty
+from pycryptotools.coins import UnsupportedCoin, Bitcoin, BitcoinCash, Litecoin, Ethereum, EthereumClassic, Counterparty
 
 
 from constants import INS_DIC, RES_DIC, TYPE_PASSWORD, TYPE_MASTERSEED, TYPE_DATA, TYPE_DESCRIPTOR, TYPE_PUBKEY, \
@@ -43,6 +43,8 @@ class Controller:
         self.satodime_vaults_status = []
         self.satodime_vaults_event = []
         self.satodime_vaults_info = []
+        self.satodime_vaults_coin_info = []
+        self.satodime_vaults_asset_list = []
 
     def get_card_status(self):
         if self.cc.card_present:
@@ -1057,22 +1059,22 @@ class Controller:
             coin = Bitcoin(is_testnet, apikeys=apikeys)
         elif key_slip44_hex == "80000002":
             coin = Litecoin(is_testnet, apikeys=apikeys)
-        elif key_slip44_hex == "80000003":
-            coin = Doge(is_testnet, apikeys=apikeys)
-        elif key_slip44_hex == "80000005":
-            coin = Dash(is_testnet, apikeys=apikeys)
+        # elif key_slip44_hex == "80000003":
+        #     coin = Doge(is_testnet, apikeys=apikeys)
+        # elif key_slip44_hex == "80000005":
+        #     coin = Dash(is_testnet, apikeys=apikeys)
         elif key_slip44_hex == "80000009":
             coin = Counterparty(is_testnet, apikeys=apikeys)
         elif key_slip44_hex == "8000003c":
             coin = Ethereum(is_testnet, apikeys=apikeys)
         elif key_slip44_hex == "8000003d":
             coin = EthereumClassic(is_testnet, apikeys=apikeys)
-        elif key_slip44_hex == "80000089":
-            coin = RSK(is_testnet, apikeys=apikeys)
+        # elif key_slip44_hex == "80000089":
+        #     coin = RSK(is_testnet, apikeys=apikeys)
         elif key_slip44_hex == "80000091":
             coin = BitcoinCash(is_testnet, apikeys=apikeys)  # todo: convert to cashaddress?
-        elif key_slip44_hex == "80000207":
-            coin = BinanceSmartChain(is_testnet, apikeys=apikeys)
+        # elif key_slip44_hex == "80000207":
+        #     coin = BinanceSmartChain(is_testnet, apikeys=apikeys)
         else:
             coin = UnsupportedCoin(is_testnet, key_slip44_hex=key_slip44_hex)
         return coin
@@ -1167,20 +1169,33 @@ class Controller:
             card_info['error'] = "No card found. Please insert card"
             return card_info
 
-    def satodime_get_vaults_info(self):
+    def satodime_vaults_get_info(self):
         logger.info('In satodime_get_vaults_info()')
 
         if self.satodime_vaults_info == []:
-            self.satodime_vaults_info = self.satodime_nb_vaults * [None]
+            self.satodime_vaults_info = self.satodime_nb_vaults * [{}]
+            self.satodime_vaults_coin_info = self.satodime_nb_vaults * [{}]
+            self.satodime_vaults_asset_list = self.satodime_nb_vaults * [[]]
             self.satodime_vaults_event = range(self.satodime_nb_vaults)
 
         logger.info(f'In satodime_get_vaults_info() self.satodime_vaults_info: {self.satodime_vaults_info}')
         logger.info(f'In satodime_get_vaults_info() self.satodime_nb_vaults: {self.satodime_nb_vaults}')
         logger.info(f'In satodime_get_vaults_info() self.satodime_vaults_event: {self.satodime_vaults_event}')
-        for vault_nbr in self.satodime_vaults_event:  # range(self.satodime_nb_vaults):
-            self.satodime_get_vault_info_basic(vault_nbr)
 
-    def satodime_get_vault_info_basic(self, vault_nbr):
+        # get basic info for each vault from smartcard
+        for vault_nbr in range(self.satodime_nb_vaults):  # range(self.satodime_nb_vaults):
+            self.satodime_vault_get_basic_info(vault_nbr)
+
+        print(f"DEBUG TEST AA satodime_vaults_event: {self.satodime_vaults_event}")
+        # get coin info from blockchain explorer
+        for vault_nbr in range(self.satodime_nb_vaults):
+            self.satodime_vault_get_coin_info(vault_nbr)
+        print("DEBUG TEST BB")
+        # get asset info from blockchain explorer
+        for vault_nbr in range(self.satodime_nb_vaults):
+            self.satodime_vault_get_asset_list(vault_nbr)
+
+    def satodime_vault_get_basic_info(self, vault_nbr):
         logger.info(f'In satodime_get_vault_info_basic vault: {vault_nbr}')
 
         if (self.cc.card_present):
@@ -1212,15 +1227,9 @@ class Controller:
                         vault_info['coin'] = coin
                         vault_info['name'] = coin.display_name
                         vault_info['symbol'] = coin.coin_symbol
-
-                        use_address_comp = coin.use_compressed_addr
-                        vault_info['use_address_comp'] = use_address_comp
                         addr = coin.pubtoaddr(bytes(pubkey_list))
                         logger.info('address: ' + addr)
-
-                        #if DEBUG: addr = DEBUG_ADDRS[coin.coin_symbol]  # TODO DEBUG API
                         vault_info['address'] = addr
-                        #vault_info['address_weburl'] = coin.address_weburl(addr)
 
                     except Exception as ex:
                         vault_info['is_error'] = True
@@ -1245,7 +1254,38 @@ class Controller:
         self.card_event = False
         self.satodime_vaults_event = []  # all slots are up-to-date
 
-    def satodime_get_vault_balances(self):
-        pass
+    def satodime_vault_get_coin_info(self, vault_nbr):
+        logger.info(f'In satodime_vault_get_coin_info vault: {vault_nbr}')
 
+        if self.cc.card_present:
+            if self.satodime_vaults_status[vault_nbr] in [STATE_SEALED, STATE_UNSEALED]:
+                vault_info = self.satodime_vaults_info[vault_nbr]
+                try:
+                    # get previously recovered address
+                    coin = vault_info['coin']
+                    addr = vault_info['address']
+                    # get coin_info for address
+                    coin_info = coin.get_coin_info(addr)
+                    self.satodime_vaults_coin_info[vault_nbr] = coin_info
+                    print(f"VAULT #{vault_nbr} coin_info: {coin_info}")
+                except Exception as ex:
+                    logger.warning(f"Exception in satodime_vault_get_coin_info: {str(ex)}")
+                    logger.warning(f"Exception in satodime_vault_get_coin_info: coin: {vault_info['coin']} addr: {vault_info['address']}")
 
+    def satodime_vault_get_asset_list(self, vault_nbr):
+        logger.info(f'In satodime_vault_get_asset_info vault: {vault_nbr}')
+
+        if self.cc.card_present:
+            if self.satodime_vaults_status[vault_nbr] in [STATE_SEALED, STATE_UNSEALED]:
+                vault_info = self.satodime_vaults_info[vault_nbr]
+                try:
+                    # get previously recovered address
+                    coin = vault_info['coin']
+                    addr = vault_info['address']
+                    # get coin_info for address
+                    asset_list = coin.get_asset_list(addr)
+                    self.satodime_vaults_asset_list[vault_nbr] = asset_list
+                    print(f"VAULT #{vault_nbr} asset_list: {asset_list}")
+                except Exception as ex:
+                    logger.warning(f"Exception in satodime_vault_get_asset_list: {str(ex)}")
+                    logger.warning(f"Exception in satodime_vault_get_asset_list: coin: {vault_info['coin']} addr: {vault_info['address']}")

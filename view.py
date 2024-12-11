@@ -646,7 +646,7 @@ class View(customtkinter.CTk):
                         logger.info("View.update_status satodime card inserted (normal mode)")
                         self.controller.satodime_on_connect()
                         logger.info("View.update_status satodime satodime_get_vaults_info...")
-                        self.controller.satodime_get_vaults_info()
+                        self.controller.satodime_vaults_get_info()
 
                     # show start screen
                     if self.start_frame is not None:  # do not create frame now as it is not main thread

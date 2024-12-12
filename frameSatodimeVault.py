@@ -5,6 +5,8 @@ import logging
 
 from constants import (DEFAULT_BG_COLOR, BG_MAIN_MENU, BG_HOVER_BUTTON,
                        TEXT_COLOR, BUTTON_TEXT_COLOR, HIGHLIGHT_COLOR, TYPE_MASTERSEED, TYPE_DIC, STATUS_DIC)
+from frameWidgetAssetTab import FrameWidgetAssetTab
+from frameWidgetAssetTable import FrameWidgetAssetTable
 from frameWidgetHeader import FrameWidgetHeader
 from frameWidgetSatodimeCard import FrameWidgetSatodimeCard
 
@@ -17,7 +19,7 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
     def __init__(self, master):
         super().__init__(master)
 
-        logger.debug("FrameSatodimeVault init")
+        logger.debug("init")
 
         try:
             # Creating new frame
@@ -34,28 +36,17 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
             )
             self.header.place(relx=0.05, rely=0.05, anchor="nw")
 
-            # satocard
+            # satocard: show info about the coin in the vault
             self.vaultcard = FrameWidgetSatodimeCard(master=self)
-            self.vaultcard.place(relx=0., rely=0.15, anchor="nw")
+            self.vaultcard.place(relx=0.0, rely=0.15, anchor="nw")
 
-            # todo display vaults
-            # Create balance field
-            # rely = 0.1
-            # self.balance_label = master.create_label("Balance:", frame=self)
-            # self.balance_label.place(relx=0.05, rely=rely, anchor="nw")
-            # rely += 0.05
-            # self.balance_entry = master.create_label("", frame=self)
-            # self.balance_entry.place(relx=0.05, rely=rely, anchor="nw")
-            # rely += 0.1
-            #
-            # # Create address field
-            #
-            # self.address_label = master.create_label("Address:", frame=self)
-            # self.address_label.place(relx=0.05, rely=rely, anchor="nw")
-            # rely += 0.05
-            # self.address_entry = master.create_label("", frame=self)
-            # self.address_entry.place(relx=0.05, rely=rely, anchor="nw")
-            # rely += 0.1
+            # tabs with token & nft assets info
+            self.asset_tab = FrameWidgetAssetTab(master=self, width=750, height=300)
+            self.asset_tab.place(relx=0.0, rely=0.5, anchor="nw")
+
+            # DEBUG directly place token frame
+            #self.token_table = FrameWidgetAssetTable(master=self, width=750, height=300)
+            #self.token_table.place(relx=0.0, rely=0.5, anchor="nw")
 
 
             # place frame
@@ -69,8 +60,10 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
         logger.debug(f"update_frame start vault_nbr: {vault_nbr}")
         logger.debug(f"update_frame start satodime_vaults_info.size: {len(self.master.controller.satodime_vaults_info)}")
 
+        # update header
         self.header.button.configure(text=f"Vault #{vault_nbr}")
 
+        # update card
         status_int = self.master.controller.satodime_vaults_status[vault_nbr]
         status = STATUS_DIC.get(status_int, "unknown status")
         vault_info = self.master.controller.satodime_vaults_info[vault_nbr]
@@ -104,4 +97,11 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
             balance=balance_str,
             balance2=balance2_str,
         )
+
+        # update tabs
+        asset_list = self.master.controller.satodime_vaults_asset_list[vault_nbr]
+        self.asset_tab.update_tab(asset_list)
+        # DEBUG update token table directly without tabs
+        #self.token_table.update_frame(asset_list)
+
 

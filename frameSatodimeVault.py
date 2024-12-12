@@ -1,10 +1,9 @@
-import asyncio
-import aiohttp
+from PIL import Image, ImageTk
 import customtkinter
 import logging
 
 from constants import (DEFAULT_BG_COLOR, BG_MAIN_MENU, BG_HOVER_BUTTON,
-                       TEXT_COLOR, BUTTON_TEXT_COLOR, HIGHLIGHT_COLOR, TYPE_MASTERSEED, TYPE_DIC, STATUS_DIC)
+                       TEXT_COLOR, BUTTON_TEXT_COLOR, HIGHLIGHT_COLOR, TYPE_MASTERSEED, TYPE_DIC, STATUS_DIC, ICON_PATH)
 from frameWidgetAssetTab import FrameWidgetAssetTab
 from frameWidgetAssetTable import FrameWidgetAssetTable
 from frameWidgetHeader import FrameWidgetHeader
@@ -68,8 +67,17 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
         status = STATUS_DIC.get(status_int, "unknown status")
         vault_info = self.master.controller.satodime_vaults_info[vault_nbr]
         blockchain = vault_info.get('name', 'unknown blockchain')
+        symbol = vault_info.get('symbol', 'unknown blockchain')
         address = vault_info.get('address', 'unknown address')
 
+        # update coin icon
+        self.icon_path = f"{ICON_PATH}{symbol}{'.png'}"
+        self.image = Image.open(self.icon_path)
+        self.image = self.image.resize((24, 24), Image.LANCZOS)
+        self.photo_image = ImageTk.PhotoImage(self.image)
+        self.header.button.configure(image=self.photo_image)
+
+        # update balance
         coin_info = self.master.controller.satodime_vaults_coin_info[vault_nbr]
         url = coin_info.get('address_explorer_url', 'no url available')
         symbol = coin_info.get('symbol', '')

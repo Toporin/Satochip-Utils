@@ -1177,21 +1177,18 @@ class Controller:
             self.satodime_vaults_info = self.satodime_nb_vaults * [{}]
             self.satodime_vaults_coin_info = self.satodime_nb_vaults * [{}]
             self.satodime_vaults_asset_list = self.satodime_nb_vaults * [[]]
-            self.satodime_vaults_event = range(self.satodime_nb_vaults)
 
         logger.info(f'In satodime_get_vaults_info() self.satodime_vaults_info: {self.satodime_vaults_info}')
         logger.info(f'In satodime_get_vaults_info() self.satodime_nb_vaults: {self.satodime_nb_vaults}')
-        logger.info(f'In satodime_get_vaults_info() self.satodime_vaults_event: {self.satodime_vaults_event}')
 
         # get basic info for each vault from smartcard
         for vault_nbr in range(self.satodime_nb_vaults):  # range(self.satodime_nb_vaults):
             self.satodime_vault_get_basic_info(vault_nbr)
 
-        print(f"DEBUG TEST AA satodime_vaults_event: {self.satodime_vaults_event}")
         # get coin info from blockchain explorer
         for vault_nbr in range(self.satodime_nb_vaults):
             self.satodime_vault_get_coin_info(vault_nbr)
-        print("DEBUG TEST BB")
+
         # get asset info from blockchain explorer
         for vault_nbr in range(self.satodime_nb_vaults):
             self.satodime_vault_get_asset_list(vault_nbr)

@@ -23,7 +23,26 @@ STATE_SEALED: "sealed",
 STATE_UNSEALED: "unsealed"
 }
 
+# some known address for debugging/testing ui
+DEBUG_ADDR = {
+    'BTC': 'bc1ql49ydapnjafl5t2cp9zqpjwe6pdgmxy98859v2',  # whale
+    'BCH': '1PUwPCNqKiC6La8wtbJEAhnBvtc8gdw19h',  # whale
+    'LTC': 'ltc1qr07zu594qf63xm7l7x6pu3a2v39m2z6hh5pp4t', # whale
+    'XCP': '1Do5kUZrTyZyoPJKtk4wCuXBkt5BDRhQJ4',
 
+    'ETH': '0xd5b06c8c83e78e92747d12a11fcd0b03002d48cf',
+    # 'ETH': '0x86b4d38e451c707e4914ffceab9479e3a8685f98',
+    # 'ETH': '0xE71a126D41d167Ce3CA048cCce3F61Fa83274535',  # cryptopunk
+    # 'ETH': '0xed1bf53Ea7fD8a290A3172B6c00F1Fb3657D538F',  # usdt
+    # 'ETH': '0x2c4ebd4b21736e992f3efeb55de37ae66457199d',  # grolex nft
+
+    # 'POL': '0x8db853Aa2f01AF401e10dd77657434536735aC62',
+    # 'POL': '0x86d22A8219De3683CF188778CDAdEE62D1442033',
+    'POL': '0xE976c3052Df18cc2Dc878b9bc3191Bba68Ef3d80',  # DolZ nft
+    # 'POL': '0x440D4955a914D5e29F861aC024A608aE41c56cB6',  # PookyBall nft contract
+    # 'POL': '0xd7f1cbca340c831d77c0d8d3dc843a07873ade44',  # PookyBall nft vault
+    # 'POL': '0xF977814e90dA44bFA03b6295A0616a897441aceC',  # Binance hot wallet with USDT
+}
 
 """Seedkeeper"""
 

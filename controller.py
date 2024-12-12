@@ -13,11 +13,12 @@ from pycryptotools.coins import UnsupportedCoin, Bitcoin, BitcoinCash, Litecoin,
 
 
 from constants import INS_DIC, RES_DIC, TYPE_PASSWORD, TYPE_MASTERSEED, TYPE_DATA, TYPE_DESCRIPTOR, TYPE_PUBKEY, \
-    TYPE_BIP39_MNEMONIC, TYPE_ELECTRUM_MNEMONIC, TYPE_2FA_SECRET, TYPE_DIC
+    TYPE_BIP39_MNEMONIC, TYPE_ELECTRUM_MNEMONIC, TYPE_2FA_SECRET, TYPE_DIC, DEBUG_ADDR
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+DEBUG_EXPLORER = True
 
 class Controller:
 
@@ -1227,7 +1228,12 @@ class Controller:
                         vault_info['coin'] = coin
                         vault_info['name'] = coin.display_name
                         vault_info['symbol'] = coin.coin_symbol
-                        addr = coin.pubtoaddr(bytes(pubkey_list))
+
+                        if DEBUG_EXPLORER:
+                            # use mockup address for testing UI
+                            addr = DEBUG_ADDR.get(coin.coin_symbol, coin.pubtoaddr(bytes(pubkey_list)))
+                        else:
+                            addr = coin.pubtoaddr(bytes(pubkey_list))
                         logger.info('address: ' + addr)
                         vault_info['address'] = addr
 

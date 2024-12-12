@@ -3,9 +3,9 @@ import customtkinter
 import logging
 
 from constants import (DEFAULT_BG_COLOR, BG_MAIN_MENU, BG_HOVER_BUTTON,
-                       TEXT_COLOR, BUTTON_TEXT_COLOR, HIGHLIGHT_COLOR, TYPE_MASTERSEED, TYPE_DIC, STATUS_DIC, ICON_PATH)
+                       TEXT_COLOR, BUTTON_TEXT_COLOR, HIGHLIGHT_COLOR, TYPE_MASTERSEED, TYPE_DIC, STATUS_DIC, ICON_PATH,
+                       STATUS_COLOR_DIC)
 from frameWidgetAssetTab import FrameWidgetAssetTab
-from frameWidgetAssetTable import FrameWidgetAssetTable
 from frameWidgetHeader import FrameWidgetHeader
 from frameWidgetSatodimeCard import FrameWidgetSatodimeCard
 
@@ -41,12 +41,7 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
 
             # tabs with token & nft assets info
             self.asset_tab = FrameWidgetAssetTab(master=self, width=750, height=300)
-            self.asset_tab.place(relx=0.0, rely=0.5, anchor="nw")
-
-            # DEBUG directly place token frame
-            #self.token_table = FrameWidgetAssetTable(master=self, width=750, height=300)
-            #self.token_table.place(relx=0.0, rely=0.5, anchor="nw")
-
+            self.asset_tab.place(relx=0.0, rely=0.3, anchor="nw")
 
             # place frame
             self.place(relx=1.0, rely=0.5, anchor="e")
@@ -62,13 +57,18 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
         # update header
         self.header.button.configure(text=f"Vault #{vault_nbr}")
 
-        # update card
+        # fetch cached vault info
         status_int = self.master.controller.satodime_vaults_status[vault_nbr]
         status = STATUS_DIC.get(status_int, "unknown status")
+        status_color = STATUS_COLOR_DIC.get(status_int, "black")
         vault_info = self.master.controller.satodime_vaults_info[vault_nbr]
         blockchain = vault_info.get('name', 'unknown blockchain')
         symbol = vault_info.get('symbol', 'unknown blockchain')
         address = vault_info.get('address', 'unknown address')
+
+        # update status
+        self.header.status_label.configure(text=f"[{status}]")
+        self.header.status_label.configure(text_color=status_color)
 
         # update coin icon
         self.icon_path = f"{ICON_PATH}{symbol}{'.png'}"
@@ -109,7 +109,4 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
         # update tabs
         asset_list = self.master.controller.satodime_vaults_asset_list[vault_nbr]
         self.asset_tab.update_tab(asset_list)
-        # DEBUG update token table directly without tabs
-        #self.token_table.update_frame(asset_list)
-
 

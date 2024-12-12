@@ -3,6 +3,7 @@ import logging
 from PIL import Image, ImageTk
 
 from constants import ICON_PATH
+from frameWidgetLabel import FrameWidgetLabel
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -38,6 +39,12 @@ class FrameWidgetHeader(customtkinter.CTkFrame):
             )
             self.button.image = self.photo_image  # Garder une référence de l'image
             self.button.place(rely=0.5, relx=0, anchor="w")
+
+            # hidden text (can be used in addition)
+            self.status_label = FrameWidgetLabel(master=self, text="")
+            self.status_label.configure(font=customtkinter.CTkFont(family="Outfit", size=25, weight="bold"))
+            self.status_label.place(relx=0.25, rely=0.5, anchor="w")
+
 
         except Exception as e:
             logger.error(f"An unexpected error occurred in init: {e}", exc_info=True)

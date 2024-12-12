@@ -19,7 +19,7 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
 
             # Créer le cadre de l'en-tête
             self.configure(
-                width=750, height=150,
+                width=750, height=100,
                 bg_color="whitesmoke", fg_color="whitesmoke"
             )
 
@@ -27,18 +27,18 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
             rely = 0
 
             # Status field
-            self.status_label = FrameWidgetLabel(master=self, text="Status:")
-            self.status_label.place(relx=0.05, rely=rely, anchor="nw")
-            self.status_value = FrameWidgetLabel(master=self, text="")
-            self.status_value.place(relx=0.25, rely=rely, anchor="nw")
-            rely += 0.25
+            # self.status_label = FrameWidgetLabel(master=self, text="Status:")
+            # self.status_label.place(relx=0.05, rely=rely, anchor="nw")
+            # self.status_value = FrameWidgetLabel(master=self, text="")
+            # self.status_value.place(relx=0.25, rely=rely, anchor="nw")
+            # rely += 0.25
 
             # Blockchain field
             self.blockchain_label = FrameWidgetLabel(master=self, text="Blockchain:")
             self.blockchain_label.place(relx=0.05, rely=rely, anchor="nw")
             self.blockchain_value = FrameWidgetLabel(master=self, text="")
             self.blockchain_value.place(relx=0.25, rely=rely, anchor="nw")
-            rely += 0.25
+            rely += 0.30
 
             # Address field
             self.address_label = FrameWidgetLabel(master=self, text="Address:")
@@ -81,7 +81,7 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
             self.button_explore.image = self.photo_image2  # keep a reference of image
             self.button_explore.place(relx=0.18, rely=rely, anchor="nw")
 
-            rely += 0.25
+            rely += 0.30
 
             # Balances field
             self.balance_label = FrameWidgetLabel(master=self, text="Balance:")
@@ -105,7 +105,7 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
             balance2: str
     ):
         logger.debug("FrameWidgetSatodimeCard update_frame")
-        self.status_value.configure(text=status)
+        # self.status_value.configure(text=status)
         self.blockchain_value.configure(text=blockchain)
         self.address_value.configure(text=address)
         self.button_explore.configure(command=lambda: webbrowser.open(url, new=2))

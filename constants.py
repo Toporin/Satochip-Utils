@@ -23,6 +23,12 @@ STATE_SEALED: "sealed",
 STATE_UNSEALED: "unsealed"
 }
 
+STATUS_COLOR_DIC = {
+STATE_UNINITIALIZED: "grey",
+STATE_SEALED: "green",
+STATE_UNSEALED: "red"
+}
+
 # some known address for debugging/testing ui
 DEBUG_ADDR = {
     'BTC': 'bc1ql49ydapnjafl5t2cp9zqpjwe6pdgmxy98859v2',  # whale

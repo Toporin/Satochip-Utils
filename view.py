@@ -2,7 +2,7 @@ import logging
 import sys
 import os
 import tkinter
-from typing import Optional, Dict, Callable, Any, Tuple
+from typing import Optional, Dict, Callable, Any, Tuple, SupportsIndex
 
 import customtkinter
 from PIL import Image, ImageTk
@@ -122,7 +122,7 @@ class View(customtkinter.CTk):
 
             # Satodime vaults
             self.satodime_overview_frame = None
-            self.satodime_vault_frame = None
+            self.satodime_vault_frames = None
 
             # state
             # store seedkeeper secret headers
@@ -658,6 +658,9 @@ class View(customtkinter.CTk):
                     self.secret_headers = None
                     self.seedkeeper_secret_headers_need_update = True
 
+                    # Satodime: reset vault content
+                    self.satodime_vault_frames = None
+
                     if self.start_frame is not None:  # do not create frame now as it is not main thread
                         self.show_start_frame()
                         self.show_nocard_menu()
@@ -1009,14 +1012,21 @@ class View(customtkinter.CTk):
                 "./pictures_db/about_popup.jpg"  # todo change icon
             )
 
-    def show_satodime_vault(self, vault_nbr):
+    def show_satodime_vault(self, vault_nbr: SupportsIndex):
         try:
             logger.debug(f"show_satodime_vault start vault: {vault_nbr}")
+            if self.satodime_vault_frames is None:
+                self.satodime_vault_frames = self.controller.satodime_nb_vaults*[None]
 
-            if self.satodime_vault_frame is None:
-                self.satodime_vault_frame = FrameSatodimeVault(self)
-            self.satodime_vault_frame.update_frame(vault_nbr)
-            self.satodime_vault_frame.tkraise()
+            if self.satodime_vault_frames[vault_nbr] is None:
+                self.satodime_vault_frames[vault_nbr] = FrameSatodimeVault(self)
+                self.satodime_vault_frames[vault_nbr].update_frame(vault_nbr)
+            self.satodime_vault_frames[vault_nbr].tkraise()
+
+            # if self.satodime_vault_frame is None:
+            #     self.satodime_vault_frame = FrameSatodimeVault(self)
+            # self.satodime_vault_frame.update_frame(vault_nbr)
+            # self.satodime_vault_frame.tkraise()
 
         except Exception as ex:
             logger.error(f"Error in show_satodime_vaults: {ex}", exc_info=True)

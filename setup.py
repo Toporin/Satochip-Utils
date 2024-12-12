@@ -6,7 +6,7 @@
 from setuptools import setup, find_packages
 from version import VERSION
 
-with open("README.md") as readme_file:
+with open("README.md", encoding="utf8") as readme_file:
     readme = readme_file.read()
 
 with open('requirements.txt') as f:

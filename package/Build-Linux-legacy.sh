@@ -46,3 +46,7 @@ deactivate
 
 echo Compilation done.
 echo Binary result is in the dist folder.
+
+echo Debug
+find . -print
+echo Endbug

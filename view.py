@@ -26,7 +26,7 @@ from frameMenuSeedkeeper import FrameMenuSeedkeeper
 from frameMenuSeedkeeperBackup import FrameMenuSeedkeeperBackup
 from frameMenuSettings import FrameMenuSettings
 from frameSatodimeVault import FrameSatodimeVault
-from frameSatodimeVaults import FrameSatodimeVaults
+from frameSatodimeOverview import FrameSatodimeOverview
 from frameSeedkeeperBackupCard import FrameSeedkeeperBackupCard
 from frameSeedkeeperBackupResult import FrameSeedkeeperBackupResult
 from frameSeedkeeperCardLogs import FrameSeedkeeperCardLogs
@@ -121,7 +121,7 @@ class View(customtkinter.CTk):
             self.seedkeeper_backup_result_frame = None
 
             # Satodime vaults
-            self.satodime_vaults_frame = None
+            self.satodime_overview_frame = None
             self.satodime_vault_frame = None
 
             # state
@@ -993,11 +993,11 @@ class View(customtkinter.CTk):
 
             # todo: get satodime info
 
-            if self.satodime_vaults_frame is None:
-                self.satodime_vaults_frame = FrameSatodimeVaults(self)
+            if self.satodime_overview_frame is None:
+                self.satodime_overview_frame = FrameSatodimeOverview(self)
             if self.satodime_vaults_need_update is True:
-                self.satodime_vaults_frame.update_frame()
-            self.satodime_vaults_frame.tkraise()
+                self.satodime_overview_frame.update_frame()
+            self.satodime_overview_frame.tkraise()
 
         except Exception as ex:
             logger.error(f"Error in show_satodime_vaults: {ex}", exc_info=True)

@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-class FrameSatodimeVaults(customtkinter.CTkFrame):
+class FrameSatodimeOverview(customtkinter.CTkFrame):
 
     def __init__(self, master):
         super().__init__(master)

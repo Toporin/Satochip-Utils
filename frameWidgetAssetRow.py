@@ -54,7 +54,7 @@ class FrameWidgetAssetRow(customtkinter.CTkFrame):
             self.button_name = customtkinter.CTkButton(
                 self, width=width_name, height=height, border_spacing=0,
                 text="", text_color="black",
-                font=customtkinter.CTkFont(family="Outfit", size=25, weight="bold"),
+                font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal"),
                 bg_color=bg_color, fg_color=bg_color,
                 hover_color=bg_color,
             )
@@ -65,7 +65,7 @@ class FrameWidgetAssetRow(customtkinter.CTkFrame):
             self.button_balance = customtkinter.CTkButton(
                 self, width=width_balance, height=height, border_spacing=0,
                 text="", text_color="black",
-                font=customtkinter.CTkFont(family="Outfit", size=25, weight="bold"),
+                font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal"),
                 bg_color=bg_color, fg_color=bg_color,
                 hover_color=bg_color,
             )
@@ -76,7 +76,7 @@ class FrameWidgetAssetRow(customtkinter.CTkFrame):
             self.button_balance2 = customtkinter.CTkButton(
                 self, width=width_balance2, height=height, border_spacing=0,
                 text="", text_color="black",
-                font=customtkinter.CTkFont(family="Outfit", size=25, weight="bold"),
+                font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal"),
                 bg_color=bg_color, fg_color=bg_color,
                 hover_color=bg_color,
             )

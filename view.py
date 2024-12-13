@@ -25,6 +25,8 @@ from frameMenuSatodime import FrameMenuSatodime
 from frameMenuSeedkeeper import FrameMenuSeedkeeper
 from frameMenuSeedkeeperBackup import FrameMenuSeedkeeperBackup
 from frameMenuSettings import FrameMenuSettings
+from frameSatodimeResetVault import FrameSatodimeResetVault
+from frameSatodimeUnsealVault import FrameSatodimeUnsealVault
 from frameSatodimeVault import FrameSatodimeVault
 from frameSatodimeOverview import FrameSatodimeOverview
 from frameSeedkeeperBackupCard import FrameSeedkeeperBackupCard
@@ -122,7 +124,9 @@ class View(customtkinter.CTk):
 
             # Satodime vaults
             self.satodime_overview_frame = None
-            self.satodime_vault_frames = None
+            self.satodime_vault_frames = None # this is a list of frames, one for each vault
+            self.satodime_unseal_vault_frame = None
+            self.satodime_reset_vault_frame = None
 
             # state
             # store seedkeeper secret headers
@@ -990,9 +994,9 @@ class View(customtkinter.CTk):
     """ METHODS TO DISPLAY A VIEW FROM SATODIME MENU SELECTION """
 
     # SEEDKEEPER MENU SELECTION
-    def show_satodime_vaults(self):
+    def show_satodime_overview(self):
         try:
-            logger.debug("show_satodime_vaults start")
+            logger.debug("show_satodime_overview start")
 
             # todo: get satodime info
 
@@ -1003,7 +1007,7 @@ class View(customtkinter.CTk):
             self.satodime_overview_frame.tkraise()
 
         except Exception as ex:
-            logger.error(f"Error in show_satodime_vaults: {ex}", exc_info=True)
+            logger.error(f"Error in show_satodime_overview: {ex}", exc_info=True)
             self.show(
                 "ERROR",
                 f"Failed to list vaults!\n{ex}",
@@ -1023,13 +1027,8 @@ class View(customtkinter.CTk):
                 self.satodime_vault_frames[vault_nbr].update_frame(vault_nbr)
             self.satodime_vault_frames[vault_nbr].tkraise()
 
-            # if self.satodime_vault_frame is None:
-            #     self.satodime_vault_frame = FrameSatodimeVault(self)
-            # self.satodime_vault_frame.update_frame(vault_nbr)
-            # self.satodime_vault_frame.tkraise()
-
         except Exception as ex:
-            logger.error(f"Error in show_satodime_vaults: {ex}", exc_info=True)
+            logger.error(f"Error in show_satodime_vault: {ex}", exc_info=True)
             self.show(
                 "ERROR",
                 f"Failed to list vaults!\n{ex}",
@@ -1037,3 +1036,25 @@ class View(customtkinter.CTk):
                 None,
                 "./pictures_db/about_popup.jpg"  # todo change icon
             )
+
+    def show_satodime_unseal_vault(self, vault_nbr: SupportsIndex):
+        try:
+            logger.debug(f"show_satodime_unseal_vault start vault: {vault_nbr}")
+            if self.satodime_unseal_vault_frame is None:
+                self.satodime_unseal_vault_frame = FrameSatodimeUnsealVault(self)
+            self.satodime_unseal_vault_frame.update_frame(vault_nbr)
+            self.satodime_unseal_vault_frame.tkraise()
+
+        except Exception as ex:
+            logger.error(f"Error in show_satodime_unseal_vault: {ex}", exc_info=True)
+
+    def show_satodime_reset_vault(self, vault_nbr: SupportsIndex):
+        try:
+            logger.debug(f"show_satodime_reset_vault start vault: {vault_nbr}")
+            if self.satodime_reset_vault_frame is None:
+                self.satodime_reset_vault_frame = FrameSatodimeResetVault(self)
+            self.satodime_reset_vault_frame.update_frame(vault_nbr)
+            self.satodime_reset_vault_frame.tkraise()
+
+        except Exception as ex:
+            logger.error(f"Error in show_satodime_reset_vault: {ex}", exc_info=True)

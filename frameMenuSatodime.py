@@ -46,7 +46,7 @@ class FrameMenuSatodime(customtkinter.CTkFrame):
                 "secrets.png",
                 0.26, 0.05,
                 state="normal",
-                command=lambda: master.show_satodime_vaults(),
+                command=lambda: master.show_satodime_overview(),
             )
 
             rely = 0.33

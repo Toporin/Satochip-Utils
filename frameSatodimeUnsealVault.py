@@ -2,20 +2,16 @@ from PIL import Image, ImageTk
 import customtkinter
 import logging
 
-from pysatochip.JCconstants import STATE_SEALED, STATE_UNSEALED
-
-from constants import (DEFAULT_BG_COLOR, BG_MAIN_MENU, BG_HOVER_BUTTON,
-                       TEXT_COLOR, BUTTON_TEXT_COLOR, HIGHLIGHT_COLOR, TYPE_MASTERSEED, TYPE_DIC, STATUS_DIC, ICON_PATH,
-                       STATUS_COLOR_DIC)
-from frameWidgetAssetTab import FrameWidgetAssetTab
+from constants import (STATUS_DIC, ICON_PATH, STATUS_COLOR_DIC)
 from frameWidgetHeader import FrameWidgetHeader
+from frameWidgetLabel import FrameWidgetLabel
 from frameWidgetSatodimeCard import FrameWidgetSatodimeCard
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-class FrameSatodimeVault(customtkinter.CTkFrame):
+class FrameSatodimeUnsealVault(customtkinter.CTkFrame):
 
     def __init__(self, master):
         super().__init__(master)
@@ -31,29 +27,49 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
 
             # Creating header
             self.header = FrameWidgetHeader(
-                "Vault",
+                "Unseal vault #",
                 "generate_popup.png",
                 frame=self
             )
             self.header.place(relx=0.05, rely=0.05, anchor="nw")
 
+            # intro text
+            self.intro_label = FrameWidgetLabel(
+                master=self,
+                text="You are about to unseal the following vault:"
+            )
+            self.intro_label.place(relx=0.05, rely=0.15, anchor="nw")
+
             # satocard: show info about the coin in the vault
+            # todo: border
             self.vaultcard = FrameWidgetSatodimeCard(master=self)
-            self.vaultcard.place(relx=0.0, rely=0.15, anchor="nw")
+            self.vaultcard.place(relx=0.0, rely=0.25, anchor="nw")
 
-            # tabs with token & nft assets info
-            self.asset_tab = FrameWidgetAssetTab(master=self, width=750, height=300)
-            self.asset_tab.place(relx=0.0, rely=0.35, anchor="nw")
+            # info labels
+            self.info_label = FrameWidgetLabel(
+                master=self,
+                text="Unsealling the vault will reveal the corresponding private key.\nYou can then transfer the entire balance to another wallet \nusing the revealed private key."
+            )
+            self.info_label.configure(justify="left")
+            self.info_label.place(relx=0.05, rely=0.5, anchor="nw")
 
-            # Create action buttons (will be updated later)
+            self.info2_label = FrameWidgetLabel(
+                master=self,
+                text="This action is irreversible."
+            )
+            self.info2_label.configure(text_color="red")
+            self.info2_label.place(relx=0.05, rely=0.65, anchor="nw")
+
+
+            # Create action buttons
             self.left_button = master.create_button(
-                text="",
-                command=lambda: None,  # will be updated in update_frame()
+                text="Cancel",
+                command=lambda: self.master.show_satodime_overview(),  # will be updated in update_frame()
                 frame=self
             )
             self.left_button.place(relx=0.75, rely=0.95, anchor="e")
             self.right_button = master.create_button(
-                text="",
+                text="Unseal!",
                 command=None,  # will be updated in update
                 frame=self
             )
@@ -68,23 +84,18 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
 
     def update_frame(self, vault_nbr):
         logger.debug(f"update_frame start vault_nbr: {vault_nbr}")
-        logger.debug(f"update_frame start satodime_vaults_info.size: {len(self.master.controller.satodime_vaults_info)}")
 
         # update header
-        self.header.button.configure(text=f"Vault #{vault_nbr}")
+        self.header.button.configure(text=f"Unseal vault #{vault_nbr}")
 
         # fetch cached vault info
         status_int = self.master.controller.satodime_vaults_status[vault_nbr]
-        #status_str = STATUS_DIC.get(status_int, "unknown status")
-        #status_color = STATUS_COLOR_DIC.get(status_int, "black")
+        # status = STATUS_DIC.get(status_int, "unknown status")
+        # status_color = STATUS_COLOR_DIC.get(status_int, "black")
         vault_info = self.master.controller.satodime_vaults_info[vault_nbr]
         blockchain = vault_info.get('name', 'unknown blockchain')
         symbol = vault_info.get('symbol', 'unknown blockchain')
         address = vault_info.get('address', 'unknown address')
-
-        # update status
-        #self.header.status_label.configure(text=f"[{status_str}]")
-        #self.header.status_label.configure(text_color=status_color)
 
         # update coin icon
         self.icon_path = f"{ICON_PATH}{symbol}{'.png'}"
@@ -122,32 +133,8 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
             balance2=balance2_str,
         )
 
-        # update action buttons
-        if status_int == STATE_SEALED:
-            # buy crypto
-            self.left_button.configure(
-                text=f"Buy {symbol}",
-                command=lambda: None #todo
-            )
-            # unseal
-            self.right_button.configure(
-                text="Unseal",
-                command=lambda index=vault_nbr: self.master.show_satodime_unseal_vault(index)
-            )
-        elif status_int == STATE_UNSEALED:
-            # show privkey
-            self.left_button.configure(
-                text=f"Show private key",
-                command=lambda: None  # todo
-            )
-            # warning: reset!
-            self.right_button.configure(
-                text="Reset",
-                command=lambda index=vault_nbr: self.master.show_satodime_reset_vault(index)
-            )
-
-        # update tabs
-        asset_list = self.master.controller.satodime_vaults_asset_list[vault_nbr]
-        self.asset_tab.update_tab(asset_list)
-
+        # update unseal action buttons with vault number
+        self.right_button.configure(
+            command=lambda index=vault_nbr: self.master.controller.satodime_unseal_vault(index),
+        )
 

@@ -3,8 +3,9 @@ import logging
 from PIL import Image, ImageTk
 import webbrowser
 import pyperclip
+from pysatochip.JCconstants import STATE_UNSEALED
 
-from constants import ICON_PATH
+from constants import ICON_PATH, STATUS_DIC, STATUS_COLOR_DIC
 from frameWidgetLabel import FrameWidgetLabel
 
 logger = logging.getLogger(__name__)
@@ -19,7 +20,7 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
 
             # Créer le cadre de l'en-tête
             self.configure(
-                width=750, height=100,
+                width=750, height=120,
                 bg_color="whitesmoke", fg_color="whitesmoke"
             )
 
@@ -27,18 +28,18 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
             rely = 0
 
             # Status field
-            # self.status_label = FrameWidgetLabel(master=self, text="Status:")
-            # self.status_label.place(relx=0.05, rely=rely, anchor="nw")
-            # self.status_value = FrameWidgetLabel(master=self, text="")
-            # self.status_value.place(relx=0.25, rely=rely, anchor="nw")
-            # rely += 0.25
+            self.status_label = FrameWidgetLabel(master=self, text="Status:")
+            self.status_label.place(relx=0.05, rely=rely, anchor="nw")
+            self.status_value = FrameWidgetLabel(master=self, text="")
+            self.status_value.place(relx=0.25, rely=rely, anchor="nw")
+            rely += 0.25
 
             # Blockchain field
             self.blockchain_label = FrameWidgetLabel(master=self, text="Blockchain:")
             self.blockchain_label.place(relx=0.05, rely=rely, anchor="nw")
             self.blockchain_value = FrameWidgetLabel(master=self, text="")
             self.blockchain_value.place(relx=0.25, rely=rely, anchor="nw")
-            rely += 0.30
+            rely += 0.25
 
             # Address field
             self.address_label = FrameWidgetLabel(master=self, text="Address:")
@@ -81,7 +82,7 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
             self.button_explore.image = self.photo_image2  # keep a reference of image
             self.button_explore.place(relx=0.18, rely=rely, anchor="nw")
 
-            rely += 0.30
+            rely += 0.25
 
             # Balances field
             self.balance_label = FrameWidgetLabel(master=self, text="Balance:")
@@ -97,7 +98,7 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
 
     def update_frame(
             self,
-            status: str,
+            status: int,
             blockchain: str,
             address: str,
             url: str,
@@ -105,7 +106,9 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
             balance2: str
     ):
         logger.debug("FrameWidgetSatodimeCard update_frame")
-        # self.status_value.configure(text=status)
+        status_str = STATUS_DIC.get(status, 'unknown')
+        status_color = STATUS_COLOR_DIC.get(status, 'black')
+        self.status_value.configure(text=status_str, text_color=status_color)
         self.blockchain_value.configure(text=blockchain)
         self.address_value.configure(text=address)
         self.button_explore.configure(command=lambda: webbrowser.open(url, new=2))

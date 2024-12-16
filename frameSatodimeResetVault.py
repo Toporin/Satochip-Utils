@@ -56,10 +56,10 @@ class FrameSatodimeResetVault(customtkinter.CTkFrame):
             self.info_label.place(relx=0.05, rely=0.5, anchor="nw")
 
             # confirmation checkbox
-            self.checkbox_passphrase_value = customtkinter.StringVar(value="off")
+            self.checkbox_confirmation_value = customtkinter.StringVar(value="off")
 
-            def update_checkbox_passphrase():
-                if self.checkbox_passphrase_value.get() == "on":
+            def update_checkbox_confirmation():
+                if self.checkbox_confirmation_value.get() == "on":
                     self.right_button.configure(state="normal")
                 else:
                     self.right_button.configure(state="disabled")
@@ -69,8 +69,8 @@ class FrameSatodimeResetVault(customtkinter.CTkFrame):
                 text=" I confirm that I have made a backup of the corresponding private key.",
                 text_color="red",
                 font=customtkinter.CTkFont(family="Outfit", size=16, weight="bold"),
-                command=update_checkbox_passphrase,
-                variable=self.checkbox_passphrase_value,
+                command=update_checkbox_confirmation,
+                variable=self.checkbox_confirmation_value,
                 onvalue="on",
                 offvalue="off"
             )
@@ -102,6 +102,9 @@ class FrameSatodimeResetVault(customtkinter.CTkFrame):
 
         # update header
         self.header.button.configure(text=f"Reset vault #{vault_nbr}")
+
+        # reset confirmation checkbox
+        self.checkbox_confirmation_value.set(value="off")
 
         # fetch cached vault info
         status_int = self.master.controller.satodime_vaults_status[vault_nbr]

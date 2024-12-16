@@ -1,5 +1,3 @@
-from typing import Dict, Any
-
 import customtkinter
 import logging
 from PIL import Image, ImageTk

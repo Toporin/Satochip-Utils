@@ -17,6 +17,24 @@ ICON_PATH = "./pictures_db/"
 
 """Satodime"""
 
+# COIN_LIST = [
+#     "Bitcoin",
+#     "Ethereum",
+#     "Bitcoin Cash",
+#     "Litecoin",
+#     "Polygon",
+#     "Counterparty"
+# ]
+
+COIN_DICT = {
+    "Bitcoin": 0x80000000,
+    "Ethereum": 0x8000003c,
+    "Bitcoin Cash": 0x80000091,
+    "Litecoin": 0x80000002,
+    "Polygon": 0x800003c6,
+    "Counterparty": 0x80000009,
+}
+
 STATUS_DIC = {
 STATE_UNINITIALIZED: "uninitialized",
 STATE_SEALED: "sealed",

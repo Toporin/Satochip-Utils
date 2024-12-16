@@ -6,14 +6,17 @@ from os import urandom
 from typing import Dict, Any, Optional
 from mnemonic import Mnemonic
 from pysatochip.CardConnector import (CardConnector, UninitializedSeedError, UnexpectedSW12Error, PinBlockedError)
-from pysatochip.JCconstants import STATE_SEALED, STATE_UNSEALED, STATE_UNINITIALIZED
+from pysatochip.JCconstants import STATE_SEALED, STATE_UNSEALED, STATE_UNINITIALIZED, DIC_CODE_BY_ASSET, SIZE_CONTRACT, \
+    SIZE_TOKENID, SIZE_DATA
+from pysatochip.slip44 import DICT_SLIP44_BY_SYMBOL
 from pysatochip.version import SATODIME_PROTOCOL_VERSION, SATODIME_PROTOCOL_MAJOR_VERSION, \
     SATODIME_PROTOCOL_MINOR_VERSION
 from pycryptotools.coins import UnsupportedCoin, Bitcoin, BitcoinCash, Litecoin, Ethereum, EthereumClassic, \
     Counterparty, Polygon
 
 from constants import INS_DIC, RES_DIC, TYPE_PASSWORD, TYPE_MASTERSEED, TYPE_DATA, TYPE_DESCRIPTOR, TYPE_PUBKEY, \
-    TYPE_BIP39_MNEMONIC, TYPE_ELECTRUM_MNEMONIC, TYPE_2FA_SECRET, TYPE_DIC, DEBUG_ADDR, STATUS_DIC, STATUS_COLOR_DIC
+    TYPE_BIP39_MNEMONIC, TYPE_ELECTRUM_MNEMONIC, TYPE_2FA_SECRET, TYPE_DIC, DEBUG_ADDR, STATUS_DIC, STATUS_COLOR_DIC, \
+    COIN_DICT
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -1196,7 +1199,7 @@ class Controller:
             self.satodime_vault_get_asset_list(vault_nbr)
 
     def satodime_vault_get_basic_info(self, vault_nbr):
-        logger.info(f'In satodime_get_vault_info_basic vault: {vault_nbr}')
+        logger.info(f'In satodime_vault_get_basic_info vault: {vault_nbr}')
 
         if (self.cc.card_present):
 
@@ -1204,7 +1207,7 @@ class Controller:
             try:
                 (response, sw1, sw2, vault_info) = self.cc.satodime_get_keyslot_status(vault_nbr)
             except Exception as ex:
-                logger.warning(f"Exception during satodime_get_keyslot_status(): {ex}")
+                logger.warning(f"Exception during satodime_vault_get_basic_info(): {ex}")
                 vault_info = {}
 
             # get pubkey
@@ -1213,11 +1216,8 @@ class Controller:
                     (response, sw1, sw2, pubkey_list, pubkey_comp_list) = self.cc.satodime_get_pubkey(
                         vault_nbr)
                     pubkey_hex = bytes(pubkey_list).hex()
-                    pubkey_comp_hex = bytes(pubkey_comp_list).hex()
                     vault_info['pubkey_hex'] = pubkey_hex
-                    vault_info['pubkey_comp_hex'] = pubkey_comp_hex
                     logger.info('PUBKEY:' + pubkey_hex)
-                    logger.info('PUBKEY_COMP:' + pubkey_comp_hex)
 
                     # recover address from pubkey
                     key_slip44_hex = vault_info['key_slip44_hex']
@@ -1295,6 +1295,71 @@ class Controller:
                     logger.warning(f"Exception in satodime_vault_get_asset_list: {str(ex)}")
                     logger.warning(f"Exception in satodime_vault_get_asset_list: coin: {vault_info['coin']} addr: {vault_info['address']}")
 
+    def satodime_seal_vault(self, vault_nbr, blockchain, is_testnet, entropy_bytes):
+        logger.info(f'In satodime_seal_vault vault: {vault_nbr}')
+        if self.cc.card_present:
+            if self.satodime_vaults_status[vault_nbr] == STATE_UNINITIALIZED:
+                try:
+                    logger.info(f'In satodime_seal_vault vault: seal vault!')
+                    if len(entropy_bytes) > 32:
+                        entropy_bytes = hashlib.sha256(entropy_bytes).digest()
+                    else:
+                        entropy_bytes = entropy_bytes + (32 - len(entropy_bytes)) * bytes([0])
+                    (response, sw1, sw2, pubkey_list, pubkey_comp_list) = self.cc.satodime_seal_key(vault_nbr, entropy_bytes)
+                    # update vault state & frame
+                    if sw1 == 0x90 and sw2 == 0x00:
+                        logger.info(f'In satodime_seal_vault vault sealed successfully!')
+                        # import blockchain meta data
+                        # metadata part0
+                        RFU1 = 0x00
+                        RFU2 = 0x00
+                        key_asset = 0x01  # 'Coin'  # use default
+                        key_slip44 = COIN_DICT.get(blockchain, 0x80000000)
+                        if is_testnet:
+                            key_slip44 = (key_slip44 & 0x7FFFFFFF)  # set  msb to 0
+                        key_slip44 = list(key_slip44.to_bytes(4, 'big'))
+                        # key_contract_bytes = b''
+                        key_contract = SIZE_CONTRACT * [0x00]  # use default
+                        # key_tokenid = ''
+                        key_tokenid = SIZE_TOKENID * [0x00]  # use default
+                        try:
+                            (response, sw1, sw2) = self.cc.satodime_set_keyslot_status_part0(
+                                vault_nbr, RFU1, RFU2,
+                                key_asset, key_slip44,
+                                key_contract, key_tokenid
+                            )
+                        except Exception as ex:
+                            logger.warning(f"Exception during satodime_set_keyslot_status_part0: {ex}")
+
+                        # metadata part1
+                        #key_data == '':
+                        key_data = SIZE_DATA * [0x00] # use default
+                        try:
+                            (response, sw1, sw2) = self.cc.satodime_set_keyslot_status_part1(vault_nbr, key_data)
+                        except Exception as ex:
+                            logger.warning(f"Exception during satodime_set_keyslot_status_part1: {ex}")
+
+                        # update state
+                        self.satodime_vaults_status[vault_nbr] = STATE_SEALED
+                        self.satodime_vault_get_basic_info(vault_nbr)
+                        self.satodime_vault_get_coin_info(vault_nbr)
+                        self.satodime_vaults_asset_list[vault_nbr] = []
+
+                        # reset vault frame to force refresh on next view
+                        self.view.satodime_vault_frames[vault_nbr] = None
+
+                        # show popup then display vault
+                        self.view.show(
+                            "SUCCESS",
+                            f"Vault #{vault_nbr} sealed successfully!",
+                            "Ok",
+                            self.view.show_satodime_vault(vault_nbr),
+                            "./pictures_db/edit_label_popup.jpg" # todo
+                        )
+
+                except Exception as ex:
+                    logger.warning(f"Exception in satodime_unseal_vault: {str(ex)}")
+
     def satodime_unseal_vault(self, vault_nbr):
         logger.info(f'In satodime_unseal_vault vault: {vault_nbr}')
 
@@ -1309,13 +1374,27 @@ class Controller:
                         self.satodime_vaults_status[vault_nbr] = STATE_UNSEALED
                         self.satodime_vaults_info[vault_nbr]['privkey_bytes'] = bytes(privkey_list)
                         self.satodime_vaults_info[vault_nbr]['entropy_bytes'] = bytes(entropy_list)
+                        coin = self.satodime_vaults_info[vault_nbr]['coin']
+                        self.satodime_vaults_info[vault_nbr]['wif'] = coin.encode_privkey(privkey_list)
+
                         # update frame
                         vault_frame = self.view.satodime_vault_frames[vault_nbr]
-                        status_str = STATUS_DIC.get(STATE_UNSEALED, 'unknown')
-                        status_color = STATUS_COLOR_DIC.get(STATE_UNSEALED, 'black')
-                        vault_frame.vaultcard.status_value.configure(
-                            text=status_str,
-                            text_color=status_color,
+                        # status_str = STATUS_DIC.get(STATE_UNSEALED, 'unknown')
+                        # status_color = STATUS_COLOR_DIC.get(STATE_UNSEALED, 'black')
+                        # vault_frame.vaultcard.status_value.configure(
+                        #     text=status_str,
+                        #     text_color=status_color,
+                        # )
+                        #vault_frame.update_frame(vault_nbr)
+                        vault_frame.update_frame_by_status(vault_nbr, STATE_UNSEALED)
+
+                        # show popup then display vault
+                        self.view.show(
+                            "SUCCESS",
+                            f"Vault unsealed successfully",
+                            "Ok",
+                            self.view.show_satodime_vault(vault_nbr),
+                            "./pictures_db/edit_label_popup.jpg"  # todo
                         )
 
                 except Exception as ex:
@@ -1335,14 +1414,42 @@ class Controller:
                         self.satodime_vaults_status[vault_nbr] = STATE_UNINITIALIZED
                         self.satodime_vaults_coin_info[vault_nbr] = {}
                         self.satodime_vaults_asset_list[vault_nbr] = []
+
                         # reset frame
-                        self.view.satodime_vault_frames[vault_nbr] = None # force refresh of frame on next view
+                        self.view.satodime_vault_frames[vault_nbr] = None  # force refresh of frame on next view
+
+                        # show popup then display vault
+                        self.view.show(
+                            "SUCCESS",
+                            f"Vault reset successfully",
+                            "Ok",
+                            self.view.show_satodime_vault(vault_nbr),
+                            "./pictures_db/edit_label_popup.jpg"  # todo
+                        )
 
                 except Exception as ex:
                     logger.warning(f"Exception in satodime_reset_vault: {str(ex)}")
 
+    def satodime_export_privkey(self, vault_nbr) -> (bytes, bytes):
+        logger.info(f'In satodime_reset_vault vault: {vault_nbr}')
+        if self.cc.card_present:
+            if self.satodime_vaults_status[vault_nbr] == STATE_UNSEALED:
+                try:
+                    (response, sw1, sw2, entropy_list, privkey_list) = self.cc.satodime_get_privkey(vault_nbr)
 
+                    self.satodime_vaults_info[vault_nbr]['privkey_bytes'] = bytes(privkey_list)
+                    self.satodime_vaults_info[vault_nbr]['entropy_bytes'] = bytes(entropy_list)
+                    # privkey_bytes is the sha256(entropy_bytes)
+                    entropy_bytes_hash = hashlib.sha256(bytes(entropy_list)).digest()
+                    #logger.warning(f"DEBUG: privkey_hex   {bytes(privkey_list).hex()}")
+                    #logger.warning(f"DEBUG: hash(entropy) {entropy_bytes_hash.hex()}")
 
+                    coin = self.satodime_vaults_info[vault_nbr]['coin']
+                    wif = coin.encode_privkey(privkey_list)
+                    self.satodime_vaults_info[vault_nbr]['wif'] = wif
+                    return bytes(privkey_list), bytes(entropy_list), wif
+                except Exception as ex:
+                    logger.warning(f"Exception in satodime_reset_vault: {str(ex)}")
 
 
 

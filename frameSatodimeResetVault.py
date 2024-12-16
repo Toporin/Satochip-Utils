@@ -3,7 +3,6 @@ import customtkinter
 import logging
 
 from constants import (STATUS_DIC, ICON_PATH, STATUS_COLOR_DIC)
-from framePopup import FramePopup
 from frameWidgetHeader import FrameWidgetHeader
 from frameWidgetLabel import FrameWidgetLabel
 from frameWidgetSatodimeCard import FrameWidgetSatodimeCard

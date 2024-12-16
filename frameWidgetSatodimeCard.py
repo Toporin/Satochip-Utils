@@ -3,9 +3,9 @@ import logging
 from PIL import Image, ImageTk
 import webbrowser
 import pyperclip
-from pysatochip.JCconstants import STATE_UNSEALED
 
 from constants import ICON_PATH, STATUS_DIC, STATUS_COLOR_DIC
+from framePopup import FramePopup
 from frameWidgetLabel import FrameWidgetLabel
 
 logger = logging.getLogger(__name__)
@@ -130,6 +130,19 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
         self.address_value.configure(text=address)
         self.button_explore.configure(command=lambda: webbrowser.open(url, new=2))
         self.button_copy.configure(command=lambda: pyperclip.copy(address))
-        self.button_qrcode.configure(command=lambda: None)  #todo
         self.balance_value.configure(text=balance)
         self.balance_value2.configure(text=balance2)
+
+        # show address in qr code popup
+        self.button_qrcode.configure(
+            command=lambda:
+            FramePopup(
+                self,
+                address,
+                address,
+                "Ok",
+                lambda :None,
+                './pictures_db/secrets_popup.png',
+                qr_msg=address,
+            )
+        )

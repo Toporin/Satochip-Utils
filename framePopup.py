@@ -1,5 +1,9 @@
+import tkinter
+
 import customtkinter
 import logging
+
+import pyqrcode
 from PIL import Image, ImageTk
 
 from constants import MAIN_MENU_COLOR, HOVER_COLOR
@@ -19,6 +23,7 @@ class FramePopup(customtkinter.CTkToplevel):
             icon_path=None,
             button2_txt=None,
             cmd2=None,
+            qr_msg=None,
     ):
         super().__init__()
 
@@ -30,7 +35,7 @@ class FramePopup(customtkinter.CTkToplevel):
 
         # Calcul pour centrer le popup par rapport à la fenêtre principale
         popup_width = 600
-        popup_height = 200
+        popup_height = 200 if not qr_msg else 400
         position_right = int(parent.winfo_screenwidth() / 2 - popup_width / 2)
         position_down = int(parent.winfo_screenheight() / 2 - popup_height / 2)
         self.geometry(f"{popup_width}x{popup_height}+{position_right}+{position_down}")
@@ -51,7 +56,6 @@ class FramePopup(customtkinter.CTkToplevel):
                 font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal")
             )
             icon_label.grid(row=0, column=0, padx=20, pady=20, sticky="ew", columnspan=2)
-
         else:
             # Ajout d'un label dans le popup
             label = customtkinter.CTkLabel(
@@ -61,6 +65,19 @@ class FramePopup(customtkinter.CTkToplevel):
             )
             label.grid(row=0, column=0, padx=20, pady=20, sticky="ew", columnspan=2)
         logger.debug("Label added to popup")
+
+        # For QR code qr code
+        if qr_msg:
+            qr = pyqrcode.create(qr_msg, error='L')
+            qr_xbm = qr.xbm(scale=3)  # if len(mnemonic.split()) <= 12 else qr.xbm(scale=2) # todo: tune scale
+            # Convert XBM code to Tkinter image
+            qr_bmp = tkinter.BitmapImage(data=qr_xbm)
+            self.qr_label = customtkinter.CTkLabel(
+                self,
+                image=qr_bmp,
+                text=""  # f"\n{msg}",
+            )
+            self.qr_label.grid(row=1, column=0, padx=20, pady=20, columnspan=2)
 
         def close_and_execute():
             if cmd:
@@ -103,7 +120,7 @@ class FramePopup(customtkinter.CTkToplevel):
                 font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal"),
                 command=lambda: close_and_execute2()
             )
-            self.show_button2.grid(row=1, column=1, padx=20, pady=20, sticky="ew")
+            self.show_button2.grid(row=2 if qr_msg else 1 , column=1, padx=20, pady=20, sticky="ew")
 
         else:  # Place only 1 button
             self.show_button = customtkinter.CTkButton(
@@ -116,7 +133,7 @@ class FramePopup(customtkinter.CTkToplevel):
                 font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal"),
                 command=lambda: close_and_execute()
             )
-            self.show_button.grid(row=1, column=0, padx=20, pady=20, columnspan=2)
+            self.show_button.grid(row=2 if qr_msg else 1, column=0, padx=20, pady=20, columnspan=2)
 
         # Rendre la fenêtre modale
         # self.transient(self)  # Set to be on top of the main window

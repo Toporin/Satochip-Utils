@@ -1,3 +1,5 @@
+from os import urandom
+
 import customtkinter
 import logging
 
@@ -132,7 +134,7 @@ class FrameSatodimeSealVault(customtkinter.CTkFrame):
                 entropy_bytes = entropy_str.encode('utf-8')
                 is_testnet = (self.expert_mode_widget.radio_value_network == "testnet")
             else:
-                entropy_bytes = bytes([])
+                entropy_bytes = urandom(32)  # bytes([])
                 is_testnet = False
             blockchain = self.blockchain_variable.get()
             self.master.controller.satodime_seal_vault(vault_nbr, blockchain, is_testnet, entropy_bytes)

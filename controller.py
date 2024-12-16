@@ -1440,9 +1440,9 @@ class Controller:
                     self.satodime_vaults_info[vault_nbr]['privkey_bytes'] = bytes(privkey_list)
                     self.satodime_vaults_info[vault_nbr]['entropy_bytes'] = bytes(entropy_list)
                     # privkey_bytes is the sha256(entropy_bytes)
-                    entropy_bytes_hash = hashlib.sha256(bytes(entropy_list)).digest()
-                    #logger.warning(f"DEBUG: privkey_hex   {bytes(privkey_list).hex()}")
-                    #logger.warning(f"DEBUG: hash(entropy) {entropy_bytes_hash.hex()}")
+                    # entropy_bytes_hash = hashlib.sha256(bytes(entropy_list)).digest()
+                    # logger.warning(f"DEBUG: privkey_hex   {bytes(privkey_list).hex()}")
+                    # logger.warning(f"DEBUG: hash(entropy) {entropy_bytes_hash.hex()}")
 
                     coin = self.satodime_vaults_info[vault_nbr]['coin']
                     wif = coin.encode_privkey(privkey_list)

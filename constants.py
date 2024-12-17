@@ -35,6 +35,26 @@ COIN_DICT = {
     "Counterparty": 0x80000009,
 }
 
+COIN_DECIMALS_DICT = {
+    "BTC": 8,
+    "ETH": 6,
+    "BCH": 6,
+    "LTC": 6,
+    "POL": 2,
+    "XCP": 3,
+
+    "USD": 2,
+    "EUR": 2,
+
+    "BTCTEST": 8,
+    "ETHTEST": 6,
+    "BCHTEST": 6,
+    "LTCTEST": 6,
+    "POLTEST": 2,
+    "XCPTEST": 3,
+}
+
+
 STATUS_DIC = {
 STATE_UNINITIALIZED: "uninitialized",
 STATE_SEALED: "sealed",

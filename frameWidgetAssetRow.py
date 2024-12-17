@@ -1,3 +1,5 @@
+import webbrowser
+
 import customtkinter
 import logging
 from PIL import Image, ImageTk
@@ -14,7 +16,7 @@ class FrameWidgetAssetRow(customtkinter.CTkFrame):
     def __init__(self, master, width: int, height: int):
         super().__init__(master)
 
-        logger.debug("init")
+        # logger.debug("init")
 
         try:
             # Creating new frame
@@ -24,10 +26,10 @@ class FrameWidgetAssetRow(customtkinter.CTkFrame):
             )
             self.width = width
             self.height = height
-            width_icon= int(0.1*width)
-            width_name = int(0.3*width)
+            width_icon= int(0.05*width)
+            width_name = int(0.4*width)
             width_balance = int(0.3 * width)
-            width_balance2 = int(0.3 * width)
+            width_balance2 = int(0.25 * width)
 
             # clickable image with icon/nft
             # load icon image
@@ -43,10 +45,10 @@ class FrameWidgetAssetRow(customtkinter.CTkFrame):
                 image=self.photo_image,
                 bg_color=bg_color, fg_color=bg_color,
                 hover_color=bg_color,
+                anchor="w",
             )
             self.button_icon.image = self.photo_image  # keep a reference of image
             self.button_icon.place(x=0, rely=0, anchor="nw")
-            #self.button_icon.pack(side='left', expand=True, fill="both")
 
             # asset name
             self.button_name = customtkinter.CTkButton(
@@ -55,9 +57,9 @@ class FrameWidgetAssetRow(customtkinter.CTkFrame):
                 font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal"),
                 bg_color=bg_color, fg_color=bg_color,
                 hover_color=bg_color,
+                anchor="w",
             )
             self.button_name.place(x=width_icon, rely=0, anchor="nw")
-            #self.button_name.pack(side='left', expand=True, fill="both")
 
             # balance
             self.button_balance = customtkinter.CTkButton(
@@ -66,9 +68,9 @@ class FrameWidgetAssetRow(customtkinter.CTkFrame):
                 font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal"),
                 bg_color=bg_color, fg_color=bg_color,
                 hover_color=bg_color,
+                anchor="w",
             )
             self.button_balance.place(x=(width_icon+width_name), rely=0, anchor="nw")
-            #self.button_balance.pack(side='left', expand=True, fill="both")
 
             # balance2
             self.button_balance2 = customtkinter.CTkButton(
@@ -77,9 +79,9 @@ class FrameWidgetAssetRow(customtkinter.CTkFrame):
                 font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal"),
                 bg_color=bg_color, fg_color=bg_color,
                 hover_color=bg_color,
+                anchor="w",
             )
             self.button_balance2.place(x=(width_icon+width_name+width_balance), rely=0, anchor="nw")
-            #self.button_balance2.pack(side='left', expand=False, fill="both")
 
         except Exception as e:
             logger.error(f"Init error : {e}", exc_info=True)
@@ -88,12 +90,11 @@ class FrameWidgetAssetRow(customtkinter.CTkFrame):
         logger.debug(f"update_frame for asset name: {name}")
 
         # populate row with asset
-
-        fg_color = DEFAULT_BG_COLOR if row_id % 2 == 0 else BG_HOVER_BUTTON
-        text_color = TEXT_COLOR if row_id % 2 == 0 else BUTTON_TEXT_COLOR
+        # fg_color = DEFAULT_BG_COLOR if row_id % 2 == 0 else BG_HOVER_BUTTON
+        # text_color = TEXT_COLOR if row_id % 2 == 0 else BUTTON_TEXT_COLOR
 
         # todo update asset icon
         self.button_name.configure(text=name)
         self.button_balance.configure(text=balance)
         self.button_balance2.configure(text=balance2)
-
+        self.button_name.configure(command=lambda: webbrowser.open(url, new=2))

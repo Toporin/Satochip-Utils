@@ -2,12 +2,15 @@ import os
 import sys
 import tkinter
 import unicodedata
+from typing import Dict, Any
 
 import customtkinter
 import logging
 import hashlib
 import pyqrcode
 from mnemonic import Mnemonic
+
+from constants import COIN_DECIMALS_DICT
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -161,3 +164,32 @@ def normalize_string(txt) -> str:
         raise TypeError("String value expected")
 
     return unicodedata.normalize("NFKD", utxt)
+
+
+def format_asset_balances(asset: Dict[str, Any]) -> (str, str):
+    # update balance
+    balance_dec = asset.get('balance', None)
+    symbol = asset.get('symbol', asset.get('name', ""))
+    # logger.debug(f"balance_dec: {balance_dec} {symbol}")
+    balance_str = f""
+    balance2_str = f""
+    if balance_dec is None:
+        return balance_str, balance2_str
+
+    # native devise
+    precision = COIN_DECIMALS_DICT.get(symbol, 2)
+    balance_str = "{:.{}f}".format(balance_dec, precision)
+    balance_str = f"{balance_str} {symbol}"
+
+    # in second devise  # default mostly to USD currently, todo: select devise...
+    rate_dec = asset.get('exchange_rate', None)
+    symbol2 = asset.get('currency', '')
+    # logger.debug(f"rate_dec: {rate_dec} {symbol2}")
+    if rate_dec is not None:
+        balance2_dec = balance_dec * rate_dec
+        precision2 = COIN_DECIMALS_DICT.get(symbol2, 2)
+        balance2_str = "{:.{}f}".format(balance2_dec, precision2)
+        balance2_str = f"{balance2_str} {symbol2}"
+        # logger.debug(f"balance2_str: {balance2_str}")
+
+    return balance_str, balance2_str

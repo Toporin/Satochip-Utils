@@ -9,6 +9,7 @@ from frameWidgetAssetTab import FrameWidgetAssetTab
 from frameWidgetHeader import FrameWidgetHeader
 from frameWidgetPrivkeyTab import FrameWidgetPrivkeyTab
 from frameWidgetSatodimeCard import FrameWidgetSatodimeCard
+from utils import format_asset_balances
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -42,6 +43,7 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
 
             # tabs with token & nft assets info
             self.show_asset_tab = True
+            self.asset_list = []
             self.asset_tab = FrameWidgetAssetTab(master=self, width=750, height=300)
             self.asset_tab.place(relx=0.0, rely=0.35, anchor="nw")
 
@@ -92,23 +94,11 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
 
         # update balance
         coin_info = self.master.controller.satodime_vaults_coin_info[vault_nbr]
+        (balance_str, balance2_str) = format_asset_balances(coin_info)
         url = coin_info.get('address_explorer_url', 'no url available')
-        balance_dec = coin_info.get('balance', None)
-        logger.debug(f"balance_dec: {balance_dec} {symbol}")
-        balance_str = f""
-        balance2_str = f""
-        if balance_dec is not None:
-            balance_str = f"{balance_dec} {symbol}"
-            # in second devise #todo: select devise...
-            rate_dec = coin_info.get('exchange_rate', None)
-            symbol2 = coin_info.get('currency', '')
-            logger.debug(f"rate_dec: {rate_dec} {symbol2}")
-            if rate_dec is not None:
-                balance2_dec = balance_dec * rate_dec
-                balance2_str = f"{balance2_dec} {symbol2}"
-                logger.debug(f"balance2_str: {balance2_str}")
 
-        logger.debug(f"update_frame update vaultcard for vault #{vault_nbr}")
+        # update vault card
+        #logger.debug(f"update_frame update vaultcard for vault #{vault_nbr}")
         self.vaultcard.update_frame(
             status=status_int,
             blockchain=blockchain,
@@ -118,36 +108,15 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
             balance2=balance2_str,
         )
 
-        # update frame based on status (button + vaultcard status)
+        # update frame based on status (buttons action + vaultcard status)
         self.update_frame_by_status(vault_nbr, status_int)
 
-        # update action buttons
-        # if status_int == STATE_SEALED:
-        #     # buy crypto
-        #     self.left_button.configure(
-        #         text=f"Buy {symbol}",
-        #         command=lambda: None #todo
-        #     )
-        #     # unseal
-        #     self.right_button.configure(
-        #         text="Unseal",
-        #         command=lambda index=vault_nbr: self.master.show_satodime_unseal_vault(index)
-        #     )
-        # elif status_int == STATE_UNSEALED:
-        #     # show privkey
-        #     self.left_button.configure(
-        #         text=f"Show private key",
-        #         command=lambda: None  # todo
-        #     )
-        #     # warning: reset!
-        #     self.right_button.configure(
-        #         text="Reset",
-        #         command=lambda index=vault_nbr: self.master.show_satodime_reset_vault(index)
-        #     )
-
         # update tabs
-        asset_list = self.master.controller.satodime_vaults_asset_list[vault_nbr]
-        self.asset_tab.update_tab(asset_list)
+        self.asset_list = self.master.controller.satodime_vaults_asset_list[vault_nbr]
+        if len(self.asset_list) > 0:
+            self.asset_tab.update_tab(self.asset_list)
+        else:
+            self.asset_tab.place_forget()
 
     def update_frame_by_status(self, vault_nbr, status: int):
         logger.debug(f"update_frame_by_status start vault_nbr: {vault_nbr}")
@@ -194,7 +163,8 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
                     self.left_button.configure(text="Show asset list")
                 else:
                     self.show_asset_tab = True
-                    self.asset_tab.place(relx=0.0, rely=0.35, anchor="nw")
+                    if len(self.asset_list) > 0:
+                        self.asset_tab.place(relx=0.0, rely=0.35, anchor="nw")
                     self.privkey_tab.place_forget()
                     self.left_button.configure(text="Show private key")
 

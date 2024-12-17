@@ -39,7 +39,7 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
 
             # satocard: show info about the coin in the vault
             self.vaultcard = FrameWidgetSatodimeCard(master=self)
-            self.vaultcard.place(relx=0.0, rely=0.15, anchor="nw")
+            self.vaultcard.place(relx=0.05, rely=0.15, anchor="nw")
 
             # tabs with token & nft assets info
             self.show_asset_tab = True
@@ -82,7 +82,7 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
         status_int = self.master.controller.satodime_vaults_status[vault_nbr]
         vault_info = self.master.controller.satodime_vaults_info[vault_nbr]
         blockchain = vault_info.get('name', 'unknown blockchain')
-        symbol = vault_info.get('symbol', 'unknown blockchain')
+        symbol = vault_info.get('symbol', 'UNKNOWN')
         address = vault_info.get('address', 'unknown address')
 
         # update coin icon
@@ -102,6 +102,7 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
         self.vaultcard.update_frame(
             status=status_int,
             blockchain=blockchain,
+            symbol=symbol,
             address=address,
             url=url,
             balance=balance_str,

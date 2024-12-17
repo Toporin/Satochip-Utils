@@ -1348,6 +1348,11 @@ class Controller:
                         # reset vault frame to force refresh on next view
                         self.view.satodime_vault_frames[vault_nbr] = None
 
+                        # update overview frame
+                        overview_frame = self.view.satodime_overview_frame
+                        if overview_frame is not None:
+                            overview_frame.update_frame_vault(vault_nbr)
+
                         # show popup then display vault
                         self.view.show(
                             "SUCCESS",
@@ -1379,14 +1384,12 @@ class Controller:
 
                         # update frame
                         vault_frame = self.view.satodime_vault_frames[vault_nbr]
-                        # status_str = STATUS_DIC.get(STATE_UNSEALED, 'unknown')
-                        # status_color = STATUS_COLOR_DIC.get(STATE_UNSEALED, 'black')
-                        # vault_frame.vaultcard.status_value.configure(
-                        #     text=status_str,
-                        #     text_color=status_color,
-                        # )
-                        #vault_frame.update_frame(vault_nbr)
                         vault_frame.update_frame_by_status(vault_nbr, STATE_UNSEALED)
+
+                        # update overview frame
+                        overview_frame = self.view.satodime_overview_frame
+                        if overview_frame is not None:
+                            overview_frame.update_frame_vault(vault_nbr)
 
                         # show popup then display vault
                         self.view.show(

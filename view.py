@@ -666,6 +666,7 @@ class View(customtkinter.CTk):
 
                     # Satodime: reset vault content
                     self.satodime_vault_frames = None
+                    self.satodime_overview_frame = None
 
                     if self.start_frame is not None:  # do not create frame now as it is not main thread
                         self.show_start_frame()
@@ -1004,8 +1005,9 @@ class View(customtkinter.CTk):
 
             if self.satodime_overview_frame is None:
                 self.satodime_overview_frame = FrameSatodimeOverview(self)
-            if self.satodime_vaults_need_update is True:
                 self.satodime_overview_frame.update_frame()
+            # if self.satodime_vaults_need_update is True:
+            #     self.satodime_overview_frame.update_frame()
             self.satodime_overview_frame.tkraise()
 
         except Exception as ex:
@@ -1067,3 +1069,7 @@ class View(customtkinter.CTk):
 
         except Exception as ex:
             logger.error(f"Error in show_satodime_reset_vault: {ex}", exc_info=True)
+
+
+
+

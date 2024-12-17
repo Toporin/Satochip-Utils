@@ -2,10 +2,11 @@ from PIL import Image, ImageTk
 import customtkinter
 import logging
 
-from constants import (STATUS_DIC, ICON_PATH, STATUS_COLOR_DIC)
+from constants import ICON_PATH
 from frameWidgetHeader import FrameWidgetHeader
 from frameWidgetLabel import FrameWidgetLabel
 from frameWidgetSatodimeCard import FrameWidgetSatodimeCard
+from utils import format_asset_balances
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -43,7 +44,7 @@ class FrameSatodimeResetVault(customtkinter.CTkFrame):
             # satocard: show info about the coin in the vault
             # todo: border
             self.vaultcard = FrameWidgetSatodimeCard(master=self)
-            self.vaultcard.place(relx=0.0, rely=0.25, anchor="nw")
+            self.vaultcard.place(relx=0.05, rely=0.25, anchor="nw")
 
             # explanation text
             self.info_label = FrameWidgetLabel(
@@ -123,27 +124,14 @@ class FrameSatodimeResetVault(customtkinter.CTkFrame):
 
         # update balance
         coin_info = self.master.controller.satodime_vaults_coin_info[vault_nbr]
+        (balance_str, balance2_str) = format_asset_balances(coin_info)
         url = coin_info.get('address_explorer_url', 'no url available')
-        # symbol = coin_info.get('symbol', '')
-        balance_dec = coin_info.get('balance', None)
-        logger.debug(f"balance_dec: {balance_dec} {symbol}")
-        balance_str = f""
-        balance2_str = f""
-        if balance_dec is not None:
-            balance_str = f"{balance_dec} {symbol}"
-            # in second devise #todo: select devise...
-            rate_dec = coin_info.get('exchange_rate', None)
-            symbol2 = coin_info.get('currency', '')
-            logger.debug(f"rate_dec: {rate_dec} {symbol2}")
-            if rate_dec is not None:
-                balance2_dec = balance_dec * rate_dec
-                balance2_str = f"{balance2_dec} {symbol2}"
-                logger.debug(f"balance2_str: {balance2_str}")
 
         logger.debug(f"update_frame update vaultcard for vault #{vault_nbr}")
         self.vaultcard.update_frame(
             status=status_int,
             blockchain=blockchain,
+            symbol=symbol,
             address=address,
             url=url,
             balance=balance_str,

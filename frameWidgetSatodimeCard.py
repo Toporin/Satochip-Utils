@@ -37,6 +37,22 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
             self.blockchain_value = FrameWidgetLabel(master=self, text="")
             self.blockchain_value.grid(row=1, column=1, padx=5, pady=00, sticky="w")
 
+            # create coin icon
+            bg_color = "whitesmoke"
+            coin_icon_path = f"{ICON_PATH}{f'genuine_card.jpg'}"
+            image = Image.open(coin_icon_path)
+            image = image.resize((48, 48), Image.LANCZOS)
+            photo_image = ImageTk.PhotoImage(image)
+            self.button_coin = customtkinter.CTkButton(
+                self, width=48, height=48, text="",
+                border_spacing=0,
+                image=photo_image,
+                bg_color=bg_color, fg_color=bg_color,
+                hover_color=bg_color,
+            )
+            self.button_coin.image = photo_image  # keep a reference of image
+            self.button_coin.grid(row=0, column=2, padx=0, pady=0, sticky="w", rowspan=2)
+
             # Address field
             self.address_label = FrameWidgetLabel(master=self, text="Address:")
             self.address_label.grid(row=2, column=0, padx=5, pady=0, sticky="w")
@@ -117,6 +133,7 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
             self,
             status: int,
             blockchain: str,
+            symbol: str,
             address: str,
             url: str,
             balance: str,
@@ -132,6 +149,13 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
         self.button_copy.configure(command=lambda: pyperclip.copy(address))
         self.balance_value.configure(text=balance)
         self.balance_value2.configure(text=balance2)
+
+        # update coin icon
+        icon_path = f"{ICON_PATH}{symbol}{'.png'}" # todo
+        image = Image.open(icon_path)
+        image = image.resize((48, 48), Image.LANCZOS)
+        photo_image = ImageTk.PhotoImage(image)
+        self.button_coin.configure(image=photo_image)
 
         # show address in qr code popup
         self.button_qrcode.configure(

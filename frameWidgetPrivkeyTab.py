@@ -3,7 +3,7 @@ import hashlib
 import customtkinter
 import logging
 
-from constants import BUTTON_COLOR
+from constants import TAB_BG_COLOR
 from frameWidgetLabel import FrameWidgetLabel
 
 logger = logging.getLogger(__name__)
@@ -28,11 +28,11 @@ class FrameWidgetPrivkeyTab(customtkinter.CTkTabview):
             # set content frame
             # tab_privkey
             self.privkey_label = FrameWidgetLabel(master=tab_privkey, text="Private key:")
-            self.privkey_label.configure(fg_color=BUTTON_COLOR)
+            self.privkey_label.configure(fg_color=TAB_BG_COLOR)
             self.privkey_label.place(relx=0.05, rely=0.05, anchor="nw")
             self.privkey_entry = customtkinter.CTkEntry(
                 tab_privkey, width=500, height=37, corner_radius=10,
-                bg_color=BUTTON_COLOR, fg_color=BUTTON_COLOR, border_color=BUTTON_COLOR,
+                bg_color=TAB_BG_COLOR, fg_color=TAB_BG_COLOR, border_color=TAB_BG_COLOR,
                 show="", text_color='grey'
             )
             #self.privkey_entry = master.create_entry(frame=tab_privkey)
@@ -40,11 +40,11 @@ class FrameWidgetPrivkeyTab(customtkinter.CTkTabview):
 
             # tab_wif
             self.wif_label = FrameWidgetLabel(master=tab_wif, text="WIF:")
-            self.wif_label.configure(fg_color=BUTTON_COLOR)
+            self.wif_label.configure(fg_color=TAB_BG_COLOR)
             self.wif_label.place(relx=0.05, rely=0.05, anchor="nw")
             self.wif_entry = customtkinter.CTkEntry(
                 tab_wif, width=500, height=37, corner_radius=10,
-                bg_color=BUTTON_COLOR, fg_color=BUTTON_COLOR, border_color=BUTTON_COLOR,
+                bg_color=TAB_BG_COLOR, fg_color=TAB_BG_COLOR, border_color=TAB_BG_COLOR,
                 show="", text_color='grey'
             )
             #self.wif_entry = master.create_entry(frame=tab_wif)
@@ -53,60 +53,60 @@ class FrameWidgetPrivkeyTab(customtkinter.CTkTabview):
             # tab_entropy
             rely = 0.00
             self.entropy_label = FrameWidgetLabel(master=tab_entropy, text="Entropy:")
-            self.entropy_label.configure(fg_color=BUTTON_COLOR)
+            self.entropy_label.configure(fg_color=TAB_BG_COLOR)
             self.entropy_label.place(relx=0.05, rely=rely, anchor="nw")
             rely += 0.1
             self.entropy_entry = customtkinter.CTkEntry(
                 tab_entropy, width=500, height=37, corner_radius=10,
-                bg_color=BUTTON_COLOR, fg_color=BUTTON_COLOR, border_color=BUTTON_COLOR,
+                bg_color=TAB_BG_COLOR, fg_color=TAB_BG_COLOR, border_color=TAB_BG_COLOR,
                 show="", text_color='grey'
             )
             self.entropy_entry.place(relx=0.05, rely=rely, anchor="nw")
             rely += 0.1
             # user entropy
             self.user_entropy_label = FrameWidgetLabel(master=tab_entropy, text="User entropy:")
-            self.user_entropy_label.configure(fg_color=BUTTON_COLOR)
+            self.user_entropy_label.configure(fg_color=TAB_BG_COLOR)
             self.user_entropy_label.place(relx=0.05, rely=rely, anchor="nw")
             rely += 0.1
             self.user_entropy_entry = customtkinter.CTkEntry(
                 tab_entropy, width=500, height=37, corner_radius=10,
-                bg_color=BUTTON_COLOR, fg_color=BUTTON_COLOR, border_color=BUTTON_COLOR,
+                bg_color=TAB_BG_COLOR, fg_color=TAB_BG_COLOR, border_color=TAB_BG_COLOR,
                 show="", text_color='grey'
             )
             self.user_entropy_entry.place(relx=0.05, rely=rely, anchor="nw")
             rely += 0.1
             # authentikey
             self.authentikey_entropy_label = FrameWidgetLabel(master=tab_entropy, text="Authentikey entropy:")
-            self.authentikey_entropy_label.configure(fg_color=BUTTON_COLOR)
+            self.authentikey_entropy_label.configure(fg_color=TAB_BG_COLOR)
             self.authentikey_entropy_label.place(relx=0.05, rely=rely, anchor="nw")
             rely += 0.1
             self.authentikey_entropy_entry = customtkinter.CTkEntry(
                 tab_entropy, width=500, height=37, corner_radius=10,
-                bg_color=BUTTON_COLOR, fg_color=BUTTON_COLOR, border_color=BUTTON_COLOR,
+                bg_color=TAB_BG_COLOR, fg_color=TAB_BG_COLOR, border_color=TAB_BG_COLOR,
                 show="", text_color='grey'
             )
             self.authentikey_entropy_entry.place(relx=0.05, rely=rely, anchor="nw")
             rely += 0.1
             # chip entropy
             self.chip_entropy_label = FrameWidgetLabel(master=tab_entropy, text="Card entropy:")
-            self.chip_entropy_label.configure(fg_color=BUTTON_COLOR)
+            self.chip_entropy_label.configure(fg_color=TAB_BG_COLOR)
             self.chip_entropy_label.place(relx=0.05, rely=rely, anchor="nw")
             rely += 0.1
             self.chip_entropy_entry = customtkinter.CTkEntry(
                 tab_entropy, width=500, height=37, corner_radius=10,
-                bg_color=BUTTON_COLOR, fg_color=BUTTON_COLOR, border_color=BUTTON_COLOR,
+                bg_color=TAB_BG_COLOR, fg_color=TAB_BG_COLOR, border_color=TAB_BG_COLOR,
                 show="", text_color='grey'
             )
             self.chip_entropy_entry.place(relx=0.05, rely=rely, anchor="nw")
             rely += 0.1
             # sha256
             self.hash_entropy_label = FrameWidgetLabel(master=tab_entropy, text="Sha256 of entropy (corresponds to the private key):")
-            self.hash_entropy_label.configure(fg_color=BUTTON_COLOR)
+            self.hash_entropy_label.configure(fg_color=TAB_BG_COLOR)
             self.hash_entropy_label.place(relx=0.05, rely=rely, anchor="nw")
             rely += 0.1
             self.hash_entropy_entry = customtkinter.CTkEntry(
                 tab_entropy, width=500, height=37, corner_radius=10,
-                bg_color=BUTTON_COLOR, fg_color=BUTTON_COLOR, border_color=BUTTON_COLOR,
+                bg_color=TAB_BG_COLOR, fg_color=TAB_BG_COLOR, border_color=TAB_BG_COLOR,
                 show="", text_color='grey'
             )
             self.hash_entropy_entry.place(relx=0.05, rely=rely, anchor="nw")

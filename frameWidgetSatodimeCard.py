@@ -60,7 +60,7 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
 
             # frame with address and buttons
             self.address_frame = customtkinter.CTkFrame(self)
-            self.address_frame.configure(bg_color="white", fg_color="white")
+            self.address_frame.configure(bg_color="whitesmoke", fg_color="whitesmoke")
             self.address_frame.grid(row=2, column=1, padx=(0, 5), pady=0, sticky="w", columnspan=2)
 
             self.address_value = FrameWidgetLabel(master=self.address_frame, text="")

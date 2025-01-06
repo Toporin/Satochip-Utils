@@ -9,6 +9,7 @@ DEFAULT_BG_COLOR = "whitesmoke"
 HIGHLIGHT_COLOR = "#D3D3D3"
 MAIN_MENU_COLOR = "#202738"
 BUTTON_COLOR = "#e1e1e0"
+TAB_BG_COLOR = "#dbdbdb"
 HOVER_COLOR = "grey"
 TEXT_COLOR = "black"
 

@@ -1,10 +1,7 @@
 import customtkinter
 import logging
-from PIL import Image, ImageTk
 
-from constants import ICON_PATH, BG_BUTTON
-from constants import (HIGHLIGHT_COLOR, BG_MAIN_MENU, DEFAULT_BG_COLOR,
-                       BG_HOVER_BUTTON, TEXT_COLOR, BUTTON_TEXT_COLOR)
+from constants import BG_BUTTON
 from frameWidgetLabel import FrameWidgetLabel
 
 logger = logging.getLogger(__name__)

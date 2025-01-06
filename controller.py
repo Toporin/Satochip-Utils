@@ -2,7 +2,8 @@ import binascii
 import hashlib
 import json
 import logging
-from os import urandom
+from configparser import ConfigParser
+from os import urandom, path, getcwd
 from typing import Dict, Any, Optional
 from mnemonic import Mnemonic
 from pysatochip.CardConnector import (CardConnector, UninitializedSeedError, UnexpectedSW12Error, PinBlockedError)
@@ -40,6 +41,7 @@ class Controller:
 
         # card infos
         self.card_status = None
+        self.authentikey = None
 
         # satodime
         self.apikeys = {}
@@ -1098,27 +1100,6 @@ class Controller:
 
         if (self.cc.card_present):
 
-            # check satodime version
-            full_version = ((self.card_status["protocol_major_version"] << 24) +
-                            (self.card_status["protocol_minor_version"] << 16) +
-                            (self.card_status["applet_major_version"] << 8) +
-                            self.card_status["applet_minor_version"])
-            logger.info(f"Satodime card full_version: {full_version}")
-            if full_version <= 0x00010001 and not self.cc.setup_done:
-                # for v0.1-0.1, we need to take ownership to access vault info
-                logger.warning(f"DEBUG DEBUG before POPUP ")
-                # FramePopup(
-                #     self.view,
-                #     "Take ownership?",
-                #     "To display vaults info, the card ownership must be taken. \nDo you want to take the card ownership on this device?",
-                #     "Yes",
-                #     lambda: self.satodime_take_card_ownership(),
-                #     './pictures_db/secrets_popup.png',  # todo
-                #     button2_txt="Cancel",
-                #     cmd2=lambda: logger.info(f"take ownership action cancelled"),
-                # )
-                logger.warning(f"DEBUG DEBUG after POPUP ")
-
             # get satodime status
             try:
                 (response, sw1, sw2, self.satodime_status) = self.cc.satodime_get_status()
@@ -1131,20 +1112,29 @@ class Controller:
             logger.info(f'In satodime_on_connect() self.satodime_nb_vaults: {self.satodime_nb_vaults}')
             logger.info(f'In satodime_on_connect() self.satodime_vaults_status: {self.satodime_vaults_status}')
 
-            # get authentikey TODO: only keep authentikey_comp_hex?
+            # get authentikey
             try:
                 self.authentikey = self.cc.card_export_authentikey()
-                self.authentikey_hex = self.authentikey.get_public_key_bytes(compressed=False).hex()
-                self.authentikey_comp_hex = self.authentikey.get_public_key_bytes(compressed=True).hex()
-                card_info['authentikey_hex'] = self.authentikey_hex
-                card_info['authentikey_comp_hex'] = self.authentikey_comp_hex
+                authentikey_comp_hex = self.authentikey.get_public_key_bytes(compressed=True).hex()
+
+                # check for ownership if any and cache ownership data in cc
+                if path.isfile('satotools.ini'):
+                    logger.info(f'os.path.dirname: {path.dirname(path.abspath(__file__))}')
+                    logger.info(f'os.path.abspath: {path.abspath(getcwd())}')
+                    config = ConfigParser()
+                    config.read('satotools.ini')
+                    if config.has_section('Satodime'):
+                        unlock_secret_hex = config.get('Satodime', authentikey_comp_hex)
+                        unlock_secret = list(bytes.fromhex(unlock_secret_hex))
+                        unlock_counter = self.satodime_status['unlock_counter']
+                        self.cc.satodime_set_unlock_secret(unlock_secret)
+                        self.cc.satodime_set_unlock_counter(unlock_counter)
+                        card_info['is_owner'] = True
+
             except Exception as ex:
+                # for satodime v0.1-0.1, authentikey is not available when card has no owner (not setup)
                 msg = f"Exception during card_export_authentikey:  {ex}"
                 logger.warning(msg)
-                #self.request('show_error', msg)
-                #card_info['is_error'] = True
-                #card_info['error'] = msg
-                #return card_info
 
             # get certificate & validation
             try:
@@ -1156,7 +1146,6 @@ class Controller:
                 card_info['cert_error'] = txt_error
 
                 # TODO: message if card is not authenticated?
-
             except Exception as ex:
                 logger.warning(f"Error while checking card authenticity: {str(ex)}")
                 card_info['is_error'] = True
@@ -1459,6 +1448,17 @@ class Controller:
         try:
             (response, sw1, sw2) = self.cc.satodime_initiate_ownership_transfer()
             if (sw1 == 0x90) and (sw2 == 0x00):
+                # remove old unlock_secret from config file
+                try:
+                    authentikey_comp_hex = self.authentikey.get_public_key_bytes(compressed=True).hex()
+                    config = ConfigParser()
+                    config.read('satotools.ini')
+                    config.remove_option('Satodime', authentikey_comp_hex)
+                    with open('satotools.ini', 'w') as f:
+                        config.write(f)
+                except Exception as ex:
+                    logger.warning(f"Exception while removing ownership data from config file:  {str(ex)}")
+                # show popup
                 self.view.show(
                     'Success',
                     "Transfer of card initiated successfully!",
@@ -1467,15 +1467,7 @@ class Controller:
                     "./pictures_db/change_pin_popup.jpg"
                 )
                 return True
-                # try:
-                #     # remove old unlock_secret from config file
-                #     config = ConfigParser()
-                #     config.read('satodime_tool.ini')
-                #     config.remove_section(self.authentikey_comp_hex)
-                #     with open('satodime_tool.ini', 'w') as f:
-                #         config.write(f)
-                # except Exception as e:
-                #     logger.warning("Exception while removing unlock_secret from config file:  " + str(e))
+
             else:
                 self.view.show(
                     "Failure",
@@ -1518,7 +1510,38 @@ class Controller:
                 logger.info(f"Setup successful!")
                 unlock_counter = response[0:SIZE_UNLOCK_COUNTER]
                 unlock_secret = response[SIZE_UNLOCK_COUNTER:(SIZE_UNLOCK_COUNTER + SIZE_UNLOCK_SECRET)]
-                # todo save in config file
+                # cache values in cc
+                self.cc.satodime_set_unlock_counter(unlock_counter)
+                self.cc.satodime_set_unlock_secret(unlock_secret)
+
+                # save ownership data in config file
+                # ownership data is saved as (card_authentikey, unlock_secret) pair
+                try:
+                    self.authentikey = self.cc.card_export_authentikey()
+                    authentikey_comp_hex = self.authentikey.get_public_key_bytes(compressed=True).hex()
+
+                    logger.info(f'os.path.dirname: {path.dirname(path.abspath("satotools.ini"))}')
+                    logger.info(f'os.path.dirname: {path.dirname(path.abspath(__file__))}')
+                    logger.info(f'os.path.abspath: {path.abspath(getcwd())}')
+                    config = ConfigParser()
+                    if path.isfile('satotools.ini'):
+                        config.read('satotools.ini')
+                    if config.has_section("Satodime") is False:
+                        config.add_section("Satodime")
+                    config.set("Satodime", authentikey_comp_hex, bytes(unlock_secret).hex())
+                    with open('satotools.ini', 'w') as f:
+                        config.write(f)
+                except Exception as ex:
+                    logger.warning("Exception while saving ownership data to config file:  " + str(ex))
+                    self.view.show(
+                        'Failure',
+                        f"Exception while saving ownership data to config file: {str(ex)}",
+                        'Ok',
+                        None,
+                        "./pictures_db/change_pin_popup.jpg" # todo change
+                    )
+
+                # show popup to user
                 self.view.show(
                     'Success',
                     "Card ownership taken successfully!",

@@ -1,3 +1,9 @@
+import base64
+import hashlib
+import hmac
+import urllib
+import webbrowser
+
 from PIL import Image, ImageTk
 import customtkinter
 import logging
@@ -16,6 +22,8 @@ logger.setLevel(logging.DEBUG)
 
 
 class FrameSatodimeVault(customtkinter.CTkFrame):
+
+    PAYBIS_SUPPORTED_CURRENCIES = {"BTC", "LTC", "BCH", "ETH", "POL"}
 
     def __init__(self, master):
         super().__init__(master)
@@ -137,10 +145,14 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
             vault_info = self.master.controller.satodime_vaults_info[vault_nbr]
             symbol = vault_info.get('symbol', 'unknown blockchain')
             address = vault_info.get('address', 'unknown address')
-            self.left_button.configure(
-                text=f"Buy {symbol}",
-                command=lambda: None #todo
-            )
+            if symbol in self.PAYBIS_SUPPORTED_CURRENCIES:
+                self.left_button.configure(
+                    text=f"Buy {symbol}",
+                    command=lambda: webbrowser.open(self.get_paybis_url(symbol, address), new=2)
+                )
+                self.left_button.place(relx=0.75, rely=0.95, anchor="e")
+            else:
+                self.left_button.place_forget()
             # unseal
             self.right_button.configure(
                 text="Unseal",
@@ -175,10 +187,73 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
                 text=f"Show private key",
                 command=lambda: switch_tabs()
             )
+            self.left_button.place(relx=0.75, rely=0.95, anchor="e")
+
             # warning: reset!
             self.right_button.configure(
                 text="Reset",
                 command=lambda index=vault_nbr: self.master.show_satodime_reset_vault(index)
             )
+
+    def get_paybis_url(self, symbol:str, address:str):
+
+        logger.debug(f"address: {address}")
+        logger.debug(f"symbol: {symbol}")
+
+        # format address if needed
+        paybis_address = address
+        if symbol == "BCH":
+            prefix = "bitcoincash:"
+            if address.startswith(prefix):
+                paybis_address = address[len(prefix):]
+
+        # format paybis curency code
+        paybis_symbol = None
+        if symbol in self.PAYBIS_SUPPORTED_CURRENCIES:
+            paybis_symbol = symbol
+
+        if paybis_symbol is not None:
+            logger.debug(f"paybis_address: {paybis_address}")
+            logger.debug(f"paybis_symbol: {paybis_symbol}")
+
+            # get API keys
+            paybis_id = self.master.controller.apikeys.get("API_KEY_PAYBIS_ID", "")
+            paybis_hmac_base64 = self.master.controller.apikeys.get("API_KEY_PAYBIS_HMAC", "")
+            paybis_hmac_bytes = base64.b64decode(paybis_hmac_base64)
+            logger.debug(f"paybis_id: {paybis_id}")
+            logger.debug(f"paybis_hmac_base64: {paybis_hmac_base64}")
+            logger.debug(f"paybis_hmac_bytes: {paybis_hmac_bytes}")
+
+            # base url
+            url = "https://widget.paybis.com/"
+
+            # build query
+            query = (f"?partnerId={paybis_id}&cryptoAddress={paybis_address}" +
+                     f"&currencyCodeFrom=EUR&currencyCodeTo={paybis_symbol}")
+            query_bytes = query.encode('utf-8')
+
+            # compute hmac-sha256
+            signature_bytes = hmac.new(
+                paybis_hmac_bytes,
+                msg=query_bytes,
+                digestmod=hashlib.sha256
+            ).digest()
+            logger.debug(f"signature_bytes.hex(): {signature_bytes.hex()}")
+
+            # base64 encoding with safe url format
+            encoded_signature = base64.standard_b64encode(signature_bytes)
+            encoded_signature = encoded_signature.decode('utf-8')
+            logger.debug(f"encoded_signature: {encoded_signature}")
+
+            encoded_signature = urllib.parse.quote(encoded_signature, safe='', encoding=None, errors=None)
+            logger.debug(f"encoded_signature(url_encoded): {encoded_signature}")
+
+            query += f"&signature={encoded_signature}"
+            url += query
+            logger.debug(f"url: {url}")
+            return url
+
+        else:
+            return ""
 
 

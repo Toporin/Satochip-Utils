@@ -56,8 +56,6 @@ class FrameWidgetOwnership(customtkinter.CTkFrame):
             hover_color=HOVER_COLOR, cursor="hand2",
             command=lambda: None  # updated later
         )
-        #master.create_button("", lambda: None, frame=self)  # updated later
-        #self.ownership_button.configure(font=customtkinter.CTkFont(size=15))
         self.ownership_button.pack(pady=5, side='left', fill="both")  # pack(side='left', expand=True, fill="both")
 
     def update_frame(self, ownership_value: str, controller: Controller):

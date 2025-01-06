@@ -2,6 +2,7 @@ import binascii
 import hashlib
 import json
 import logging
+import sys
 from configparser import ConfigParser
 from os import urandom, path, getcwd
 from typing import Dict, Any, Optional
@@ -9,21 +10,17 @@ from mnemonic import Mnemonic
 from pysatochip.CardConnector import (CardConnector, UninitializedSeedError, UnexpectedSW12Error, PinBlockedError)
 from pysatochip.JCconstants import STATE_SEALED, STATE_UNSEALED, STATE_UNINITIALIZED, DIC_CODE_BY_ASSET, SIZE_CONTRACT, \
     SIZE_TOKENID, SIZE_DATA, SIZE_UNLOCK_COUNTER, SIZE_UNLOCK_SECRET
-from pysatochip.slip44 import DICT_SLIP44_BY_SYMBOL
-from pysatochip.version import SATODIME_PROTOCOL_VERSION, SATODIME_PROTOCOL_MAJOR_VERSION, \
-    SATODIME_PROTOCOL_MINOR_VERSION
 from pycryptotools.coins import UnsupportedCoin, Bitcoin, BitcoinCash, Litecoin, Ethereum, EthereumClassic, \
     Counterparty, Polygon
 
 from constants import INS_DIC, RES_DIC, TYPE_PASSWORD, TYPE_MASTERSEED, TYPE_DATA, TYPE_DESCRIPTOR, TYPE_PUBKEY, \
     TYPE_BIP39_MNEMONIC, TYPE_ELECTRUM_MNEMONIC, TYPE_2FA_SECRET, TYPE_DIC, DEBUG_ADDR, STATUS_DIC, STATUS_COLOR_DIC, \
     COIN_DICT
-from framePopup import FramePopup
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-DEBUG_EXPLORER = True
+DEBUG_EXPLORER = False
 
 class Controller:
 
@@ -39,12 +36,30 @@ class Controller:
             logger.error(f"Failed to initialize CardConnector {ex}", exc_info=True)
             raise
 
+        # get apikeys from file
+        self.apikeys = {}
+        if getattr(sys, 'frozen', False ):
+            # running in a bundle
+            self.pkg_dir = sys._MEIPASS # for pyinstaller
+        else:
+            # running live
+            self.pkg_dir = path.split(path.realpath(__file__))[0]
+        apikeys_path = path.join(self.pkg_dir, "api_keys.ini")
+        logger.info(f'apikeys_path: {apikeys_path}')
+        config = ConfigParser()
+        if path.isfile(apikeys_path):
+            config.read(apikeys_path)
+            if config.has_section('APIKEYS'):
+                self.apikeys = config['APIKEYS']
+                # for key in config['APIKEYS']:
+                #     print(key)
+                #     print(config['APIKEYS'][key])
+
         # card infos
         self.card_status = None
         self.authentikey = None
 
         # satodime
-        self.apikeys = {}
         self.satodime_status = None
         self.satodime_nb_vaults = 0 # None?
         self.satodime_vaults_status = []

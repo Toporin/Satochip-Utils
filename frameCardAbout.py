@@ -1,9 +1,13 @@
+import webbrowser
+from PIL import Image, ImageTk
 import customtkinter
 import logging
 from pysatochip.version import PYSATOCHIP_VERSION
 
 from frameWidgetHeader import FrameWidgetHeader
+from utils import convert_name_to_photo_image
 from version import VERSION
+from constants import ICON_PATH
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -103,7 +107,28 @@ class FrameCardAbout(customtkinter.CTkFrame):
             self.seedkeeper_nb_secrets = master.create_label("Secret stored", frame=self)  # updated later
 
             # SATODIME specific
-            # TODO
+
+            # ownership status & button
+            self.ownership_status = master.create_label("Ownership status", frame=self)
+            self.ownership_button = master.create_button("", lambda: None, frame=self) # updated later
+            self.ownership_button.configure(font=master.make_text_size_at(15))
+            # info button
+            # load icon image
+            # icon_path = f"{ICON_PATH}{'info_icon.png'}"
+            # image = Image.open(icon_path)
+            # image = image.resize((24, 24), Image.LANCZOS)
+            # self.photo_image =  ImageTk.PhotoImage(image)
+            bg_color = "whitesmoke"
+            self.photo_image = convert_name_to_photo_image("info_icon.png")
+            self.ownership_info_url = "https://satochip.io/satodime-ownership-explained/"
+            self.ownership_info_button = customtkinter.CTkButton(
+                self, width=28, height=28, text="",
+                border_spacing=0,
+                image=self.photo_image,
+                bg_color=bg_color, fg_color=bg_color,
+                hover_color=bg_color,
+                command=lambda: webbrowser.open(self.ownership_info_url, new=2)
+            )
 
             self.update_frame()
             self.place(relx=1.0, rely=0.5, anchor="e")
@@ -167,11 +192,14 @@ class FrameCardAbout(customtkinter.CTkFrame):
                 else:
                     self.card_status.configure(text="Card requires setup")
 
+            # remove card specific widgets
+            self.update_forget_widgets()
+
             # Satochip Specific
             if self.master.controller.cc.card_type == "Satochip":
                 rely = self.rely
-                self.seedkeeper_memory.place_forget()
-                self.seedkeeper_nb_secrets.place_forget()
+                # self.seedkeeper_memory.place_forget()
+                # self.seedkeeper_nb_secrets.place_forget()
                 self.card_configuration.configure(text="Satochip configuration")
                 # seeded
                 self.satochip_seeded.configure(
@@ -188,8 +216,8 @@ class FrameCardAbout(customtkinter.CTkFrame):
 
             # Seedkeeper Specific
             elif self.master.controller.cc.card_type == "SeedKeeper":
-                self.satochip_seeded.place_forget()
-                self.satochip_2FA.place_forget()
+                # self.satochip_seeded.place_forget()
+                # self.satochip_2FA.place_forget()
                 self.card_configuration.configure(text="Seedkeeper configuration")
                 # get seedkeeper status (seedkeeper v0.2+ and PIN required!)
                 if protocol_version >= 2:
@@ -227,6 +255,62 @@ class FrameCardAbout(customtkinter.CTkFrame):
                 rely += 0.05
 
             # Satodime Specific
-            if self.master.controller.cc.card_type == "Satodime":
-                # TODO
-                pass
+            elif self.master.controller.cc.card_type == "Satodime":
+                rely = self.rely
+                self.card_configuration.configure(text="Satodime configuration")
+
+                # update status
+                ownership_value = "Card has no owner"
+                if self.master.controller.cc.setup_done:
+                    ownership_value = "Card is owned"
+                self.ownership_status.configure(text=ownership_value)
+                self.ownership_status.place(relx=0.05, rely=rely, anchor="nw")
+
+                # info button
+                self.ownership_info_button.place(relx=0.28, rely=rely, anchor="nw")
+
+                # update transfert button
+                def satodime_transfer_card():
+                    is_success = self.master.controller.satodime_transfer_card()
+                    if is_success:  # update status
+                        self.ownership_status.configure(text="Card has no owner")
+                        self.ownership_button.configure(
+                            text="Take ownership",
+                            command=lambda: satodime_take_card_ownership(),
+                        )
+
+                def satodime_take_card_ownership():
+                    is_success = self.master.controller.satodime_take_card_ownership()
+                    if is_success:  # update status
+                        self.ownership_status.configure(text="Card is owned")
+                        self.ownership_button.configure(
+                            text="Transfer ownership",
+                            command=lambda: satodime_transfer_card(),
+                        )
+
+                if self.master.controller.cc.setup_done:
+                    self.ownership_button.configure(
+                        text="Transfer ownership",
+                        command=lambda: satodime_transfer_card(),
+                    )
+                else:
+                    self.ownership_button.configure(
+                        text="Take ownership",
+                        command=lambda: satodime_take_card_ownership(),
+                    )
+                self.ownership_button.place(relx=0.4, rely=rely, anchor="nw")
+
+
+    def update_forget_widgets(self):
+        # satochip
+        self.satochip_seeded.place_forget()
+        self.satochip_2FA.place_forget()
+
+        # seedkeeper
+        self.seedkeeper_memory.place_forget()
+        self.seedkeeper_nb_secrets.place_forget()
+
+        # satodime
+        self.ownership_status.place_forget()
+        self.ownership_info_button.place_forget()
+        self.ownership_button.place_forget()

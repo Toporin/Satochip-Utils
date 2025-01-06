@@ -42,10 +42,11 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
             self.vaultcard.place(relx=0.05, rely=0.15, anchor="nw")
 
             # tabs with token & nft assets info
+            self.tabs_rely = 0.38
             self.show_asset_tab = True
             self.asset_list = []
             self.asset_tab = FrameWidgetAssetTab(master=self, width=750, height=300)
-            self.asset_tab.place(relx=0.0, rely=0.35, anchor="nw")
+            self.asset_tab.place(relx=0.0, rely=self.tabs_rely, anchor="nw")
 
             # tabs with privkey info (will be placed on button action)
             self.privkey_tab = FrameWidgetPrivkeyTab(master=self, width=750, height=300)
@@ -124,6 +125,7 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
         # update vaultcard status
         status_str = STATUS_DIC.get(status, 'unknown')
         status_color = STATUS_COLOR_DIC.get(status, 'black')
+        self.vaultcard.configure(border_color=status_color)
         self.vaultcard.status_value.configure(
             text=status_str,
             text_color=status_color,
@@ -160,12 +162,12 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
                 if self.show_asset_tab:
                     self.show_asset_tab = False
                     self.asset_tab.place_forget()
-                    self.privkey_tab.place(relx=0.0, rely=0.35, anchor="nw")
+                    self.privkey_tab.place(relx=0.0, rely=self.tabs_rely, anchor="nw")
                     self.left_button.configure(text="Show asset list")
                 else:
                     self.show_asset_tab = True
                     if len(self.asset_list) > 0:
-                        self.asset_tab.place(relx=0.0, rely=0.35, anchor="nw")
+                        self.asset_tab.place(relx=0.0, rely=self.tabs_rely, anchor="nw")
                     self.privkey_tab.place_forget()
                     self.left_button.configure(text="Show private key")
 

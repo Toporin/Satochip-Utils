@@ -22,12 +22,13 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
             # Créer le cadre de l'en-tête
             self.configure(
                 width=750, height=120,
-                bg_color="whitesmoke", fg_color="whitesmoke"
+                bg_color="whitesmoke", fg_color="whitesmoke",
+                border_width=3, border_color="green", # todo border?
             )
 
             # Status field
             self.status_label = FrameWidgetLabel(master=self, text="Status:")
-            self.status_label.grid(row=0, column=0, padx=5, pady=0, sticky="w")
+            self.status_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
             self.status_value = FrameWidgetLabel(master=self, text="")
             self.status_value.grid(row=0, column=1, padx=5, pady=0, sticky="w")
 
@@ -60,7 +61,7 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
             # frame with address and buttons
             self.address_frame = customtkinter.CTkFrame(self)
             self.address_frame.configure(bg_color="white", fg_color="white")
-            self.address_frame.grid(row=2, column=1, padx=0, pady=0, sticky="w", columnspan=2)
+            self.address_frame.grid(row=2, column=1, padx=(0, 5), pady=0, sticky="w", columnspan=2)
 
             self.address_value = FrameWidgetLabel(master=self.address_frame, text="")
             self.address_value.grid(row=0, column=1, padx=5, pady=0, sticky="w")
@@ -119,7 +120,7 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
 
             # Balances field
             self.balance_label = FrameWidgetLabel(master=self, text="Balance:")
-            self.balance_label.grid(row=3, column=0, padx=5, pady=0, sticky="w")
+            self.balance_label.grid(row=3, column=0, padx=5, pady=5, sticky="w")
             self.balance_value = FrameWidgetLabel(master=self, text="")
             self.balance_value.grid(row=3, column=1, padx=5, pady=0, sticky="w")
             self.balance_value2 = FrameWidgetLabel(master=self, text="")
@@ -142,6 +143,7 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
         logger.debug("FrameWidgetSatodimeCard update_frame")
         status_str = STATUS_DIC.get(status, 'unknown')
         status_color = STATUS_COLOR_DIC.get(status, 'black')
+        self.configure(border_color=status_color)
         self.status_value.configure(text=status_str, text_color=status_color)
         self.blockchain_value.configure(text=blockchain)
         self.address_value.configure(text=address)

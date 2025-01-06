@@ -7,7 +7,7 @@ from typing import Dict, Any, Optional
 from mnemonic import Mnemonic
 from pysatochip.CardConnector import (CardConnector, UninitializedSeedError, UnexpectedSW12Error, PinBlockedError)
 from pysatochip.JCconstants import STATE_SEALED, STATE_UNSEALED, STATE_UNINITIALIZED, DIC_CODE_BY_ASSET, SIZE_CONTRACT, \
-    SIZE_TOKENID, SIZE_DATA
+    SIZE_TOKENID, SIZE_DATA, SIZE_UNLOCK_COUNTER, SIZE_UNLOCK_SECRET
 from pysatochip.slip44 import DICT_SLIP44_BY_SYMBOL
 from pysatochip.version import SATODIME_PROTOCOL_VERSION, SATODIME_PROTOCOL_MAJOR_VERSION, \
     SATODIME_PROTOCOL_MINOR_VERSION
@@ -17,6 +17,7 @@ from pycryptotools.coins import UnsupportedCoin, Bitcoin, BitcoinCash, Litecoin,
 from constants import INS_DIC, RES_DIC, TYPE_PASSWORD, TYPE_MASTERSEED, TYPE_DATA, TYPE_DESCRIPTOR, TYPE_PUBKEY, \
     TYPE_BIP39_MNEMONIC, TYPE_ELECTRUM_MNEMONIC, TYPE_2FA_SECRET, TYPE_DIC, DEBUG_ADDR, STATUS_DIC, STATUS_COLOR_DIC, \
     COIN_DICT
+from framePopup import FramePopup
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -1096,42 +1097,39 @@ class Controller:
         card_info['about'] = 'card info are stored in this dict'  # to do!
 
         if (self.cc.card_present):
-            # get card status
-            # try:
-            #     (response, sw1, sw2, d) = self.cc.card_get_status()
-            # except Exception as ex:
-            #     logger.warning(f"Exception during card_get_status: {ex}")
-            #     msg = (f"Error while getting card status. \nTry to remove and insert the card again.")
+
+            # check satodime version
+            full_version = ((self.card_status["protocol_major_version"] << 24) +
+                            (self.card_status["protocol_minor_version"] << 16) +
+                            (self.card_status["applet_major_version"] << 8) +
+                            self.card_status["applet_minor_version"])
+            logger.info(f"Satodime card full_version: {full_version}")
+            if full_version <= 0x00010001 and not self.cc.setup_done:
+                # for v0.1-0.1, we need to take ownership to access vault info
+                logger.warning(f"DEBUG DEBUG before POPUP ")
+                # FramePopup(
+                #     self.view,
+                #     "Take ownership?",
+                #     "To display vaults info, the card ownership must be taken. \nDo you want to take the card ownership on this device?",
+                #     "Yes",
+                #     lambda: self.satodime_take_card_ownership(),
+                #     './pictures_db/secrets_popup.png',  # todo
+                #     button2_txt="Cancel",
+                #     cmd2=lambda: logger.info(f"take ownership action cancelled"),
+                # )
+                logger.warning(f"DEBUG DEBUG after POPUP ")
 
             # get satodime status
             try:
                 (response, sw1, sw2, self.satodime_status) = self.cc.satodime_get_status()
             except Exception as ex:
                 logger.warning(f"Exception during satodime_get_status(): {ex}")
-                # (response, sw1, sw2, satodime_status) = ([], 0x00, 0x00, {})
                 self.satodime_status = {'unlock_counter': [], 'max_num_keys': 0, 'satodime_keys_status': []}
 
             self.satodime_nb_vaults = self.satodime_status['max_num_keys']
             self.satodime_vaults_status = self.satodime_status['satodime_keys_status']
             logger.info(f'In satodime_on_connect() self.satodime_nb_vaults: {self.satodime_nb_vaults}')
             logger.info(f'In satodime_on_connect() self.satodime_vaults_status: {self.satodime_vaults_status}')
-
-            # logger.debug(f'In main_menu satodime_vaults_info: {self.satodime_vaults_info}')
-            # logger.debug(f'In main_menu card_event_slots0: {self.card_event_slots}')
-
-            # check version
-            # if (self.cc.card_type == 'Satodime'):
-            #     card_info['card_status'] = d
-            #     v_supported = SATODIME_PROTOCOL_VERSION
-            #     v_applet = d["protocol_version"]
-            #     logger.info(
-            #         f"Satodime version={v_applet} SatodimeTool supported version= {v_supported}")  # debugSatochip
-            #     if (v_supported < v_applet):
-            #         msg = ((
-            #                    'The version of your Satodime is higher than supported by SatodimeTool. You should update SatodimeTool to ensure correct functioning!') + '\n'
-            #                + f'    Satodime version: {d["protocol_major_version"]}.{d["protocol_minor_version"]}' + '\n'
-            #                + f'    Supported version: {SATODIME_PROTOCOL_MAJOR_VERSION}.{SATODIME_PROTOCOL_MINOR_VERSION}')
-            #         self.request('show_error', msg)
 
             # get authentikey TODO: only keep authentikey_comp_hex?
             try:
@@ -1143,10 +1141,10 @@ class Controller:
             except Exception as ex:
                 msg = f"Exception during card_export_authentikey:  {ex}"
                 logger.warning(msg)
-                self.request('show_error', msg)
-                card_info['is_error'] = True
-                card_info['error'] = msg
-                return card_info
+                #self.request('show_error', msg)
+                #card_info['is_error'] = True
+                #card_info['error'] = msg
+                #return card_info
 
             # get certificate & validation
             try:
@@ -1434,12 +1432,11 @@ class Controller:
                     logger.warning(f"Exception in satodime_reset_vault: {str(ex)}")
 
     def satodime_export_privkey(self, vault_nbr) -> (bytes, bytes):
-        logger.info(f'In satodime_reset_vault vault: {vault_nbr}')
+        logger.info(f'In satodime_export_privkey vault: {vault_nbr}')
         if self.cc.card_present:
             if self.satodime_vaults_status[vault_nbr] == STATE_UNSEALED:
                 try:
                     (response, sw1, sw2, entropy_list, privkey_list) = self.cc.satodime_get_privkey(vault_nbr)
-
                     self.satodime_vaults_info[vault_nbr]['privkey_bytes'] = bytes(privkey_list)
                     self.satodime_vaults_info[vault_nbr]['entropy_bytes'] = bytes(entropy_list)
                     # privkey_bytes is the sha256(entropy_bytes)
@@ -1453,6 +1450,101 @@ class Controller:
                     return bytes(privkey_list), bytes(entropy_list), wif
                 except Exception as ex:
                     logger.warning(f"Exception in satodime_reset_vault: {str(ex)}")
+                    self.satodime_vaults_info[vault_nbr]['privkey_bytes'] = "Failed to recover private key (card needs owner)"
+                    self.satodime_vaults_info[vault_nbr]['entropy_bytes'] = "N/A"
+                    self.satodime_vaults_info[vault_nbr]['wif'] = "N/A"
 
+    def satodime_transfer_card(self):
+        logger.info(f'In satodime_transfer_card')
+        try:
+            (response, sw1, sw2) = self.cc.satodime_initiate_ownership_transfer()
+            if (sw1 == 0x90) and (sw2 == 0x00):
+                self.view.show(
+                    'Success',
+                    "Transfer of card initiated successfully!",
+                    'Ok',
+                    None,
+                    "./pictures_db/change_pin_popup.jpg"
+                )
+                return True
+                # try:
+                #     # remove old unlock_secret from config file
+                #     config = ConfigParser()
+                #     config.read('satodime_tool.ini')
+                #     config.remove_section(self.authentikey_comp_hex)
+                #     with open('satodime_tool.ini', 'w') as f:
+                #         config.write(f)
+                # except Exception as e:
+                #     logger.warning("Exception while removing unlock_secret from config file:  " + str(e))
+            else:
+                self.view.show(
+                    "Failure",
+                    f"Failed to transfer card ownership (error code {hex(256*sw1+sw2)})",
+                    'Ok',
+                    None,
+                    "./pictures_db/change_pin_popup.jpg"
+                )
+                return False
+        except Exception as ex:
+            logger.warning(f"Exception during satodime_transfer_card: {ex}")
+            return False
 
+    def satodime_take_card_ownership(self):
+        logger.info(f'In satodime_take_card_ownership')
+        # these values are not used, just provided for compatibility with Satochip & SeedKeeper
+        pin_0 = list(urandom(4))  # RFU #list(values['pin'].encode('utf8'))
+        pin_tries_0 = 0x05
+        ublk_tries_0 = 0x01
+        ublk_0 = list(urandom(16))  # RFU
+        pin_tries_1 = 0x01
+        ublk_tries_1 = 0x01
+        pin_1 = list(urandom(16))  # RFU
+        ublk_1 = list(urandom(16))  # RFU
+        secmemsize = 32  # 0x0000 # => for satochip - TODO: hardcode value?
+        memsize = 0x0000  # RFU
+        create_object_ACL = 0x01  # RFU
+        create_key_ACL = 0x01  # RFU
+        create_pin_ACL = 0x01  # RFU
 
+        # setup
+        try:
+            (response, sw1, sw2) = self.cc.card_setup(
+                pin_tries_0, ublk_tries_0, pin_0, ublk_0,
+                pin_tries_1, ublk_tries_1, pin_1, ublk_1,
+                secmemsize, memsize,
+                create_object_ACL, create_key_ACL, create_pin_ACL
+            )
+            if sw1 == 0x90 and sw2 == 0x00:
+                logger.info(f"Setup successful!")
+                unlock_counter = response[0:SIZE_UNLOCK_COUNTER]
+                unlock_secret = response[SIZE_UNLOCK_COUNTER:(SIZE_UNLOCK_COUNTER + SIZE_UNLOCK_SECRET)]
+                # todo save in config file
+                self.view.show(
+                    'Success',
+                    "Card ownership taken successfully!",
+                    'Ok',
+                    None,
+                    "./pictures_db/change_pin_popup.jpg"
+                )
+                return True
+            else:
+                msg = f"Unable to set up applet!  sw12={hex(sw1)} {hex(sw2)}"
+                logger.warning(msg)
+                self.view.show(
+                    "Failure",
+                    f"Failed to take card ownership (error code {hex(256 * sw1 + sw2)})",
+                    'Ok',
+                    None,
+                    "./pictures_db/change_pin_popup.jpg"
+                )
+                return False
+
+        except Exception as ex:
+            self.view.show(
+                "Failure",
+                f"Failed to take card ownership ({str(ex)})",
+                'Ok',
+                None,
+                "./pictures_db/change_pin_popup.jpg"
+            )
+            return False

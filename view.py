@@ -26,6 +26,7 @@ from frameMenuSatodime import FrameMenuSatodime
 from frameMenuSeedkeeper import FrameMenuSeedkeeper
 from frameMenuSeedkeeperBackup import FrameMenuSeedkeeperBackup
 from frameMenuSettings import FrameMenuSettings
+from frameMenuSettingsSatodime import FrameMenuSettingsSatodime
 from frameSatodimeResetVault import FrameSatodimeResetVault
 from frameSatodimeSealVault import FrameSatodimeSealVault
 from frameSatodimeUnsealVault import FrameSatodimeUnsealVault
@@ -91,6 +92,7 @@ class View(customtkinter.CTk):
             self.start_frame = None
             # menu frames
             self.settings_menu_frame = None
+            self.settings_satodime_menu_frame = None
             self.seedkeeper_menu_frame = None
             self.seedkeeper_backup_menu_frame = None
             self.satodime_menu_frame = None
@@ -210,21 +212,21 @@ class View(customtkinter.CTk):
     ##############
     """ UTILS """
 
-    def convert_name_to_photo_image(self, filename):
-        icon_path = f"{ICON_PATH}{filename}"
-        image = Image.open(icon_path)
-        image = image.resize((25, 25), Image.LANCZOS)
-        photo_image = customtkinter.CTkImage(image)
-        return photo_image
+    # def convert_name_to_photo_image(self, filename):
+    #     icon_path = f"{ICON_PATH}{filename}"
+    #     image = Image.open(icon_path)
+    #     image = image.resize((25, 25), Image.LANCZOS)
+    #     photo_image = customtkinter.CTkImage(image)
+    #     return photo_image
 
     @staticmethod
     def make_text_bold(size=18):
-        logger.debug("make_text_bold start")
+        # logger.debug("make_text_bold start")
         result = customtkinter.CTkFont(weight="bold", size=size)
         return result
 
     def make_text_size_at(self, size=18):
-        logger.debug("make_text_size_at start")
+        # logger.debug("make_text_size_at start")
         result = customtkinter.CTkFont(size=size)
         return result
 
@@ -338,7 +340,7 @@ class View(customtkinter.CTk):
 
 
     def create_label(self, text, bg_fg_color: str = "whitesmoke", frame=None) -> customtkinter.CTkLabel:
-        logger.debug("view.create_label start")
+        # logger.debug("view.create_label start")
         label = customtkinter.CTkLabel(
             frame,
             text=text,
@@ -355,7 +357,7 @@ class View(customtkinter.CTk):
             command=None,
             frame=None
     ) -> customtkinter.CTkButton:
-        logger.debug("View.create_button() start")
+        # logger.debug("View.create_button() start")
 
         button = customtkinter.CTkButton(
             frame,
@@ -378,7 +380,7 @@ class View(customtkinter.CTk):
             command: Optional[Callable] = None,
             text_color: str = 'white',
     ) -> Optional[customtkinter.CTkButton]:
-        logger.info(f"001 Starting main menu button creation for '{button_label}'")
+        # logger.info(f"001 Starting main menu button creation for '{button_label}'")
 
         icon_path = f"{ICON_PATH}{icon_name}"
         image = Image.open(icon_path)
@@ -406,7 +408,7 @@ class View(customtkinter.CTk):
         return button
 
     def create_entry(self, show_option: str = "", width=555, height=37, frame=None) -> customtkinter.CTkEntry:
-        logger.debug("create_entry start")
+        # logger.debug("create_entry start")
         entry = customtkinter.CTkEntry(
             frame, width=width, height=height, corner_radius=10,
             bg_color='white', fg_color=BUTTON_COLOR, border_color=BUTTON_COLOR,
@@ -428,7 +430,7 @@ class View(customtkinter.CTk):
 
     def update_textbox(self, text_box, text):
         try:
-            logger.debug("update_textbox start")
+            # logger.debug("update_textbox start")
             # Efface le contenu actuel
             text_box.delete(1.0, "end")
             # Inserting new text into the textbox
@@ -583,11 +585,19 @@ class View(customtkinter.CTk):
             self.show_nocard_menu()
 
     def show_settings_menu(self):
-        logger.info("IN View.show_settings_menu start")
+        logger.info("In show_settings_menu start")
         if self.settings_menu_frame is None:
             self.settings_menu_frame = FrameMenuSettings(self)
         self.settings_menu_frame.update_frame()
         self.settings_menu_frame.tkraise()
+
+    def show_settings_satodime_menu(self):
+        logger.info("In show_settings_satodime_menu start")
+        if self.settings_satodime_menu_frame is None:
+            self.settings_satodime_menu_frame = FrameMenuSettingsSatodime(self)
+        #self.settings_satodime_menu_frame.update_frame()
+        self.settings_satodime_menu_frame.tkraise()
+
 
     def show_nocard_menu(self):
         logger.info("IN View.show_settings_menu start")

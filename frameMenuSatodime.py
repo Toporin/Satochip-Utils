@@ -5,9 +5,11 @@ import logging
 from PIL import Image, ImageTk
 
 from constants import MAIN_MENU_COLOR, ICON_PATH
+from framePopup import FramePopup
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
 
 class FrameMenuSatodime(customtkinter.CTkFrame):
     def __init__(self, master):
@@ -63,40 +65,6 @@ class FrameMenuSatodime(customtkinter.CTkFrame):
                 self.button_vaults_array += [button_vault]
                 rely += 0.07
 
-            # self.button_generate = master.create_menu_button(
-            #     self,
-            #     "Generate",
-            #     "generate.png",
-            #     0.33, 0.05,
-            #     state="normal",
-            #     command=lambda: master.show_generate_secret()
-            # )
-            #
-            # self.button_import = master.create_menu_button(
-            #     self,
-            #     "Import",
-            #     "import.png",
-            #     0.40, 0.05,
-            #     state="normal",
-            #     command=lambda: master.show_import_secret()
-            # )
-            #
-            # self.button_backup = master.create_menu_button(
-            #     self, "Backup card",
-            #     "logs.png",
-            #     0.47, 0.05,
-            #     state="normal",
-            #     command=lambda: master.show_backup_card()
-            # )
-            #
-            # self.button_logs = master.create_menu_button(
-            #     self, "Logs",
-            #     "logs.png",
-            #     0.54, 0.05,
-            #     state="normal",
-            #     command=lambda: master.show_card_logs()
-            # )
-
             self.button_settings = master.create_menu_button(
                 self, "Settings",
                 "settings.png",
@@ -104,7 +72,7 @@ class FrameMenuSatodime(customtkinter.CTkFrame):
                 state="normal",
                 command=lambda: [
                     master.show_about_frame(),
-                    master.show_settings_menu(),
+                    master.show_settings_satodime_menu(),
                 ]
             )
 
@@ -131,19 +99,40 @@ class FrameMenuSatodime(customtkinter.CTkFrame):
 
     def update_frame(self):
 
-        # rely = 0.33
-        # for vault_nbr in range(3):  # TODO: currently max 3 vaults supported
-        #
-        #     # show/hide vaults that are not supported by the card
-        #     if vault_nbr < self.master.controller.satodime_nb_vaults:
-        #         self.button_vaults_array[vault_nbr].place(relx=0.05, rely=rely, anchor="w")
-        #     else:
-        #         self.button_vaults_array[vault_nbr].place_forget()
-        #     rely += 0.07
+        rely = 0.33
+        for vault_nbr in range(3):  # TODO: currently max 3 vaults supported
 
-        pass
+            # show/hide vaults that are not supported by the card
+            if vault_nbr < self.master.controller.satodime_nb_vaults:
+                self.button_vaults_array[vault_nbr].place(relx=0.05, rely=rely, anchor="w")
+            else:
+                self.button_vaults_array[vault_nbr].place_forget()
+            rely += 0.07
 
 
+        # check satodime version
+        # for v0.1-0.1, we need to take ownership to access vault info
+        full_version = ((self.master.controller.card_status["protocol_major_version"] << 24) +
+                        (self.master.controller.card_status["protocol_minor_version"] << 16) +
+                        (self.master.controller.card_status["applet_major_version"] << 8) +
+                        self.master.controller.card_status["applet_minor_version"])
+        logger.info(f"Satodime card full_version: {full_version}")
+        if full_version <= 0x00010001 and not self.master.controller.cc.setup_done:
+            logger.warning(f"DEBUG DEBUG before POPUP ")
+            FramePopup(
+                self,
+                "Take ownership?",
+                "To display vaults info, the card ownership must be taken. \nDo you want to take the card ownership on this device?",
+                "Yes",
+                lambda: [
+                    self.master.controller.satodime_take_card_ownership(),
+                    self.master.update_status(isConnected=True),
+                ],
+                './pictures_db/secrets_popup.png',  # todo
+                button2_txt="Cancel",
+                cmd2=lambda: logger.info(f"take ownership action cancelled"),
+            )
+            logger.warning(f"DEBUG DEBUG after POPUP ")
 
 
 

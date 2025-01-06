@@ -3,14 +3,14 @@ import sys
 import tkinter
 import unicodedata
 from typing import Dict, Any
-
+from PIL import Image, ImageTk
 import customtkinter
 import logging
 import hashlib
 import pyqrcode
 from mnemonic import Mnemonic
 
-from constants import COIN_DECIMALS_DICT
+from constants import COIN_DECIMALS_DICT, ICON_PATH
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -193,3 +193,11 @@ def format_asset_balances(asset: Dict[str, Any]) -> (str, str):
         # logger.debug(f"balance2_str: {balance2_str}")
 
     return balance_str, balance2_str
+
+
+def convert_name_to_photo_image(filename, sizex=25, sizey=25):
+    icon_path = f"{ICON_PATH}{filename}"
+    image = Image.open(icon_path)
+    image = image.resize((sizex, sizey), Image.LANCZOS)
+    photo_image = customtkinter.CTkImage(image)
+    return photo_image

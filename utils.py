@@ -2,6 +2,7 @@ import os
 import sys
 import tkinter
 import unicodedata
+from decimal import Decimal
 from typing import Dict, Any
 from PIL import Image, ImageTk
 import customtkinter
@@ -185,6 +186,9 @@ def format_asset_balances(asset: Dict[str, Any]) -> (str, str):
     rate_dec = asset.get('exchange_rate', None)
     symbol2 = asset.get('currency', '')
     # logger.debug(f"rate_dec: {rate_dec} {symbol2}")
+    if balance_dec == Decimal(0):
+        balance2_str = f"0.00 USD"
+        # logger.debug(f"balance2_str: {balance2_str}")
     if rate_dec is not None:
         balance2_dec = balance_dec * rate_dec
         precision2 = COIN_DECIMALS_DICT.get(symbol2, 2)

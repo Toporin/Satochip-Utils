@@ -1335,7 +1335,7 @@ class Controller:
 
                         # metadata part1
                         #key_data == '':
-                        key_data = SIZE_DATA * [0x00] # use default
+                        key_data = SIZE_DATA * [0x00]  # use default
                         try:
                             (response, sw1, sw2) = self.cc.satodime_set_keyslot_status_part1(vault_nbr, key_data)
                         except Exception as ex:
@@ -1363,9 +1363,18 @@ class Controller:
                             self.view.show_satodime_vault(vault_nbr),
                             "./pictures_db/edit_label_popup.jpg" # todo
                         )
+                    else:
+                        raise ValueError(f"error code {hex(sw1*256 + sw2)}")
 
                 except Exception as ex:
                     logger.warning(f"Exception in satodime_unseal_vault: {str(ex)}")
+                    self.view.show(
+                        "Failure",
+                        f"Failed to seal vault #{vault_nbr} ({str(ex)})! \nYou may need to be the card owner to perform this operation.",
+                        "Ok",
+                        None,
+                        "./pictures_db/edit_label_popup.jpg"  # todo
+                    )
 
     def satodime_unseal_vault(self, vault_nbr):
         logger.info(f'In satodime_unseal_vault vault: {vault_nbr}')
@@ -1401,9 +1410,18 @@ class Controller:
                             self.view.show_satodime_vault(vault_nbr),
                             "./pictures_db/edit_label_popup.jpg"  # todo
                         )
+                    else:
+                        raise ValueError(f"error code {hex(sw1*256 + sw2)}")
 
                 except Exception as ex:
                     logger.warning(f"Exception in satodime_unseal_vault: {str(ex)}")
+                    self.view.show(
+                        "Failure",
+                        f"Failed to unseal vault ({str(ex)})! \nYou may need to be the card owner to perform this operation.",
+                        "Ok",
+                        None,
+                        "./pictures_db/edit_label_popup.jpg"  # todo
+                    )
 
     def satodime_reset_vault(self, vault_nbr):
         logger.info(f'In satodime_reset_vault vault: {vault_nbr}')
@@ -1431,9 +1449,18 @@ class Controller:
                             self.view.show_satodime_vault(vault_nbr),
                             "./pictures_db/edit_label_popup.jpg"  # todo
                         )
+                    else:
+                        raise ValueError(f"error code {hex(sw1 * 256 + sw2)}")
 
                 except Exception as ex:
                     logger.warning(f"Exception in satodime_reset_vault: {str(ex)}")
+                    self.view.show(
+                        "Failure",
+                        f"Failed to reset vault ({str(ex)})! \nYou may need to be the card owner to perform this operation.",
+                        "Ok",
+                        None,
+                        "./pictures_db/edit_label_popup.jpg"  # todo
+                    )
 
     def satodime_export_privkey(self, vault_nbr) -> (bytes, bytes):
         logger.info(f'In satodime_export_privkey vault: {vault_nbr}')
@@ -1441,22 +1468,43 @@ class Controller:
             if self.satodime_vaults_status[vault_nbr] == STATE_UNSEALED:
                 try:
                     (response, sw1, sw2, entropy_list, privkey_list) = self.cc.satodime_get_privkey(vault_nbr)
-                    self.satodime_vaults_info[vault_nbr]['privkey_bytes'] = bytes(privkey_list)
-                    self.satodime_vaults_info[vault_nbr]['entropy_bytes'] = bytes(entropy_list)
-                    # privkey_bytes is the sha256(entropy_bytes)
-                    # entropy_bytes_hash = hashlib.sha256(bytes(entropy_list)).digest()
-                    # logger.warning(f"DEBUG: privkey_hex   {bytes(privkey_list).hex()}")
-                    # logger.warning(f"DEBUG: hash(entropy) {entropy_bytes_hash.hex()}")
+                    if sw1 == 0x90 and sw2 == 0x00:
+                        self.satodime_vaults_info[vault_nbr]['privkey_bytes'] = bytes(privkey_list)
+                        self.satodime_vaults_info[vault_nbr]['entropy_bytes'] = bytes(entropy_list)
+                        # privkey_bytes is the sha256(entropy_bytes)
+                        # entropy_bytes_hash = hashlib.sha256(bytes(entropy_list)).digest()
+                        # logger.warning(f"DEBUG: privkey_hex   {bytes(privkey_list).hex()}")
+                        # logger.warning(f"DEBUG: hash(entropy) {entropy_bytes_hash.hex()}")
 
-                    coin = self.satodime_vaults_info[vault_nbr]['coin']
-                    wif = coin.encode_privkey(privkey_list)
-                    self.satodime_vaults_info[vault_nbr]['wif'] = wif
-                    return bytes(privkey_list), bytes(entropy_list), wif
+                        coin = self.satodime_vaults_info[vault_nbr]['coin']
+                        wif = coin.encode_privkey(privkey_list)
+                        self.satodime_vaults_info[vault_nbr]['wif'] = wif
+
+                        # show popup
+                        self.view.show(
+                            "SUCCESS",
+                            f"Private key exported successfully from card!",
+                            "Ok",
+                            None,
+                            "./pictures_db/edit_label_popup.jpg"  # todo
+                        )
+                        return bytes(privkey_list), bytes(entropy_list), wif
+                    else:
+                        raise ValueError(f"error code {hex(sw1*256 + sw2)}")
+
                 except Exception as ex:
-                    logger.warning(f"Exception in satodime_reset_vault: {str(ex)}")
-                    self.satodime_vaults_info[vault_nbr]['privkey_bytes'] = "Failed to recover private key (card needs owner)"
-                    self.satodime_vaults_info[vault_nbr]['entropy_bytes'] = "N/A"
-                    self.satodime_vaults_info[vault_nbr]['wif'] = "N/A"
+                    logger.warning(f"Exception in satodime_export_privkey: {str(ex)}")
+                    self.satodime_vaults_info[vault_nbr]['privkey_bytes'] = None
+                    self.satodime_vaults_info[vault_nbr]['entropy_bytes'] = None
+                    self.satodime_vaults_info[vault_nbr]['wif'] = None
+                    self.view.show(
+                        "Failure",
+                        f"Failed to export private key from card ({str(ex)})! \nYou may need to be the card owner to perform this operation.",
+                        "Ok",
+                        None,
+                        "./pictures_db/edit_label_popup.jpg"  # todo
+                    )
+                    return None, None, None
 
     def satodime_transfer_card(self):
         logger.info(f'In satodime_transfer_card')
@@ -1484,16 +1532,17 @@ class Controller:
                 return True
 
             else:
-                self.view.show(
-                    "Failure",
-                    f"Failed to transfer card ownership (error code {hex(256*sw1+sw2)})",
-                    'Ok',
-                    None,
-                    "./pictures_db/change_pin_popup.jpg"
-                )
-                return False
+                raise ValueError(f"error code {hex(sw1*256 + sw2)}")
+
         except Exception as ex:
             logger.warning(f"Exception during satodime_transfer_card: {ex}")
+            self.view.show(
+                "Failure",
+                f"Failed to transfer card ownership ({str(ex)})",
+                'Ok',
+                None,
+                "./pictures_db/change_pin_popup.jpg"
+            )
             return False
 
     def satodime_take_card_ownership(self):
@@ -1531,30 +1580,20 @@ class Controller:
 
                 # save ownership data in config file
                 # ownership data is saved as (card_authentikey, unlock_secret) pair
-                try:
-                    self.authentikey = self.cc.card_export_authentikey()
-                    authentikey_comp_hex = self.authentikey.get_public_key_bytes(compressed=True).hex()
+                self.authentikey = self.cc.card_export_authentikey()
+                authentikey_comp_hex = self.authentikey.get_public_key_bytes(compressed=True).hex()
 
-                    logger.info(f'os.path.dirname: {path.dirname(path.abspath("satotools.ini"))}')
-                    logger.info(f'os.path.dirname: {path.dirname(path.abspath(__file__))}')
-                    logger.info(f'os.path.abspath: {path.abspath(getcwd())}')
-                    config = ConfigParser()
-                    if path.isfile('satotools.ini'):
-                        config.read('satotools.ini')
-                    if config.has_section("Satodime") is False:
-                        config.add_section("Satodime")
-                    config.set("Satodime", authentikey_comp_hex, bytes(unlock_secret).hex())
-                    with open('satotools.ini', 'w') as f:
-                        config.write(f)
-                except Exception as ex:
-                    logger.warning("Exception while saving ownership data to config file:  " + str(ex))
-                    self.view.show(
-                        'Failure',
-                        f"Exception while saving ownership data to config file: {str(ex)}",
-                        'Ok',
-                        None,
-                        "./pictures_db/change_pin_popup.jpg" # todo change
-                    )
+                logger.info(f'os.path.dirname: {path.dirname(path.abspath("satotools.ini"))}')
+                logger.info(f'os.path.dirname: {path.dirname(path.abspath(__file__))}')
+                logger.info(f'os.path.abspath: {path.abspath(getcwd())}')
+                config = ConfigParser()
+                if path.isfile('satotools.ini'):
+                    config.read('satotools.ini')
+                if config.has_section("Satodime") is False:
+                    config.add_section("Satodime")
+                config.set("Satodime", authentikey_comp_hex, bytes(unlock_secret).hex())
+                with open('satotools.ini', 'w') as f:
+                    config.write(f)
 
                 # show popup to user
                 self.view.show(
@@ -1566,18 +1605,10 @@ class Controller:
                 )
                 return True
             else:
-                msg = f"Unable to set up applet!  sw12={hex(sw1)} {hex(sw2)}"
-                logger.warning(msg)
-                self.view.show(
-                    "Failure",
-                    f"Failed to take card ownership (error code {hex(256 * sw1 + sw2)})",
-                    'Ok',
-                    None,
-                    "./pictures_db/change_pin_popup.jpg"
-                )
-                return False
+                raise ValueError(f"error code {hex(sw1*256 + sw2)}")
 
         except Exception as ex:
+            logger.warning(f"Exception in satodime_take_card_ownership: {str(ex)}")
             self.view.show(
                 "Failure",
                 f"Failed to take card ownership ({str(ex)})",

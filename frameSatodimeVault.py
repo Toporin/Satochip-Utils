@@ -159,21 +159,26 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
                 command=lambda index=vault_nbr: self.master.show_satodime_unseal_vault(index)
             )
         elif status == STATE_UNSEALED:
-            # update private info tab
-            vault_info = self.master.controller.satodime_vaults_info[vault_nbr]
-            privkey_bytes = vault_info.get('privkey_bytes', None)
-            entropy_bytes = vault_info.get('entropy_bytes', None)
-            wif = vault_info.get('wif', None)
-            if privkey_bytes is None or entropy_bytes is None or wif is None:
-                # recover from card
-                (privkey_bytes, entropy_bytes, wif) = self.master.controller.satodime_export_privkey(vault_nbr)
-            self.privkey_tab.update_tab(privkey_bytes, entropy_bytes, wif)
+
 
             # show/hide privkey
             def switch_tabs():
                 if self.show_asset_tab:
                     self.show_asset_tab = False
                     self.asset_tab.place_forget()
+
+                    # update private info tab
+                    vault_info = self.master.controller.satodime_vaults_info[vault_nbr]
+                    privkey_bytes = vault_info.get('privkey_bytes', None)
+                    entropy_bytes = vault_info.get('entropy_bytes', None)
+                    wif = vault_info.get('wif', None)
+                    if privkey_bytes is None or entropy_bytes is None or wif is None:
+                        # recover from card
+                        (privkey_bytes, entropy_bytes, wif) = self.master.controller.satodime_export_privkey(vault_nbr)
+                    if privkey_bytes and entropy_bytes and wif:
+                        self.privkey_tab.update_tab(privkey_bytes, entropy_bytes, wif)
+
+                    # show private info tab
                     self.privkey_tab.place(relx=0.0, rely=self.tabs_rely, anchor="nw")
                     self.left_button.configure(text="Show asset list")
                 else:

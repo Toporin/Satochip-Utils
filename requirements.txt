@@ -1,26 +1,9 @@
 customtkinter==5.2.2
-mnemonic==0.20
 pillow==10.3.0
-pysatochip==0.15.1
+pysatochip==0.15.3
+pycryptotools~=0.3.0
 pyscard==2.0.9
+mnemonic==0.20
 pyqrcode~=1.2.1
-# unused modules
-# pyaes==1.6.1
-# ecdsa==0.19.0
-# cryptography==42.0.8
-# pyOpenSSL==24.1.0
-# pyinstaller==6.7.0
-# pyinstaller-hooks-contrib==2024.6
-# setuptools==69.5.1
-# altgraph==0.17.4
-# cffi==1.16.0
-# darkdetect==0.8.0
-# packaging==24.1
-# pefile==2023.2.7
-# pycparser==2.22
-# pywin32-ctypes==0.2.2
-# six==1.16.0
-setuptools~=68.2.2
-pycryptotools~=0.3.0.beta
-aiohttp~=3.10.11
 pyperclip~=1.9.0
+setuptools~=68.2.2

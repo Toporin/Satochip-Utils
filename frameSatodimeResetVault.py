@@ -29,7 +29,7 @@ class FrameSatodimeResetVault(customtkinter.CTkFrame):
             # Creating header
             self.header = FrameWidgetHeader(
                 "Reset vault #",
-                "generate_popup.png",
+                "reset_icon_red.png",
                 frame=self
             )
             self.header.place(relx=0.05, rely=0.05, anchor="nw")
@@ -116,11 +116,11 @@ class FrameSatodimeResetVault(customtkinter.CTkFrame):
         address = vault_info.get('address', 'unknown address')
 
         # update coin icon
-        self.icon_path = f"{ICON_PATH}{symbol}{'.png'}"
-        self.image = Image.open(self.icon_path)
-        self.image = self.image.resize((24, 24), Image.LANCZOS)
-        self.photo_image = ImageTk.PhotoImage(self.image)
-        self.header.button.configure(image=self.photo_image)
+        # self.icon_path = f"{ICON_PATH}{symbol}{'.png'}"
+        # self.image = Image.open(self.icon_path)
+        # self.image = self.image.resize((24, 24), Image.LANCZOS)
+        # self.photo_image = ImageTk.PhotoImage(self.image)
+        # self.header.button.configure(image=self.photo_image)
 
         # update balance
         coin_info = self.master.controller.satodime_vaults_coin_info[vault_nbr]

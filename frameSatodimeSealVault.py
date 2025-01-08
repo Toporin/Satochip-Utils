@@ -29,7 +29,7 @@ class FrameSatodimeSealVault(customtkinter.CTkFrame):
             # Creating header
             self.header = FrameWidgetHeader(
                 "Seal vault #",
-                "generate_popup.png",
+                "lock_icon_black.png",
                 frame=self
             )
             self.header.place(relx=0.05, rely=0.05, anchor="nw")

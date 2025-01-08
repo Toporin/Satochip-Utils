@@ -132,11 +132,12 @@ class FrameSatodimeSealVault(customtkinter.CTkFrame):
             if self.checkbox_expert_mode_value.get() == "on":
                 entropy_str = self.expert_mode_widget.entropy_textbox.get(1.0, "end-1c")
                 entropy_bytes = entropy_str.encode('utf-8')
-                is_testnet = (self.expert_mode_widget.radio_value_network == "testnet")
+                is_testnet = (self.expert_mode_widget.radio_value_network.get() == "testnet")
             else:
                 entropy_bytes = urandom(32)  # bytes([])
                 is_testnet = False
             blockchain = self.blockchain_variable.get()
+
             self.master.controller.satodime_seal_vault(vault_nbr, blockchain, is_testnet, entropy_bytes)
 
         # update button command

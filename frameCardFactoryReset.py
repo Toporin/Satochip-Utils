@@ -101,11 +101,11 @@ class FrameCardFactoryReset(customtkinter.CTkFrame):
             def factory_reset_unsupported():
                 master.appMode = ApplicationMode.Normal
                 master.show(
-                    'FAIL',
+                    'ERROR',
                     f"Factory reset not supported for this card",
                     "ok",
                     lambda: master.show_start_frame(),
-                    "./pictures_db/reset_popup.jpg"
+                    "./pictures_db/error_popup_red.png"
                 )
                 master.show_button.configure(state='normal')
 
@@ -140,7 +140,7 @@ class FrameCardFactoryReset(customtkinter.CTkFrame):
                         f"Please follow the instruction below.",
                         "Remove card",
                         lambda: self.click_reset_button(),
-                        "./pictures_db/reset_popup.jpg"
+                        "./pictures_db/remove_card_popup.png"
                     )
                     master.show_button.configure(state='disabled')
 
@@ -150,7 +150,7 @@ class FrameCardFactoryReset(customtkinter.CTkFrame):
                         f"No card found.\nInsert card and start again.",
                         "Ok",
                         lambda: None,
-                        "./pictures_db/reset_popup.jpg"
+                        "./pictures_db/insert_card_popup.png"
                     )
                     master.show_button.configure(state='normal')
 
@@ -179,33 +179,38 @@ class FrameCardFactoryReset(customtkinter.CTkFrame):
                     self.master.controller.cc.card_disconnect()
                     msg = 'The card has been reset to factory\nRemaining counter: 0'
                     self.master.show('SUCCESS', msg, "Ok", lambda: self.master.restart_app(),
-                              "./pictures_db/reset_popup.jpg")
+                              "./pictures_db/success_popup_green.png")
                     logger.info("Card has been reset to factory. Counter set to 0.")
                 elif sw1 == 0xFF and sw2 == 0xFF:
                     logger.info("Factory reset aborted. The card must be removed after each reset.")
                     msg = 'RESET ABORTED!\n Remaining counter: MAX.'
                     self.master.show('ABORTED', msg, "Ok",
                               lambda: [self.master.controller.cc.set_mode_factory_reset(False), self.master.show_start_frame()],
-                              "./pictures_db/reset_popup.jpg")
+                              "./pictures_db/error_popup_red.png")
                     logger.info("Reset aborted. Counter set to MAX.")
                 elif sw1 == 0xFF and sw2 > 0x00:
                     logger.info(f"Factory reset in progress. Remaining counter: {sw2}")
                     counter = str(sw2) + "/4"
                     msg = f"Please follow the instruction below.\n{counter} steps left."
-                    self.master.show('IN PROGRESS', msg, "Remove card", lambda: self.click_reset_button(),
-                              "./pictures_db/reset_popup.jpg")
+                    self.master.show(
+                        'IN PROGRESS',
+                        msg,
+                        "Remove card",
+                        lambda: self.click_reset_button(),
+                        "./pictures_db/remove_card_popup.png"
+                    )
                     self.master.show_button.configure(state='disabled')
                     logger.info("Card needs to be removed and reinserted to continue.")
                 elif sw1 == 0x6F and sw2 == 0x00:
                     logger.info("Factory reset failed with error code 0x6F00.")
                     counter = "Unknown error 0x6F00"
                     msg = f"The factory reset failed\n{counter}"
-                    self.master.show('FAILED', msg, "Ok", None, "./pictures_db/reset_popup.jpg")
+                    self.master.show('ERROR', msg, "Ok", None, "./pictures_db/error_popup_red.png")
                 elif sw1 == 0x6D and sw2 == 0x00:
                     logger.info("Factory reset failed with error code 0x6D00.")
                     counter = "Instruction not supported (error code 0x6D00)"
                     msg = f"The factory reset failed\n{counter}"
-                    self.master.show('FAILED', msg, "Ok", None, "./pictures_db/reset_popup.jpg")
+                    self.master.show('ERROR', msg, "Ok", None, "./pictures_db/error_popup_red.png")
 
             except Exception as e:
                 logger.error(f"An unexpected error occurred during the factory reset process: {e}", exc_info=True)
@@ -232,7 +237,7 @@ class FrameCardFactoryReset(customtkinter.CTkFrame):
                             f"Please follow the instruction below.\n{pin_remaining} steps left.",
                             "Remove card",
                             lambda: self.click_reset_button(),
-                            "./pictures_db/reset_popup.jpg"
+                            "./pictures_db/remove_card_popup.png"
                         )
                         self.master.show_button.configure(state='disabled')
                 except Exception as ex:
@@ -262,7 +267,7 @@ class FrameCardFactoryReset(customtkinter.CTkFrame):
                                 "The card has been reset to factory!",
                                 "Ok",
                                 lambda: self.master.show_start_frame(),  # self.master.restart_app(),
-                                "./pictures_db/reset_popup.jpg"
+                                "./pictures_db/success_popup_green.png"
                             )
                             break
                         except Exception as ex:

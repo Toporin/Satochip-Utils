@@ -42,33 +42,11 @@ class FrameMenuSettingsSatodime(customtkinter.CTkFrame):
             # create default widgets, use update method to update state
             self.rely = 0.26
 
-            # setup/seed/insert/done button
-            # self.button_status = master.create_menu_button(
-            #     self,
-            #     "Insert Card",
-            #     "insert_card.jpg",
-            #     self.rely, 0.05,
-            #     command=lambda: None,
-            #     state='normal',
-            #     text_color='white',
-            # )
-            # self.rely += 0.07
-
-            # change PIN button
-            # self.button_change_pin = master.create_menu_button(
-            #     self,
-            #     "Change Pin",
-            #     "change_pin_locked.jpg",
-            #     0.33, 0.05,
-            #     command=lambda: master.show_change_pin_frame(),
-            #     state='disabled'
-            # )
-
             # edit label
             self.button_edit_label = master.create_menu_button(
                 self,
                 "Edit Label",
-                "edit_label_locked.jpg",
+                "edit_label.png",
                 self.rely, 0.05,
                 command=lambda: master.show_edit_label_frame(),
                 state='normal'
@@ -79,28 +57,18 @@ class FrameMenuSettingsSatodime(customtkinter.CTkFrame):
             self.button_check_auth = master.create_menu_button(
                 self,
                 "Check Authenticity",
-                "check_authenticity_locked.jpg",
+                "check_authenticity.png",
                 self.rely, 0.05,
                 command=lambda: master.show_check_authenticity_frame(),
                 state='normal'
             )
             self.rely += 0.07
 
-            # factory reset
-            # self.button_factory_reset = master.create_menu_button(
-            #     self,
-            #     "Reset my Card",
-            #     "reset.png",
-            #     0.54, 0.05,
-            #     command=lambda: master.show_factory_reset_frame(),
-            #     state='disabled'
-            # )
-
             # about
             self.button_about = master.create_menu_button(
                 self,
                 "About",
-                "about_locked.jpg",
+                "about.jpg",
                 self.rely, 0.05,  # 0.73, 0.05,
                 command=lambda: master.show_about_frame(),
                 state='normal'
@@ -111,7 +79,7 @@ class FrameMenuSettingsSatodime(customtkinter.CTkFrame):
             self.button_back = master.create_menu_button(
                 self,
                 "Back",
-                "about_locked.jpg", #todo
+                "back_icon.png",
                 0.74, 0.05,
                 command=lambda: master.show_start_frame(),
                 state='normal'
@@ -133,43 +101,6 @@ class FrameMenuSettingsSatodime(customtkinter.CTkFrame):
 
     def update_frame(self):
         logger.debug("FrameMenuSetting update_frame() start")
-        # logger.debug(f"FrameMenuSetting update_frame() card_present: {self.master.controller.cc.card_present}")
-        # logger.debug(f"FrameMenuSetting update_frame() card_type: {self.master.controller.cc.card_type}")
-        # logger.debug(f"FrameMenuSetting update_frame() setup_done: {self.master.controller.cc.setup_done}")
-
-        # if self.master.controller.cc.card_present:
-        #
-        #     if self.master.controller.cc.card_type == "Satodime":
-        #         if self.master.controller.cc.setup_done:
-                    # photo_image = convert_name_to_photo_image("setup_done.jpg")
-                    # self.button_status.configure(
-                    #     require_redraw,
-                    #     text="Setup Done", image=photo_image,
-                    #     command=lambda: None,
-                    #     state="normal", text_color='white',
-                    # )
-                    # self.button_edit_label.configure(state="normal")
-                    # self.button_check_auth.configure(state="normal")
-                    # self.button_about.configure(state="normal")
-                # else: # todo check
-                #     photo_image = convert_name_to_photo_image("setup_my_card.png")
-                #     self.button_status.configure(
-                #         require_redraw,
-                #         text="Setup my card", image=photo_image,
-                #         command=lambda: self.master.show_setup_card_frame(),
-                #         state="normal", text_color="green",
-                #     )
-                #     self.button_edit_label.configure(state="disabled")
-                #     self.button_check_auth.configure(state="disabled")
-                #     self.button_about.configure(state="disabled")
-
-        # else: # no card
-        #     photo_image = convert_name_to_photo_image("insert_card.jpg")
-            # self.button_status.configure(text="Insert card", image=photo_image, command=lambda: None, text_color='white')
-            # self.button_edit_label.configure(state="disabled")
-            # self.button_check_auth.configure(state="disabled")
-            # self.button_about.configure(state="disabled")
-
 
 
 

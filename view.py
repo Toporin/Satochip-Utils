@@ -154,7 +154,8 @@ class View(customtkinter.CTk):
             self.main_frame.place(relx=0.5, rely=0.5, anchor="center")
 
             # widgets
-            self.show_button = None # popup button called in different contexts todo: refactor
+            self.icon_label = None  # popup icon+label called in different contexts todo: refactor
+            self.show_button = None  # popup button called in different contexts todo: refactor
 
             # Launching initialization starting with welcome view
             self.nocard_menu_frame = FrameMenuNoCard(self)
@@ -532,11 +533,14 @@ class View(customtkinter.CTk):
             if icon_path:
                 icon_image = Image.open(icon_path)
                 icon = customtkinter.CTkImage(light_image=icon_image, size=(30, 30))
-                icon_label = customtkinter.CTkLabel(popup, image=icon, text=f"\n{msg}", compound='top',
-                                                    font=customtkinter.CTkFont(family="Outfit",
-                                                                               size=18,
-                                                                               weight="normal"))
-                icon_label.pack(pady=(20, 10))  # Ajout d'un padding différent pour l'icône
+                self.icon_label = customtkinter.CTkLabel(
+                    popup,
+                    image=icon,
+                    text=f"\n{msg}",
+                    compound='top',
+                    font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal")
+                )
+                self.icon_label.pack(pady=(20, 10))  # Ajout d'un padding différent pour l'icône
                 logger.debug("Icon added to popup")
             else:
                 # Ajout d'un label dans le popup
@@ -638,6 +642,10 @@ class View(customtkinter.CTk):
 
                 elif isConnected is False:
                     logger.info(f"Card removed for Reset Factory!")
+                    icon_path = "./pictures_db/insert_card_popup.png"
+                    icon_image = Image.open(icon_path)
+                    icon = customtkinter.CTkImage(light_image=icon_image, size=(30, 30))
+                    self.icon_label.configure(image=icon)
                     self.show_button.configure(text='Insert card', state='disabled')
 
                 else:  # None
@@ -862,7 +870,7 @@ class View(customtkinter.CTk):
                 f"Failed to list secrets!\n{ex}",
                 "Ok",
                 None,
-                "./pictures_db/about_popup.jpg"  # todo change icon
+                "./pictures_db/error_popup_red.png"
             )
 
     def show_seedkeeper_secret(self, secret_header):
@@ -1027,7 +1035,7 @@ class View(customtkinter.CTk):
                 f"Failed to list vaults!\n{ex}",
                 "Ok",
                 None,
-                "./pictures_db/about_popup.jpg"  # todo change icon
+                "./pictures_db/error_popup_red.png"
             )
 
     def show_satodime_vault(self, vault_nbr: SupportsIndex):
@@ -1055,7 +1063,7 @@ class View(customtkinter.CTk):
                 f"Failed to list vaults!\n{ex}",
                 "Ok",
                 None,
-                "./pictures_db/about_popup.jpg"  # todo change icon
+                "./pictures_db/error_popup_red.png"
             )
 
     def show_satodime_unseal_vault(self, vault_nbr: SupportsIndex):

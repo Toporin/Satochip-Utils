@@ -28,7 +28,7 @@ class FrameSatodimeOverview(customtkinter.CTkFrame):
             # Creating header
             self.header = FrameWidgetHeader(
                 "My vaults",
-                "generate_popup.png",
+                "shield_icon.png",
                 frame=self
             )
             self.header.place(relx=0.05, rely=0.05, anchor="nw")

@@ -34,7 +34,7 @@ class FrameWidgetAssetRow(customtkinter.CTkFrame):
             # clickable image with icon/nft
             # load icon image
             bg_color = "whitesmoke"
-            self.icon_path = f"{ICON_PATH}{'about_popup.jpg'}" # todo change...
+            self.icon_path = f"{ICON_PATH}{'coin_icon.png'}"
             self.image = Image.open(self.icon_path)
             self.image = self.image.resize((24, 24), Image.LANCZOS)
             self.photo_image = ImageTk.PhotoImage(self.image)

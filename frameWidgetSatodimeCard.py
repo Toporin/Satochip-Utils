@@ -168,7 +168,7 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
                 address,
                 "Ok",
                 lambda :None,
-                './pictures_db/secrets_popup.png',
+                './pictures_db/address_popup.png',
                 qr_msg=address,
             )
         )

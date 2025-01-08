@@ -97,16 +97,16 @@ class Controller:
                 else:
                     logger.warning("Setup my card PIN: PINs do not match.")
                     self.view.show('ERROR', "Pin and pin confirm do not match!", 'Ok',
-                                   None, "./pictures_db/change_pin_popup.jpg")
+                                   None, "./pictures_db/error_popup_red.png")
             else:
                 logger.warning("Setup my card PIN: wrong PIN size.")
                 self.view.show("ERROR",
                                "Pin must contain between 4 and 16 characters",
                                'Ok', None,
-                               "./pictures_db/change_pin_popup.jpg")
+                               "./pictures_db/error_popup_red.png")
         else:
             self.view.show("ERROR", "You have to set up a PIN to continue.", 'Ok',
-                           None, "./pictures_db/change_pin_popup.jpg")
+                           None, "./pictures_db/error_popup_red.png")
 
     def change_card_pin(self, current_pin, new_pin, new_pin_confirm):
         try:
@@ -116,14 +116,14 @@ class Controller:
                     logger.warning("New PIN is too short.")
                     self.view.show("ERROR",
                                    "Pin must contain at least 4 characters", 'Ok',
-                                   None, "./pictures_db/change_pin_popup.jpg")
+                                   None, "./pictures_db/error_popup_red.png")
 
                 if new_pin != new_pin_confirm:
                     logger.warning("New PINs do not match.")
                     self.view.show("WARNING",
                                    "The PIN values do not match! Please type PIN again!",
                                    "Ok", None,
-                                   "./pictures_db/change_pin_popup.jpg")
+                                   "./pictures_db/error_popup_red.png")
                 else:
                     current_pin = list(current_pin.encode('utf8'))
                     new_pin = list(new_pin.encode('utf8'))
@@ -132,17 +132,17 @@ class Controller:
                         logger.info("PIN changed successfully.")
                         msg = "PIN changed successfully!"
                         self.view.show("SUCCESS", msg, 'Ok',
-                                       None, "./pictures_db/change_pin_popup.jpg")
+                                       None, "./pictures_db/success_popup_green.png")
                         self.view.show_start_frame()
                     else:
                         logger.error(f"Failed to change PIN with error code: {hex(sw1)}{hex(sw2)}")
                         msg = f"Failed to change PIN with error code: {hex(sw1)}{hex(sw2)}"
                         self.view.show("ERROR", f"{msg}\n Probably too long", 'Ok',
-                                       None, "./pictures_db/change_pin_popup.jpg")
+                                       None, "./pictures_db/error_popup_red.png")
         except Exception as e:
             logger.error(f"Error changing PIN: {e}")
             self.view.show("ERROR", "Failed to change PIN.", "Ok",
-                           None, "./pictures_db/change_pin_popup.jpg")
+                           None, "./pictures_db/error_popup_red.png")
 
     def import_seed(self, mnemonic, passphrase=None):
         """Import a seed (and optional passphrase) into a Satochip"""
@@ -156,7 +156,7 @@ class Controller:
                         self.view.show('WARNING',
                                        'Wrong passphrase: incorrect or blank',
                                        'Ok', None,
-                                       "./pictures_db/seed_popup.jpg")
+                                       "./pictures_db/error_popup_red.png")
                     else:
                         seed = Mnemonic.to_seed(mnemonic, passphrase)
                         self.card_setup_native_seed(seed)
@@ -168,12 +168,12 @@ class Controller:
                 self.view.show('WARNING',
                                "Warning!\nInvalid BIP39 seedphrase, please retry.",
                                'Ok', None,
-                               "./pictures_db/seed_popup.jpg")
+                               "./pictures_db/error_popup_red.png")
 
         except Exception as e:
             logger.error(f"Error while importing seed: {e}")
             self.view.show("ERROR", "Failed to import seed.", "Ok", None,
-                           "./pictures_db/seed_popup.jpg")
+                           "./pictures_db/error_popup_red.png")
 
     def edit_label(self, label):
         try:
@@ -188,16 +188,16 @@ class Controller:
                 self.view.show("SUCCESS",
                                f"New label set successfully",
                                "Ok", self.view.show_start_frame(),
-                               "./pictures_db/edit_label_popup.jpg")
+                               "./pictures_db/success_popup_green.png")
             else:
                 logger.warning("Failed to set new label.")
                 self.view.show("ERROR", f"Failed to set label (code {hex(sw1*256+sw2)})", "oK",
-                               None, "./pictures_db/edit_label_popup.jpg")
+                               None, "./pictures_db/error_popup_red.png")
 
         except Exception as e:
             logger.error(f"Failed to edit label: {e}")
             self.view.show("ERROR", f"Failed to edit label: {e}", "Ok", None,
-                           "./pictures_db/edit_label_popup.jpg")
+                           "./pictures_db/error_popup_red.png")
 
     def get_card_label_infos(self):
         """Get label info"""
@@ -237,7 +237,7 @@ class Controller:
                     self.view.show(
                         'ERROR', "Device cannot be unlocked without PIN code!", 'Ok',
                         lambda: None,
-                        "./pictures_db/change_pin_popup.jpg"
+                        "./pictures_db/error_popup_red.png"
                     )
                     return
                 elif len(pin) < 4:
@@ -258,7 +258,7 @@ class Controller:
                     'ERROR',
                     "Too many wrong PIN! \nYour card has been blocked.",
                     'Ok', lambda: back_to_start_frame(),
-                    "./pictures_db/change_pin_popup.jpg"
+                    "./pictures_db/error_popup_red.png"
                 )
                 return
 
@@ -267,7 +267,7 @@ class Controller:
                 self.view.show(
                     'ERROR', str(e), 'Ok',
                     lambda: None,
-                    "./pictures_db/change_pin_popup.jpg"
+                    "./pictures_db/error_popup_red.png"
                 )
 
     # only for satochip and seedkeeper
@@ -309,7 +309,7 @@ class Controller:
                 self.view.show(
                     'SUCCESS', 'Your card is now setup!', 'Ok',
                     lambda: None,
-                    "./pictures_db/home_popup.jpg"
+                    "./pictures_db/success_popup_green.png"
                 )
         except Exception as e:
             logger.error(f"An error occurred in card_setup_native_pin: {e}", exc_info=True)
@@ -330,7 +330,7 @@ class Controller:
                                'Your card is now seeded!',
                                'Ok',
                                lambda: None,
-                               "./pictures_db/seed_popup.jpg")
+                               "./pictures_db/success_popup_green.png")
                 self.view.update_status()
                 self.view.show_start_frame()
                 self.view.show_menu_frame()
@@ -339,7 +339,7 @@ class Controller:
                 logger.info(f"Authentikey={hex_authentikey}")
             else:
                 self.view.show('ERROR', 'Error when importing seed to Satochip!', 'Ok', None,
-                               "./pictures_db/seed_popup.jpg")
+                               "./pictures_db/error_popup_red.png")
 
     ###########################
     """MY SECRETS MANAGEMENT"""
@@ -413,7 +413,7 @@ class Controller:
                     f"Secret deleted successfully\nID: {sid}",
                     "Ok",
                     self.view.show_seedkeeper_list_secrets(),
-                    "./pictures_db/generate_popup.png"  # todo change icon
+                    "./pictures_db/success_popup_green.png"
                 )
             elif sw1 == 0x9C and sw2 == 0x08:
                 self.view.show(
@@ -421,7 +421,7 @@ class Controller:
                     f"Secret not found (code 0x9C08)",
                     "Ok",
                     self.view.show_seedkeeper_list_secrets(),
-                    "./pictures_db/generate_popup.png"  # todo change icon
+                    "./pictures_db/error_popup_red.png"
                 )
             else:
                 raise UnexpectedSW12Error(
@@ -433,7 +433,7 @@ class Controller:
                 f"Failed to delete secret with sid {sid}.\n{str(ex)}",
                 "Ok",
                 self.view.show_seedkeeper_list_secrets(),
-                "./pictures_db/generate_popup.png"  # todo change icon
+                "./pictures_db/error_popup_red.png"
             )
 
     ########################
@@ -993,7 +993,7 @@ class Controller:
             # if secret_headers is None, we will have to regenerate it completely
             secret_header = {
                 'label': label,
-                'type': secret_type,  # todo unify 'type' entry (either str or byte)
+                'type': secret_type,
                 'subtype': secret_subtype,
                 'export_rights': export_rights,
                 'id': sid,
@@ -1094,7 +1094,7 @@ class Controller:
         # elif key_slip44_hex == "80000089":
         #     coin = RSK(is_testnet, apikeys=apikeys)
         elif key_slip44_hex == "80000091":
-            coin = BitcoinCash(is_testnet, apikeys=apikeys)  # todo: convert to cashaddress?
+            coin = BitcoinCash(is_testnet, apikeys=apikeys)
         # elif key_slip44_hex == "80000207":
         #     coin = BinanceSmartChain(is_testnet, apikeys=apikeys)
         elif key_slip44_hex == "800003c6":
@@ -1298,7 +1298,7 @@ class Controller:
                     logger.warning(f"Exception in satodime_vault_get_asset_list: coin: {vault_info['coin']} addr: {vault_info['address']}")
 
     def satodime_seal_vault(self, vault_nbr, blockchain, is_testnet, entropy_bytes):
-        logger.info(f'In satodime_seal_vault vault: {vault_nbr}')
+        logger.info(f'In satodime_seal_vault vault: {vault_nbr} blockchain:{blockchain} is_testnet:{is_testnet}')
         if self.cc.card_present:
             if self.satodime_vaults_status[vault_nbr] == STATE_UNINITIALIZED:
                 try:
@@ -1361,7 +1361,7 @@ class Controller:
                             f"Vault #{vault_nbr} sealed successfully!",
                             "Ok",
                             self.view.show_satodime_vault(vault_nbr),
-                            "./pictures_db/edit_label_popup.jpg" # todo
+                            "./pictures_db/success_popup_green.png"
                         )
                     else:
                         raise ValueError(f"error code {hex(sw1*256 + sw2)}")
@@ -1369,11 +1369,11 @@ class Controller:
                 except Exception as ex:
                     logger.warning(f"Exception in satodime_unseal_vault: {str(ex)}")
                     self.view.show(
-                        "Failure",
+                        "ERROR",
                         f"Failed to seal vault #{vault_nbr} ({str(ex)})! \nYou may need to be the card owner to perform this operation.",
                         "Ok",
                         None,
-                        "./pictures_db/edit_label_popup.jpg"  # todo
+                        "./pictures_db/error_popup_red.png"
                     )
 
     def satodime_unseal_vault(self, vault_nbr):
@@ -1408,7 +1408,7 @@ class Controller:
                             f"Vault unsealed successfully",
                             "Ok",
                             self.view.show_satodime_vault(vault_nbr),
-                            "./pictures_db/edit_label_popup.jpg"  # todo
+                            "./pictures_db/success_popup_green.png"
                         )
                     else:
                         raise ValueError(f"error code {hex(sw1*256 + sw2)}")
@@ -1416,11 +1416,11 @@ class Controller:
                 except Exception as ex:
                     logger.warning(f"Exception in satodime_unseal_vault: {str(ex)}")
                     self.view.show(
-                        "Failure",
+                        "ERROR",
                         f"Failed to unseal vault ({str(ex)})! \nYou may need to be the card owner to perform this operation.",
                         "Ok",
                         None,
-                        "./pictures_db/edit_label_popup.jpg"  # todo
+                        "./pictures_db/error_popup_red.png"
                     )
 
     def satodime_reset_vault(self, vault_nbr):
@@ -1441,13 +1441,18 @@ class Controller:
                         # reset frame
                         self.view.satodime_vault_frames[vault_nbr] = None  # force refresh of frame on next view
 
+                        # update overview frame
+                        overview_frame = self.view.satodime_overview_frame
+                        if overview_frame is not None:
+                            overview_frame.update_frame_vault(vault_nbr)
+
                         # show popup then display vault
                         self.view.show(
                             "SUCCESS",
                             f"Vault reset successfully",
                             "Ok",
                             self.view.show_satodime_vault(vault_nbr),
-                            "./pictures_db/edit_label_popup.jpg"  # todo
+                            "./pictures_db/success_popup_green.png"
                         )
                     else:
                         raise ValueError(f"error code {hex(sw1 * 256 + sw2)}")
@@ -1455,11 +1460,11 @@ class Controller:
                 except Exception as ex:
                     logger.warning(f"Exception in satodime_reset_vault: {str(ex)}")
                     self.view.show(
-                        "Failure",
+                        "ERROR",
                         f"Failed to reset vault ({str(ex)})! \nYou may need to be the card owner to perform this operation.",
                         "Ok",
                         None,
-                        "./pictures_db/edit_label_popup.jpg"  # todo
+                        "./pictures_db/error_popup_red.png"
                     )
 
     def satodime_export_privkey(self, vault_nbr) -> (bytes, bytes):
@@ -1486,7 +1491,7 @@ class Controller:
                             f"Private key exported successfully from card!",
                             "Ok",
                             None,
-                            "./pictures_db/edit_label_popup.jpg"  # todo
+                            "./pictures_db/success_popup_green.png"
                         )
                         return bytes(privkey_list), bytes(entropy_list), wif
                     else:
@@ -1498,11 +1503,11 @@ class Controller:
                     self.satodime_vaults_info[vault_nbr]['entropy_bytes'] = None
                     self.satodime_vaults_info[vault_nbr]['wif'] = None
                     self.view.show(
-                        "Failure",
+                        "ERROR",
                         f"Failed to export private key from card ({str(ex)})! \nYou may need to be the card owner to perform this operation.",
                         "Ok",
                         None,
-                        "./pictures_db/edit_label_popup.jpg"  # todo
+                        "./pictures_db/error_popup_red.png"
                     )
                     return None, None, None
 
@@ -1523,11 +1528,11 @@ class Controller:
                     logger.warning(f"Exception while removing ownership data from config file:  {str(ex)}")
                 # show popup
                 self.view.show(
-                    'Success',
+                    'SUCCESS',
                     "Transfer of card initiated successfully!",
                     'Ok',
                     None,
-                    "./pictures_db/change_pin_popup.jpg"
+                    "./pictures_db/success_popup_green.png"
                 )
                 return True
 
@@ -1537,11 +1542,11 @@ class Controller:
         except Exception as ex:
             logger.warning(f"Exception during satodime_transfer_card: {ex}")
             self.view.show(
-                "Failure",
+                "ERROR",
                 f"Failed to transfer card ownership ({str(ex)})",
                 'Ok',
                 None,
-                "./pictures_db/change_pin_popup.jpg"
+                "./pictures_db/error_popup_red.png"
             )
             return False
 
@@ -1556,7 +1561,7 @@ class Controller:
         ublk_tries_1 = 0x01
         pin_1 = list(urandom(16))  # RFU
         ublk_1 = list(urandom(16))  # RFU
-        secmemsize = 32  # 0x0000 # => for satochip - TODO: hardcode value?
+        secmemsize = 32  # 0x0000 # => for satochip
         memsize = 0x0000  # RFU
         create_object_ACL = 0x01  # RFU
         create_key_ACL = 0x01  # RFU
@@ -1597,11 +1602,11 @@ class Controller:
 
                 # show popup to user
                 self.view.show(
-                    'Success',
+                    'SUCCESS',
                     "Card ownership taken successfully!",
                     'Ok',
                     None,
-                    "./pictures_db/change_pin_popup.jpg"
+                    "./pictures_db/success_popup_green.png"
                 )
                 return True
             else:
@@ -1610,10 +1615,10 @@ class Controller:
         except Exception as ex:
             logger.warning(f"Exception in satodime_take_card_ownership: {str(ex)}")
             self.view.show(
-                "Failure",
+                "Error",
                 f"Failed to take card ownership ({str(ex)})",
                 'Ok',
                 None,
-                "./pictures_db/change_pin_popup.jpg"
+                "./pictures_db/error_popup_red.png"
             )
             return False

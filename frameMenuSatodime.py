@@ -5,7 +5,9 @@ import logging
 from PIL import Image, ImageTk
 
 from constants import MAIN_MENU_COLOR, ICON_PATH
+from controller import DEBUG_EXPLORER
 from framePopup import FramePopup
+from frameWidgetLabel import FrameWidgetLabel
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -57,12 +59,27 @@ class FrameMenuSatodime(customtkinter.CTkFrame):
                 button_vault = self.master.create_menu_button(
                     self,
                     f"Vault #{vault_nbr}",
-                    "secrets.png",
+                    "shield_icon_white.png",
                     rely, 0.05,
                     state="normal",
                     command=lambda index=vault_nbr: self.master.show_satodime_vault(index),
                 )
                 self.button_vaults_array += [button_vault]
+                rely += 0.07
+
+            # show warning if in debug mode!
+            if DEBUG_EXPLORER:
+                rely += 0.07
+                self.debug_button = self.master.create_menu_button(
+                    self,
+                    f"WARNING:DEBUG ON",
+                    "error_popup_red.png",
+                    rely, 0.05,
+                    state="disabled",
+                    command=None,
+                    text_color="red"
+                )
+                self.debug_button.configure(True, text_color="red")
                 rely += 0.07
 
             self.button_settings = master.create_menu_button(
@@ -128,7 +145,7 @@ class FrameMenuSatodime(customtkinter.CTkFrame):
                     self.master.controller.satodime_take_card_ownership(),
                     self.master.update_status(isConnected=True),
                 ],
-                './pictures_db/secrets_popup.png',  # todo
+                './pictures_db/ownership_popup.png',
                 button2_txt="Cancel",
                 cmd2=lambda: logger.info(f"take ownership action cancelled"),
             )

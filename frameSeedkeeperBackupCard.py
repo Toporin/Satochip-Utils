@@ -26,7 +26,7 @@ class FrameSeedkeeperBackupCard(customtkinter.CTkFrame):
 
             # Creating header
             self.header = FrameWidgetHeader(
-                "Backup your seedkeeper", "seed_popup.jpg",  # todo change icon
+                "Backup your seedkeeper", "backup_card_icon.png",
                 frame=self
             )
             self.header.place(relx=0.05, rely=0.05, anchor="nw")
@@ -156,7 +156,7 @@ class FrameSeedkeeperBackupCard(customtkinter.CTkFrame):
                         'This card has not been setup. \nExit backup process, setup the card then start again!',
                         'Ok',
                         lambda: on_setup_required_button(),
-                        "./pictures_db/change_pin_popup.jpg"
+                        "./pictures_db/error_popup_red.png"
                     )
                     return
             else:
@@ -166,7 +166,7 @@ class FrameSeedkeeperBackupCard(customtkinter.CTkFrame):
                     'No card found! \nPlease insert backup card then try again.',
                     'Ok',
                     None,
-                    "./pictures_db/change_pin_popup.jpg"
+                    "./pictures_db/error_popup_red.png"
                 )
                 return
 
@@ -187,7 +187,7 @@ class FrameSeedkeeperBackupCard(customtkinter.CTkFrame):
                     'This is your MASTER card.\nPlease insert your BACKUP card and try again!',
                     'Ok',
                     None,
-                    "./pictures_db/change_pin_popup.jpg"
+                    "./pictures_db/error_popup_red.png"
                 )
                 return
 
@@ -254,7 +254,7 @@ class FrameSeedkeeperBackupCard(customtkinter.CTkFrame):
                         'Wrong card!\nPlease insert your MASTER card and try again.',
                         'Ok',
                         None,
-                        "./pictures_db/change_pin_popup.jpg"
+                        "./pictures_db/error_popup_red.png"
                     )
                     return
 
@@ -309,7 +309,7 @@ class FrameSeedkeeperBackupCard(customtkinter.CTkFrame):
                     str(e),
                     'Ok',
                     None,
-                    "./pictures_db/change_pin_popup.jpg"
+                    "./pictures_db/error_popup_red.png"
                 )
 
         self.next_button.configure(command=lambda: on_next_button())
@@ -337,7 +337,7 @@ class FrameSeedkeeperBackupCard(customtkinter.CTkFrame):
                     'Wrong card!\nPlease insert your BACKUP card and try again.',
                     'Ok',
                     None,
-                    "./pictures_db/change_pin_popup.jpg"
+                    "./pictures_db/error_popup_red.png"
                 )
                 return
 

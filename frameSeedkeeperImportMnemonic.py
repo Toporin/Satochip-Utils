@@ -22,7 +22,7 @@ class FrameSeedkeeperImportMnemonic(customtkinter.CTkFrame):
 
             # Creating header
             self.header = FrameWidgetHeader(
-                "Import Bip39 mnemonic", "seed_popup.jpg",
+                "Import Bip39 mnemonic", "seed_popup.png",
                 frame=self
             )
             self.header.place(relx=0.05, rely=0.05, anchor="nw")

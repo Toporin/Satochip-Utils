@@ -24,7 +24,7 @@ class FrameCardImportSeed(customtkinter.CTkFrame):
             # Creating header
             self.header = FrameWidgetHeader(
                 "Import Seed",
-                "seed_popup.jpg",
+                "seed_popup.png",
                 frame=self
             )
             self.header.place(relx=0.05, rely=0.05, anchor="nw")

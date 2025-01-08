@@ -22,7 +22,7 @@ class FrameSeedkeeperGenerateMnemonic(customtkinter.CTkFrame):
 
             # Creating header
             self.header = FrameWidgetHeader(
-                "Generate Bip39 mnemonic", "generate_popup.png",
+                "Generate Bip39 mnemonic", "seed_popup.png",
                 frame=self
             )
             self.header.place(relx=0.05, rely=0.05, anchor="nw")

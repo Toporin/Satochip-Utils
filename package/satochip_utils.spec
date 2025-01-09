@@ -41,7 +41,7 @@ datai = [
     (ICON, "gui/"),
     ("../pysatochip/cert/*", "pysatochip/cert/"),
     ("../wordlist/*", "wordlist/"),
-    ("../wordlist/*", "."),  # hack: english.txt needed there for pycryptotools import
+    ("../wordlist/*", "pycryptotools/"),  # hack: english.txt needed there for pycryptotools import
     ("../pictures_db/*", "pictures_db/"),
     ("../*.png", "."),
 ]

@@ -44,6 +44,7 @@ datai = [
     ("../wordlist/*", "pycryptotools/"),  # hack: english.txt needed there for pycryptotools import
     ("../pictures_db/*", "pictures_db/"),
     ("../*.png", "."),
+    ("../*.ini", "."),  # config files
 ]
 
 hiddeni = []

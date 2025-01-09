@@ -17,6 +17,19 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
+def get_config_path():
+    '''Get path for config file, depending whether app is running from sources or executable'''
+    if hasattr(sys, "_MEIPASS"):
+        abs_home = os.path.abspath(os.path.expanduser("~"))
+        abs_dir_app = os.path.join(abs_home, f".satotools")
+        if not os.path.exists(abs_dir_app):
+            os.mkdir(abs_dir_app)
+        cfg_path = os.path.join(abs_dir_app, "satotools.ini")
+    else:
+        cfg_path = os.path.abspath(".%ssatotools.ini" % os.sep)
+    logger.debug(f"get_config_path cfg_path: {cfg_path}")
+    return cfg_path
+
 def get_fingerprint_from_authentikey_bytes(authentikey_bytes):
     logger.debug(f"getFingerprintFromAuthentikeyBytes for authentikeyBytes: {authentikey_bytes.hex()}")
     raw_secret = bytes([len(authentikey_bytes)]) + authentikey_bytes

@@ -16,6 +16,7 @@ from pycryptotools.coins import UnsupportedCoin, Bitcoin, BitcoinCash, Litecoin,
 from constants import INS_DIC, RES_DIC, TYPE_PASSWORD, TYPE_MASTERSEED, TYPE_DATA, TYPE_DESCRIPTOR, TYPE_PUBKEY, \
     TYPE_BIP39_MNEMONIC, TYPE_ELECTRUM_MNEMONIC, TYPE_2FA_SECRET, TYPE_DIC, DEBUG_ADDR, STATUS_DIC, STATUS_COLOR_DIC, \
     COIN_DICT
+from utils import get_config_path
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -1133,11 +1134,10 @@ class Controller:
                 authentikey_comp_hex = self.authentikey.get_public_key_bytes(compressed=True).hex()
 
                 # check for ownership if any and cache ownership data in cc
-                if path.isfile('satotools.ini'):
-                    logger.info(f'os.path.dirname: {path.dirname(path.abspath(__file__))}')
-                    logger.info(f'os.path.abspath: {path.abspath(getcwd())}')
+                config_path = get_config_path()
+                if path.isfile(config_path):
                     config = ConfigParser()
-                    config.read('satotools.ini')
+                    config.read(config_path)
                     if config.has_section('Satodime'):
                         unlock_secret_hex = config.get('Satodime', authentikey_comp_hex)
                         unlock_secret = list(bytes.fromhex(unlock_secret_hex))
@@ -1519,10 +1519,11 @@ class Controller:
                 # remove old unlock_secret from config file
                 try:
                     authentikey_comp_hex = self.authentikey.get_public_key_bytes(compressed=True).hex()
+                    config_path = get_config_path()
                     config = ConfigParser()
-                    config.read('satotools.ini')
+                    config.read(config_path)
                     config.remove_option('Satodime', authentikey_comp_hex)
-                    with open('satotools.ini', 'w') as f:
+                    with open(config_path, 'w') as f:
                         config.write(f)
                 except Exception as ex:
                     logger.warning(f"Exception while removing ownership data from config file:  {str(ex)}")
@@ -1587,17 +1588,14 @@ class Controller:
                 # ownership data is saved as (card_authentikey, unlock_secret) pair
                 self.authentikey = self.cc.card_export_authentikey()
                 authentikey_comp_hex = self.authentikey.get_public_key_bytes(compressed=True).hex()
-
-                logger.info(f'os.path.dirname: {path.dirname(path.abspath("satotools.ini"))}')
-                logger.info(f'os.path.dirname: {path.dirname(path.abspath(__file__))}')
-                logger.info(f'os.path.abspath: {path.abspath(getcwd())}')
+                config_path = get_config_path()
                 config = ConfigParser()
-                if path.isfile('satotools.ini'):
-                    config.read('satotools.ini')
+                if path.isfile(config_path):
+                    config.read(config_path)
                 if config.has_section("Satodime") is False:
                     config.add_section("Satodime")
                 config.set("Satodime", authentikey_comp_hex, bytes(unlock_secret).hex())
-                with open('satotools.ini', 'w') as f:
+                with open(config_path, 'w') as f:
                     config.write(f)
 
                 # show popup to user

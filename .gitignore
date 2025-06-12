@@ -1,3 +1,5 @@
 .idea
+satotools.ini
+api_keys.ini
 __pycache__
 dist/

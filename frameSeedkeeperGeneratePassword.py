@@ -24,7 +24,7 @@ class FrameSeedkeeperGeneratePassword(customtkinter.CTkFrame):
 
             # Creating header
             self.header = FrameWidgetHeader(
-                "Generate password", "password_popup.jpg",
+                "Generate password", "password_icon.png",
                 frame=self
             )
             self.header.place(relx=0.05, rely=0.05, anchor="nw")
@@ -198,7 +198,7 @@ class FrameSeedkeeperGeneratePassword(customtkinter.CTkFrame):
                     # self.password_textbox.configure(state='disabled')  # does not allow copy-paste on some linux distro
                 except ValueError as e:
                     logger.error(f"Error generating login/password: {e}", exc_info=True)
-                    master.show("ERROR", str(e), "Ok", None, "./pictures_db/generate_popup.png")
+                    master.show("ERROR", str(e), "Ok", None, "./pictures_db/error_popup_red.png")
                 except Exception as e:
                     logger.error(f"Error generating login/password: {e}", exc_info=True)
 
@@ -222,15 +222,15 @@ class FrameSeedkeeperGeneratePassword(customtkinter.CTkFrame):
                     sid, fingerprint = master.controller.import_password(label, password, login, url)
                     master.show("SUCCESS",
                               f"Password saved successfully with id: {sid}",
-                              "Ok", master.show_seedkeeper_list_secrets, "./pictures_db/generate_popup.png")
+                              "Ok", master.show_seedkeeper_list_secrets, "./pictures_db/success_popup_green.png")
 
                 except Exception as e:
                     logger.error(f"Failed to save password to card: {e}", exc_info=True)
                     master.show(
-                        "Error",
+                        "ERROR",
                         f"Failed to import password: {e}",
                         "Ok", None,
-                        "./pictures_db/about_popup.jpg"  # todo change icon
+                        "./pictures_db/error_popup_red.png"
                     )
 
             self.save_button = master.create_button(

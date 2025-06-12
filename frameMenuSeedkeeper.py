@@ -43,7 +43,7 @@ class FrameMenuSeedkeeper(customtkinter.CTkFrame):
             self.button_my_secrets = master.create_menu_button(
                 self,
                 "My secrets",
-                "secrets.png",
+                "password_icon_white.png",
                 0.26, 0.05,
                 state="normal",
                 command=lambda: master.show_seedkeeper_list_secrets(),
@@ -51,8 +51,8 @@ class FrameMenuSeedkeeper(customtkinter.CTkFrame):
 
             self.button_generate = master.create_menu_button(
                 self,
-                "Generate",
-                "generate.png",
+                "Generate secret",
+                "add_icon_white.png",
                 0.33, 0.05,
                 state="normal",
                 command=lambda: master.show_generate_secret()
@@ -60,7 +60,7 @@ class FrameMenuSeedkeeper(customtkinter.CTkFrame):
 
             self.button_import = master.create_menu_button(
                 self,
-                "Import",
+                "Import secret",
                 "import.png",
                 0.40, 0.05,
                 state="normal",
@@ -69,15 +69,15 @@ class FrameMenuSeedkeeper(customtkinter.CTkFrame):
 
             self.button_backup = master.create_menu_button(
                 self, "Backup card",
-                "logs.png",
+                "backup_card_icon_white.png",
                 0.47, 0.05,
                 state="normal",
                 command=lambda: master.show_backup_card()
             )
 
             self.button_logs = master.create_menu_button(
-                self, "Logs",
-                "logs.png",
+                self, "Card logs",
+                "logs_icon.png",
                 0.54, 0.05,
                 state="normal",
                 command=lambda: master.show_card_logs()

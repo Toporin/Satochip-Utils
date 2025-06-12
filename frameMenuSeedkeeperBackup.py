@@ -49,7 +49,7 @@ class FrameMenuSeedkeeperBackup(customtkinter.CTkFrame):
             self.button_cancel_backup = master.create_menu_button(
                 self,
                 "Back to main menu",
-                "secrets.png",  # todo
+                "back_icon.png",
                 0.26, 0.05,
                 state="normal",
                 command=lambda: on_cancel_button(),

@@ -24,7 +24,7 @@ class FrameSeedkeeperCardLogs(customtkinter.CTkFrame):
 
             # Creating header
             self.header = FrameWidgetHeader(
-                "Card logs", "secrets.png",
+                "Card logs", "logs_icon_black.png",
                 frame=self
             )
             self.header.place(relx=0.05, rely=0.05, anchor="nw")

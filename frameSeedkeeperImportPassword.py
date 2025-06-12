@@ -23,7 +23,7 @@ class FrameSeedkeeperImportPassword(customtkinter.CTkFrame):
 
             # Creating header
             self.header = FrameWidgetHeader(
-                "Import password", "password_popup.jpg",
+                "Import password", "password_icon.png",
                 frame=self
             )
             self.header.place(relx=0.05, rely=0.05, anchor="nw")
@@ -83,16 +83,16 @@ class FrameSeedkeeperImportPassword(customtkinter.CTkFrame):
                         "SUCCESS",
                         f"Password saved successfully!\nID: {sid}",
                         "Ok", master.show_seedkeeper_list_secrets,
-                        "./pictures_db/generate_popup.png"
+                        "./pictures_db/success_popup_green.png"
                     )
 
                 except Exception as e:
                     logger.error(f"Failed to save password to card: {e}", exc_info=True)
                     master.show(
-                        "Error",
+                        "ERROR",
                         f"Failed to import password: \n{e}",
                         "Ok", None,
-                        "./pictures_db/about_popup.jpg"  # todo change icon
+                        "./pictures_db/error_popup_red.png"
                     )
 
             self.save_button = master.create_button(

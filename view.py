@@ -2,11 +2,12 @@ import logging
 import sys
 import os
 import tkinter
-from typing import Optional, Dict, Callable, Any, Tuple
+from typing import Optional, Dict, Callable, Any, Tuple, SupportsIndex
 
 import customtkinter
 from PIL import Image, ImageTk
 from customtkinter import CTkOptionMenu
+from pysatochip.JCconstants import STATE_UNINITIALIZED
 
 from FrameSeedkeeperGenerateSecretSelectType import FrameSeedkeeperGenerateSecretSelectType
 from applicationMode import ApplicationMode
@@ -21,9 +22,16 @@ from frameCardFactoryReset import FrameCardFactoryReset
 from frameCardImportSeed import FrameCardImportSeed
 from frameCardSetupPin import FrameCardSetupPin
 from frameMenuNoCard import FrameMenuNoCard
+from frameMenuSatodime import FrameMenuSatodime
 from frameMenuSeedkeeper import FrameMenuSeedkeeper
 from frameMenuSeedkeeperBackup import FrameMenuSeedkeeperBackup
 from frameMenuSettings import FrameMenuSettings
+from frameMenuSettingsSatodime import FrameMenuSettingsSatodime
+from frameSatodimeResetVault import FrameSatodimeResetVault
+from frameSatodimeSealVault import FrameSatodimeSealVault
+from frameSatodimeUnsealVault import FrameSatodimeUnsealVault
+from frameSatodimeVault import FrameSatodimeVault
+from frameSatodimeOverview import FrameSatodimeOverview
 from frameSeedkeeperBackupCard import FrameSeedkeeperBackupCard
 from frameSeedkeeperBackupResult import FrameSeedkeeperBackupResult
 from frameSeedkeeperCardLogs import FrameSeedkeeperCardLogs
@@ -68,7 +76,7 @@ ICON_PATH = "./pictures_db/"
 
 
 class View(customtkinter.CTk):
-    def __init__(self, loglevel=logging.INFO):
+    def __init__(self, loop, loglevel=logging.INFO):
         try:
             # logger.setLevel(loglevel)
             logger.setLevel(logging.DEBUG)
@@ -76,14 +84,18 @@ class View(customtkinter.CTk):
             logger.info("Starting View.__init__()")
             super().__init__()
 
+            self.loop = loop
+
             # frame declaration
             # these frames will be created when needed using show_* methods
             self.welcome_frame = None
             self.start_frame = None
             # menu frames
             self.settings_menu_frame = None
+            self.settings_satodime_menu_frame = None
             self.seedkeeper_menu_frame = None
             self.seedkeeper_backup_menu_frame = None
+            self.satodime_menu_frame = None
             # settings frames
             self.setup_card_frame = None
             self.about_frame = None
@@ -92,6 +104,7 @@ class View(customtkinter.CTk):
             self.change_pin_frame = None
             self.seed_import_frame = None
             self.factory_reset_frame = None
+
             # seedkeeper secret frames
             self.list_secrets_frame = None
             self.seedkeeper_show_password_frame = None
@@ -113,11 +126,19 @@ class View(customtkinter.CTk):
             self.seedkeeper_backup_card_frame = None
             self.seedkeeper_backup_result_frame = None
 
+            # Satodime vaults
+            self.satodime_overview_frame = None
+            self.satodime_vault_frames = None # this is a list of frames, one for each vault
+            self.satodime_unseal_vault_frame = None
+            self.satodime_reset_vault_frame = None
+
             # state
             # store seedkeeper secret headers
             self.secret_headers = None
             # should we update the list of headers?
             self.seedkeeper_secret_headers_need_update = True
+            # should we update the list of vaults?
+            self.satodime_vaults_need_update = True
             # app is in seedbackup mode (inserting/removing card should not trigger start screen!)
             self.appMode = ApplicationMode.Normal
 
@@ -133,7 +154,8 @@ class View(customtkinter.CTk):
             self.main_frame.place(relx=0.5, rely=0.5, anchor="center")
 
             # widgets
-            self.show_button = None # popup button called in different contexts todo: refactor
+            self.icon_label = None  # popup icon+label called in different contexts todo: refactor
+            self.show_button = None  # popup button called in different contexts todo: refactor
 
             # Launching initialization starting with welcome view
             self.nocard_menu_frame = FrameMenuNoCard(self)
@@ -191,21 +213,21 @@ class View(customtkinter.CTk):
     ##############
     """ UTILS """
 
-    def convert_name_to_photo_image(self, filename):
-        icon_path = f"{ICON_PATH}{filename}"
-        image = Image.open(icon_path)
-        image = image.resize((25, 25), Image.LANCZOS)
-        photo_image = customtkinter.CTkImage(image)
-        return photo_image
+    # def convert_name_to_photo_image(self, filename):
+    #     icon_path = f"{ICON_PATH}{filename}"
+    #     image = Image.open(icon_path)
+    #     image = image.resize((25, 25), Image.LANCZOS)
+    #     photo_image = customtkinter.CTkImage(image)
+    #     return photo_image
 
     @staticmethod
     def make_text_bold(size=18):
-        logger.debug("make_text_bold start")
+        # logger.debug("make_text_bold start")
         result = customtkinter.CTkFont(weight="bold", size=size)
         return result
 
     def make_text_size_at(self, size=18):
-        logger.debug("make_text_size_at start")
+        # logger.debug("make_text_size_at start")
         result = customtkinter.CTkFont(size=size)
         return result
 
@@ -319,7 +341,7 @@ class View(customtkinter.CTk):
 
 
     def create_label(self, text, bg_fg_color: str = "whitesmoke", frame=None) -> customtkinter.CTkLabel:
-        logger.debug("view.create_label start")
+        # logger.debug("view.create_label start")
         label = customtkinter.CTkLabel(
             frame,
             text=text,
@@ -336,7 +358,7 @@ class View(customtkinter.CTk):
             command=None,
             frame=None
     ) -> customtkinter.CTkButton:
-        logger.debug("View.create_button() start")
+        # logger.debug("View.create_button() start")
 
         button = customtkinter.CTkButton(
             frame,
@@ -359,7 +381,7 @@ class View(customtkinter.CTk):
             command: Optional[Callable] = None,
             text_color: str = 'white',
     ) -> Optional[customtkinter.CTkButton]:
-        logger.info(f"001 Starting main menu button creation for '{button_label}'")
+        # logger.info(f"001 Starting main menu button creation for '{button_label}'")
 
         icon_path = f"{ICON_PATH}{icon_name}"
         image = Image.open(icon_path)
@@ -387,7 +409,7 @@ class View(customtkinter.CTk):
         return button
 
     def create_entry(self, show_option: str = "", width=555, height=37, frame=None) -> customtkinter.CTkEntry:
-        logger.debug("create_entry start")
+        # logger.debug("create_entry start")
         entry = customtkinter.CTkEntry(
             frame, width=width, height=height, corner_radius=10,
             bg_color='white', fg_color=BUTTON_COLOR, border_color=BUTTON_COLOR,
@@ -409,7 +431,7 @@ class View(customtkinter.CTk):
 
     def update_textbox(self, text_box, text):
         try:
-            logger.debug("update_textbox start")
+            # logger.debug("update_textbox start")
             # Efface le contenu actuel
             text_box.delete(1.0, "end")
             # Inserting new text into the textbox
@@ -511,11 +533,14 @@ class View(customtkinter.CTk):
             if icon_path:
                 icon_image = Image.open(icon_path)
                 icon = customtkinter.CTkImage(light_image=icon_image, size=(30, 30))
-                icon_label = customtkinter.CTkLabel(popup, image=icon, text=f"\n{msg}", compound='top',
-                                                    font=customtkinter.CTkFont(family="Outfit",
-                                                                               size=18,
-                                                                               weight="normal"))
-                icon_label.pack(pady=(20, 10))  # Ajout d'un padding différent pour l'icône
+                self.icon_label = customtkinter.CTkLabel(
+                    popup,
+                    image=icon,
+                    text=f"\n{msg}",
+                    compound='top',
+                    font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal")
+                )
+                self.icon_label.pack(pady=(20, 10))  # Ajout d'un padding différent pour l'icône
                 logger.debug("Icon added to popup")
             else:
                 # Ajout d'un label dans le popup
@@ -556,17 +581,27 @@ class View(customtkinter.CTk):
         if self.controller.cc.card_present:
             if self.controller.cc.card_type == "SeedKeeper" and self.controller.cc.setup_done:
                 self.show_seedkeeper_menu()
+            elif self.controller.cc.card_type == "Satodime":
+                self.show_satodime_menu()
             else:
                 self.show_settings_menu()
         else:  # no card
             self.show_nocard_menu()
 
     def show_settings_menu(self):
-        logger.info("IN View.show_settings_menu start")
+        logger.info("In show_settings_menu start")
         if self.settings_menu_frame is None:
             self.settings_menu_frame = FrameMenuSettings(self)
         self.settings_menu_frame.update_frame()
         self.settings_menu_frame.tkraise()
+
+    def show_settings_satodime_menu(self):
+        logger.info("In show_settings_satodime_menu start")
+        if self.settings_satodime_menu_frame is None:
+            self.settings_satodime_menu_frame = FrameMenuSettingsSatodime(self)
+        #self.settings_satodime_menu_frame.update_frame()
+        self.settings_satodime_menu_frame.tkraise()
+
 
     def show_nocard_menu(self):
         logger.info("IN View.show_settings_menu start")
@@ -579,6 +614,13 @@ class View(customtkinter.CTk):
         else:
             logger.info("show_seedkeeper_menu seedkeeper_menu_frame is not None, show it")
             self.seedkeeper_menu_frame.tkraise()
+
+    def show_satodime_menu(self):
+        logger.info("show_satodime_menu start")
+        if self.satodime_menu_frame is None:
+            self.satodime_menu_frame = FrameMenuSatodime(self)
+        self.satodime_menu_frame.update_frame()
+        self.satodime_menu_frame.tkraise()
 
     def show_seedkeeper_backup_menu(self):
         logger.info("show_seedkeeper_backup_menu start")
@@ -600,6 +642,10 @@ class View(customtkinter.CTk):
 
                 elif isConnected is False:
                     logger.info(f"Card removed for Reset Factory!")
+                    icon_path = "./pictures_db/insert_card_popup.png"
+                    icon_image = Image.open(icon_path)
+                    icon = customtkinter.CTkImage(light_image=icon_image, size=(30, 30))
+                    self.icon_label.configure(image=icon)
                     self.show_button.configure(text='Insert card', state='disabled')
 
                 else:  # None
@@ -617,16 +663,28 @@ class View(customtkinter.CTk):
                     # get card status (also cached in controller)
                     card_status = self.controller.get_card_status()
 
+                    logger.info(f"View.update_status card_type: {self.controller.cc.card_type}")
+
+                    # do some actions according to card type
+                    if self.controller.cc.card_type == "Satodime":
+                        logger.info("View.update_status satodime card inserted (normal mode)")
+                        self.controller.satodime_on_connect()
+                        logger.info("View.update_status satodime satodime_get_vaults_info...")
+                        self.controller.satodime_vaults_get_info()
+
                     # show start screen
                     if self.start_frame is not None:  # do not create frame now as it is not main thread
                         self.show_start_frame()
-
 
                 elif isConnected is False:
                     # update state
                     # Seedkeeper: reset secret_headers to force update on reconnection
                     self.secret_headers = None
                     self.seedkeeper_secret_headers_need_update = True
+
+                    # Satodime: reset vault content
+                    self.satodime_vault_frames = None
+                    self.satodime_overview_frame = None
 
                     if self.start_frame is not None:  # do not create frame now as it is not main thread
                         self.show_start_frame()
@@ -812,7 +870,7 @@ class View(customtkinter.CTk):
                 f"Failed to list secrets!\n{ex}",
                 "Ok",
                 None,
-                "./pictures_db/about_popup.jpg"  # todo change icon
+                "./pictures_db/error_popup_red.png"
             )
 
     def show_seedkeeper_secret(self, secret_header):
@@ -951,3 +1009,85 @@ class View(customtkinter.CTk):
             self.seedkeeper_card_logs_frame = FrameSeedkeeperCardLogs(self)
         self.seedkeeper_card_logs_frame.update_frame(logs)
         self.seedkeeper_card_logs_frame.tkraise()
+
+
+    ####################################################################################################################
+    """ METHODS TO DISPLAY A VIEW FROM SATODIME MENU SELECTION """
+
+    # SEEDKEEPER MENU SELECTION
+    def show_satodime_overview(self):
+        try:
+            logger.debug("show_satodime_overview start")
+
+            # todo: get satodime info
+
+            if self.satodime_overview_frame is None:
+                self.satodime_overview_frame = FrameSatodimeOverview(self)
+                self.satodime_overview_frame.update_frame()
+            # if self.satodime_vaults_need_update is True:
+            #     self.satodime_overview_frame.update_frame()
+            self.satodime_overview_frame.tkraise()
+
+        except Exception as ex:
+            logger.error(f"Error in show_satodime_overview: {ex}", exc_info=True)
+            self.show(
+                "ERROR",
+                f"Failed to list vaults!\n{ex}",
+                "Ok",
+                None,
+                "./pictures_db/error_popup_red.png"
+            )
+
+    def show_satodime_vault(self, vault_nbr: SupportsIndex):
+        try:
+            logger.debug(f"show_satodime_vault start vault: {vault_nbr}")
+            if self.satodime_vault_frames is None:
+                self.satodime_vault_frames = self.controller.satodime_nb_vaults*[None]
+
+            # show vault frame depending on state
+            if self.controller.satodime_vaults_status[vault_nbr] == STATE_UNINITIALIZED:
+                if self.satodime_vault_frames[vault_nbr] is None:
+                    self.satodime_vault_frames[vault_nbr] = FrameSatodimeSealVault(self)
+                    self.satodime_vault_frames[vault_nbr].update_frame(vault_nbr)
+                self.satodime_vault_frames[vault_nbr].tkraise()
+            else:
+                if self.satodime_vault_frames[vault_nbr] is None:
+                    self.satodime_vault_frames[vault_nbr] = FrameSatodimeVault(self)
+                    self.satodime_vault_frames[vault_nbr].update_frame(vault_nbr)
+                self.satodime_vault_frames[vault_nbr].tkraise()
+
+        except Exception as ex:
+            logger.error(f"Error in show_satodime_vault: {ex}", exc_info=True)
+            self.show(
+                "ERROR",
+                f"Failed to list vaults!\n{ex}",
+                "Ok",
+                None,
+                "./pictures_db/error_popup_red.png"
+            )
+
+    def show_satodime_unseal_vault(self, vault_nbr: SupportsIndex):
+        try:
+            logger.debug(f"show_satodime_unseal_vault start vault: {vault_nbr}")
+            if self.satodime_unseal_vault_frame is None:
+                self.satodime_unseal_vault_frame = FrameSatodimeUnsealVault(self)
+            self.satodime_unseal_vault_frame.update_frame(vault_nbr)
+            self.satodime_unseal_vault_frame.tkraise()
+
+        except Exception as ex:
+            logger.error(f"Error in show_satodime_unseal_vault: {ex}", exc_info=True)
+
+    def show_satodime_reset_vault(self, vault_nbr: SupportsIndex):
+        try:
+            logger.debug(f"show_satodime_reset_vault start vault: {vault_nbr}")
+            if self.satodime_reset_vault_frame is None:
+                self.satodime_reset_vault_frame = FrameSatodimeResetVault(self)
+            self.satodime_reset_vault_frame.update_frame(vault_nbr)
+            self.satodime_reset_vault_frame.tkraise()
+
+        except Exception as ex:
+            logger.error(f"Error in show_satodime_reset_vault: {ex}", exc_info=True)
+
+
+
+

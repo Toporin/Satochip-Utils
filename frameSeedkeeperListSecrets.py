@@ -1,5 +1,3 @@
-import time
-
 import customtkinter
 import logging
 
@@ -34,7 +32,7 @@ class FrameSeedkeeperListSecrets(customtkinter.CTkFrame):
             # Creating header
             self.header = FrameWidgetHeader(
                 "My secrets",
-                "generate_popup.png",
+                "password_icon.png",
                 frame=self
             )
             self.header.place(relx=0.05, rely=0.05, anchor="nw")

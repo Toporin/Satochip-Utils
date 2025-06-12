@@ -1,9 +1,14 @@
+import webbrowser
+from PIL import Image, ImageTk
 import customtkinter
 import logging
 from pysatochip.version import PYSATOCHIP_VERSION
 
 from frameWidgetHeader import FrameWidgetHeader
+from frameWidgetOwnership import FrameWidgetOwnership
+from utils import convert_name_to_photo_image
 from version import VERSION
+from constants import ICON_PATH
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -103,7 +108,8 @@ class FrameCardAbout(customtkinter.CTkFrame):
             self.seedkeeper_nb_secrets = master.create_label("Secret stored", frame=self)  # updated later
 
             # SATODIME specific
-            # TODO
+            # ownership status & button
+            self.ownership_widget = FrameWidgetOwnership(self)
 
             self.update_frame()
             self.place(relx=1.0, rely=0.5, anchor="e")
@@ -167,11 +173,12 @@ class FrameCardAbout(customtkinter.CTkFrame):
                 else:
                     self.card_status.configure(text="Card requires setup")
 
+            # remove card specific widgets
+            self.update_forget_widgets()
+
             # Satochip Specific
             if self.master.controller.cc.card_type == "Satochip":
                 rely = self.rely
-                self.seedkeeper_memory.place_forget()
-                self.seedkeeper_nb_secrets.place_forget()
                 self.card_configuration.configure(text="Satochip configuration")
                 # seeded
                 self.satochip_seeded.configure(
@@ -188,8 +195,6 @@ class FrameCardAbout(customtkinter.CTkFrame):
 
             # Seedkeeper Specific
             elif self.master.controller.cc.card_type == "SeedKeeper":
-                self.satochip_seeded.place_forget()
-                self.satochip_2FA.place_forget()
                 self.card_configuration.configure(text="Seedkeeper configuration")
                 # get seedkeeper status (seedkeeper v0.2+ and PIN required!)
                 if protocol_version >= 2:
@@ -227,6 +232,30 @@ class FrameCardAbout(customtkinter.CTkFrame):
                 rely += 0.05
 
             # Satodime Specific
-            if self.master.controller.cc.card_type == "Satodime":
-                # TODO
-                pass
+            elif self.master.controller.cc.card_type == "Satodime":
+                rely = self.rely
+                self.card_configuration.configure(text="Satodime configuration")
+
+                # update status
+                ownership_value = "unknown"
+                if self.master.controller.cc.setup_done is False:
+                    ownership_value = "Card has no owner"
+                elif self.master.controller.cc.is_owner:
+                    ownership_value = "You are the owner"
+                else:
+                    ownership_value = "You are NOT the owner"
+
+                self.ownership_widget.update_frame(ownership_value, self.master.controller)
+                self.ownership_widget.place(relx=0.05, rely=rely, anchor="nw")
+
+    def update_forget_widgets(self):
+        # satochip
+        self.satochip_seeded.place_forget()
+        self.satochip_2FA.place_forget()
+
+        # seedkeeper
+        self.seedkeeper_memory.place_forget()
+        self.seedkeeper_nb_secrets.place_forget()
+
+        # satodime
+        self.ownership_widget.place_forget()

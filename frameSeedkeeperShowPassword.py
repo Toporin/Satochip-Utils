@@ -25,7 +25,7 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
             # Creating header
             self.header = FrameWidgetHeader(
                 "Password details",
-                "secrets_popup.png",
+                "password_icon.png",
                 frame=self
             )
             self.header.place(relx=0.05, rely=0.05, anchor="nw")
@@ -161,7 +161,7 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
                     "Do you really want to delete this secret? \nThis operation is irreversible!",
                     "Yes",
                     lambda sid=secret['id']: self.master.controller.seedkeeper_reset_secret(sid),
-                    './pictures_db/secrets_popup.png',
+                    './pictures_db/error_popup_red.png',
                     button2_txt="Cancel",
                     cmd2=lambda: None,
                 )

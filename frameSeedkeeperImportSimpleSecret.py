@@ -23,7 +23,7 @@ class FrameSeedkeeperImportSimpleSecret(customtkinter.CTkFrame):
 
             # Creating header
             self.header = FrameWidgetHeader(
-                f"Import {secret_type}", "password_popup.jpg",
+                f"Import {secret_type}", "password_icon.png",
                 frame=self
             )
             self.header.place(relx=0.05, rely=0.05, anchor="nw")
@@ -87,7 +87,7 @@ class FrameSeedkeeperImportSimpleSecret(customtkinter.CTkFrame):
                             f"Secret imported successfully\nID: {sid}",
                             "Ok",
                             master.show_seedkeeper_list_secrets,
-                            "./pictures_db/generate_popup.png"  # todo change icon
+                            "./pictures_db/success_popup_green.png"
                         )
                     else:
                         raise ValueError("No secret provided")
@@ -95,10 +95,10 @@ class FrameSeedkeeperImportSimpleSecret(customtkinter.CTkFrame):
                 except Exception as ex:
                     logger.error(f"Failed to save {secret_type} to card: {ex}", exc_info=True)
                     master.show(
-                        "Error",
+                        "ERROR",
                         f"Failed to import secret: \n{ex}",
                         "Ok", None,
-                        "./pictures_db/about_popup.jpg"  # todo change icon
+                        "./pictures_db/error_popup_red.png"
                     )
 
             self.save_button = master.create_button(

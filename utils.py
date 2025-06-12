@@ -2,16 +2,33 @@ import os
 import sys
 import tkinter
 import unicodedata
-
+from decimal import Decimal
+from typing import Dict, Any
+from PIL import Image, ImageTk
 import customtkinter
 import logging
 import hashlib
 import pyqrcode
 from mnemonic import Mnemonic
 
+from constants import COIN_DECIMALS_DICT, ICON_PATH
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+
+def get_config_path():
+    '''Get path for config file, depending whether app is running from sources or executable'''
+    if hasattr(sys, "_MEIPASS"):
+        abs_home = os.path.abspath(os.path.expanduser("~"))
+        abs_dir_app = os.path.join(abs_home, f".satotools")
+        if not os.path.exists(abs_dir_app):
+            os.mkdir(abs_dir_app)
+        cfg_path = os.path.join(abs_dir_app, "satotools.ini")
+    else:
+        cfg_path = os.path.abspath(".%ssatotools.ini" % os.sep)
+    logger.debug(f"get_config_path cfg_path: {cfg_path}")
+    return cfg_path
 
 def get_fingerprint_from_authentikey_bytes(authentikey_bytes):
     logger.debug(f"getFingerprintFromAuthentikeyBytes for authentikeyBytes: {authentikey_bytes.hex()}")
@@ -161,3 +178,43 @@ def normalize_string(txt) -> str:
         raise TypeError("String value expected")
 
     return unicodedata.normalize("NFKD", utxt)
+
+
+def format_asset_balances(asset: Dict[str, Any]) -> (str, str):
+    # update balance
+    balance_dec = asset.get('balance', None)
+    symbol = asset.get('symbol', asset.get('name', ""))
+    # logger.debug(f"balance_dec: {balance_dec} {symbol}")
+    balance_str = f""
+    balance2_str = f""
+    if balance_dec is None:
+        return balance_str, balance2_str
+
+    # native devise
+    precision = COIN_DECIMALS_DICT.get(symbol, 2)
+    balance_str = "{:.{}f}".format(balance_dec, precision)
+    balance_str = f"{balance_str} {symbol}"
+
+    # in second devise  # default mostly to USD currently, todo: select devise...
+    rate_dec = asset.get('exchange_rate', None)
+    symbol2 = asset.get('currency', '')
+    # logger.debug(f"rate_dec: {rate_dec} {symbol2}")
+    if balance_dec == Decimal(0):
+        balance2_str = f"0.00 USD"
+        # logger.debug(f"balance2_str: {balance2_str}")
+    if rate_dec is not None:
+        balance2_dec = balance_dec * rate_dec
+        precision2 = COIN_DECIMALS_DICT.get(symbol2, 2)
+        balance2_str = "{:.{}f}".format(balance2_dec, precision2)
+        balance2_str = f"{balance2_str} {symbol2}"
+        # logger.debug(f"balance2_str: {balance2_str}")
+
+    return balance_str, balance2_str
+
+
+def convert_name_to_photo_image(filename, sizex=25, sizey=25):
+    icon_path = f"{ICON_PATH}{filename}"
+    image = Image.open(icon_path)
+    image = image.resize((sizex, sizey), Image.LANCZOS)
+    photo_image = customtkinter.CTkImage(image)
+    return photo_image

@@ -1,4 +1,4 @@
-# Satochip-Utils
+# Sato-Tools
 
 Your one stop shop to manage your Satochip cards, including Satodime and Seedkeeper.
 Change your PIN code, reset your card, setup your hardware wallet and many more...
@@ -12,7 +12,7 @@ _________________
 > 🛒 [Buy your smart card reader here 🔗](https://satochip.io/product/chip-card-reader/).
 
 ### Setup your card
-Satochip-Utils allows you to setup your **Satochip hardware wallet** by:
+Sato-Tools allows you to setup your **Satochip hardware wallet** by:
 - Set a PIN code (from 4 to 16 chars)
 - Set a label
 - Seed your Satochip hardware wallet 
@@ -43,7 +43,7 @@ _________________
 > 🛒 [Buy your smart card reader here 🔗](https://satochip.io/product/chip-card-reader/).
 
 ### Setup your card
-Satochip-Utils allows you to setup your **Seedkeeper** by:
+Sato-Tools allows you to setup your **Seedkeeper** by:
 - Set a PIN code (from 4 to 16 chars)
 - Set a label
 
@@ -87,7 +87,7 @@ This means that all private keys, saved information and settings (such as PIN co
 
 Before starting the reset process, make sure you have a backup of the contents; either the seedphrase (from your Satochip hardware wallet) or any other password stored in your card.
 
-The reset process is simple: plug in your card, launch the Satochip-Utils tool, click on "Reset my card", read the text and click on "Start".
+The reset process is simple: plug in your card, launch Sato-Tools, click on "Reset my card" in settings, read the text and click on "Start".
 Then follow the pop-up wizard and remove your card from the smart card reader, then insert it again. And do this several times. 
 
 _________________

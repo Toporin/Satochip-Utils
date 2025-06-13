@@ -1,8 +1,13 @@
+import base64
 import binascii
 import hashlib
 import json
 import logging
+import math
 import sys
+import traceback
+
+import cbor2 # for cashu
 from configparser import ConfigParser
 from os import urandom, path, getcwd
 from typing import Dict, Any, Optional
@@ -1620,3 +1625,300 @@ class Controller:
                 "./pictures_db/error_popup_red.png"
             )
             return False
+
+
+
+    ##########################
+    """ SATOCASH METHODS """
+    ##########################
+
+    def satocash_get_balances(self, unit: str):
+        """Get balances for tokens stored in the card for a given currency unit, sorted by mints
+            based on pysatochip CLI
+        """
+        logger.info(f'In satocash_get_balances')
+        try:
+            dic_info = {"STATE": 0, "KEYSET_INDEX": 1, "AMOUNT": 2, "MINT_INDEX": 3, "UNIT": 4}
+            dic_unit = {"sat": 1, "msat": 2, "USD": 3, "EUR": 4}
+            unit = dic_unit[unit]
+
+            # get status
+            response, sw1, sw2, status_dic = self.cc.satocash_get_status()
+            max_nb_mints = status_dic.get('max_nb_mints', 0)
+            nb_mints = status_dic.get('nb_mints', 0)
+            max_nb_proofs = status_dic.get('max_nb_proofs', 0)
+            nb_proofs = status_dic.get('nb_proofs', 0)
+            nb_unspent_proofs = status_dic.get('nb_unspent_proofs', 0)
+            logger.info(f"status_dic: {status_dic}")
+
+            # get proof info in raw format
+            index_size=128
+            info_type_amount_exponent = dic_info['AMOUNT']
+            info_type_mint = dic_info['MINT_INDEX']
+            amount_exponents = []
+            mint_indexes = []
+            for index_start in range(0, max_nb_proofs, index_size):
+                response, sw1, sw2 = self.cc.satocash_get_proof_info(unit, info_type_amount_exponent, index_start, index_size)
+                amount_exponents += response
+                response, sw1, sw2 = self.cc.satocash_get_proof_info(unit, info_type_mint, index_start, index_size)
+                mint_indexes += response
+            logger.info(f"amount_exponents: {amount_exponents}")
+            logger.info(f"mint_indexes: {mint_indexes}")
+
+            # compute balance for each mint
+            amount_unspent_by_mints = max_nb_mints * [0]
+            amount_spent_by_mints = max_nb_mints * [0]
+            mint_urls = max_nb_mints * ['']
+            for index in range(max_nb_proofs):
+                mint_index = mint_indexes[index]
+                amount_exponent = amount_exponents[index]
+                if amount_exponent == 0xFF:
+                    amount = 0
+                else:
+                    if amount_exponent & 0x80 == 0x80:
+                        # spent amount
+                        amount = 2**(amount_exponent & 0x7f)
+                        amount_spent_by_mints[mint_index] += amount
+                    else:
+                        # unspent amount
+                        amount = 2 ** amount_exponent
+                        amount_unspent_by_mints[mint_index] += amount
+
+            logger.info(f"UNSPENT AMOUNTS:")
+            for index in range(max_nb_mints):
+                if amount_unspent_by_mints[index]!=0:
+                    # get mint info
+                    response, sw1, sw2, url = self.cc.satocash_export_mint(index)
+                    mint_urls[index] = url
+                    logger.info(f"balance: {amount_unspent_by_mints[index]} - mint: {url} - index: {index}")
+
+            logger.info(f"SPENT AMOUNTS:")
+            for index in range(max_nb_mints):
+                if amount_spent_by_mints[index] != 0:
+                    # get mint info
+                    response, sw1, sw2, url = self.cc.satocash_export_mint(index)
+                    mint_urls[index] = url
+                    logger.info(f"balance: {amount_spent_by_mints[index]} - mint: {url} - index: {index}")
+
+            return status_dic, mint_urls, amount_unspent_by_mints, amount_spent_by_mints
+
+        except Exception as ex:
+            logger.error(f"Error while fetching balances: {ex}")
+
+    def satocash_import_tokenv4(self, tokenv4: str):
+        """
+        Import a base64 serialized token into satocash.
+        Based on pysatochip CLI
+        Note: the function may throw if token is ill-formated or if memory is full
+        """
+
+        json = self.satocash_deserialize_tokenv4(tokenv4)
+        logger.info(f"token_json: {json}")
+        amount_total = 0
+
+        unit_str = json['u']
+        mint_url = json['m']
+        mint_index = -1
+        # import mint
+        response, sw1, sw2, mint_index = self.cc.satocash_import_mint(mint_url)
+        logger.info(f"Mint {mint_url} imported into card at index {mint_index}")
+
+        tokens = json['t']
+        # for each token
+        for token_dic in tokens:
+            keyset_id_bytes = token_dic['i']
+            keyset_index = 0
+            # import keyset_id
+            dic_unit = {"sat": 1, "msat": 2, "USD": 3, "EUR": 4}
+            unit = dic_unit[unit_str]
+            logger.info(f"unit: {unit}")
+            logger.info(f"keyset_id_bytes: {keyset_id_bytes}")
+            logger.info(f"mint_index: {mint_index}")
+
+            response, sw1, sw2, keyset_index = self.cc.satocash_import_keyset(keyset_id_bytes, mint_index, unit)
+            logger.info(f"Keyset {keyset_id_bytes.hex()} imported into card at index {keyset_index}")
+
+
+            proofs = token_dic['p']
+            # for each proof
+            for proof_dic in proofs:
+                amount = proof_dic['a']
+                amount_total += amount
+                secret_hex = proof_dic['s']
+                unblinded_key_bytes = proof_dic['c']
+                if len(unblinded_key_bytes) != 33:
+                    raise ValueError(f"Wrong unblinded_key size: {len(unblinded_key_bytes)} (should be 33)")
+
+                # import proof
+                # parse data from string
+                amount_exponent = int( math.log(int(amount), 2))  # the amount is actually stored as the power 2 exponent in [0...63]
+                logger.info(f"amount_exponent: {amount_exponent}")
+                secret_bytes = bytes.fromhex(secret_hex)
+                response, sw1, sw2, proof_index = self.cc.satocash_import_proof(keyset_index, amount_exponent,
+                                                                           secret_bytes, unblinded_key_bytes)
+                logger.info(f"Token imported into card at index {proof_index}")
+
+        return mint_url, unit_str, amount_total
+
+    def satocash_export_tokenv4(self, unit:str, amount: str):
+        """Export a base64 serialized token from satocash for at least a given amount"""
+        try:
+            amount = int(amount)
+
+            tokenv4_str = ""
+            mint_url = ""
+            error_msg = ""
+
+            # get status
+            response, sw1, sw2, status_dic = self.cc.satocash_get_status()
+            max_nb_mints = status_dic.get('max_nb_mints', 0)
+            max_nb_keysets = status_dic.get('max_nb_keysets', 0)
+            nb_mints = status_dic.get('nb_mints', 0)
+            max_nb_proofs = status_dic.get('max_nb_proofs', 0)
+            nb_proofs = status_dic.get('nb_proofs', 0)
+            nb_unspent_proofs = status_dic.get('nb_unspent_proofs', 0)
+            logger.info(f"max_nb_mints: {max_nb_mints}")
+            logger.info(f"max_nb_keysets: {max_nb_keysets}")
+            logger.info(f"max_nb_proofs: {max_nb_proofs}")
+            logger.info(f"nb_proofs: {nb_proofs}")
+            logger.info(f"nb_unspent_proofs: {nb_unspent_proofs}")
+
+            # get proof info in raw format
+            dic_info = {"STATE": 0, "KEYSET_INDEX": 1, "AMOUNT_EXPONENT": 2, "MINT_INDEX": 3, "UNIT": 4}
+            dic_unit = {"sat": 1, "msat": 2, "USD": 3, "EUR": 4}
+            index_size = 128
+            unit_byte = dic_unit[unit]
+            info_type_amount_exponent = dic_info['AMOUNT_EXPONENT']
+            info_type_mint = dic_info['MINT_INDEX']
+            info_type_keyset_index = dic_info['KEYSET_INDEX']
+            amount_exponents = []
+            mint_indexes = []
+            keyset_indexes = []
+            for index_start in range(0, max_nb_proofs, 128):
+                response, sw1, sw2 = self.cc.satocash_get_proof_info(unit_byte, info_type_amount_exponent, index_start,
+                                                                index_size)
+                amount_exponents += response
+                response, sw1, sw2 = self.cc.satocash_get_proof_info(unit_byte, info_type_mint, index_start, index_size)
+                mint_indexes += response
+                response, sw1, sw2 = self.cc.satocash_get_proof_info(unit_byte, info_type_keyset_index, index_start,
+                                                                index_size)
+                keyset_indexes += response
+            logger.info(f"amount_exponents: {amount_exponents}")
+            logger.info(f"mint_indexes: {mint_indexes}")
+            logger.info(f"keyset_indexes: {keyset_indexes}")
+
+            # compute balance for each mint
+            # also list keysets by mint and proofs by keyset
+            amount_unspent_by_mints = max_nb_mints * [0]
+            keyset_indexes_by_mint = max_nb_mints * [set()]
+            proof_indexes_by_keyset = max_nb_keysets * [set()]
+            amount_available = 0
+            mint_index = None
+            for proof_index in range(max_nb_proofs):
+                mint_index = mint_indexes[proof_index]
+                amount_exponent = amount_exponents[proof_index]
+                keyset_index = keyset_indexes[proof_index]
+
+                # get proof amount
+                if (amount_exponent != 0xFF) and (amount_exponent & 0x80 == 0x00):
+                    # unspent amount
+                    proof_amount = 2 ** amount_exponent
+                    amount_unspent_by_mints[mint_index] += proof_amount
+                    keyset_indexes_by_mint[mint_index].add(keyset_index)
+                    proof_indexes_by_keyset[keyset_index].add(proof_index)
+                    if amount_unspent_by_mints[mint_index] >= amount:
+                        # we have reached a sufficient set of proofs
+                        amount_available = amount_unspent_by_mints[mint_index]
+                        break
+
+            # check that we have sufficient funds
+            if amount_available < amount:
+                tokenv4_str = ""
+                amount_exported = 0
+                mint_url = ""
+                error_msg = f"Not enough funds available in one mint! \n Amount per mint: {amount_unspent_by_mints}"
+                logger.warning(error_msg)
+                return tokenv4_str, mint_url, unit, amount_exported, error_msg
+
+            # at this point, we have enough funds in the mint at mint_index
+            response, sw1, sw2, mint_url = self.cc.satocash_export_mint(mint_index)
+            logger.info(f"mint_index: {mint_index}")
+            logger.info(f"mint_url: {mint_url}")
+            logger.info(f"amount_available: {amount_available}")
+
+            # select proofs by keysets and get ids from card
+            keyset_indexes_subset = keyset_indexes_by_mint[mint_index]
+            logger.info(f"keyset_indexes_subset: {keyset_indexes_subset}")
+            response, sw1, sw2, keysets, keysets_dic = self.cc.satocash_export_keysets(list(keyset_indexes_subset))
+
+            # generate tokenv4 dict
+            tokenv4_dic = {'m': mint_url, 'u': unit, 'd': 'Satocash token'}
+            tokenv4_dic['t'] = []
+            for keyset_dic in keysets:
+                token_dic = {}
+
+                # get id from card
+                keyset_id = keyset_dic['id']
+                keyset_index = keyset_dic['index']
+                token_dic['i'] = keyset_id
+
+                # get proofs by keyset_index
+                token_dic['p'] = []
+                proof_indexes_subset = proof_indexes_by_keyset[keyset_index]
+                logger.info(f"proof_indexes_subset: {proof_indexes_subset}")
+                # export proofs
+                proof_list = self.cc.satocash_export_proofs(list(proof_indexes_subset))
+                for proof in proof_list:
+                    proof_dic = {
+                        'a': proof['amount'],
+                        's': proof['secret_hex'],
+                        'c': bytes.fromhex(proof['unblinded_key_hex'])
+                    }
+                    token_dic['p'] += [proof_dic]
+                    logger.info(f"proof_dic: {proof_dic}")
+
+                logger.info(f"token_dic: {token_dic}")
+                tokenv4_dic['t'] += [token_dic]
+
+            logger.info(f"tokenv4_dic: {tokenv4_dic}")
+
+            # serialize token dic to string
+            tokenv4_str = self.satocash_serialize_tokenv4(tokenv4_dic)
+            logger.info(f"tokenv4_str: {tokenv4_str}")
+
+            return tokenv4_str, mint_url, unit, amount_available, error_msg
+
+        except Exception as ex:
+            logger.error(f"Error while exporting tokens: {ex}")
+            logger.error(traceback.format_exc())
+            raise ex
+
+    def satocash_deserialize_tokenv4(self, tokenv4_serialized: str):
+        """
+        Ingesta a serialized "cashuB<cbor_urlsafe_base64>" token and returns a TokenV4 as json.
+        based on Nutshell
+        """
+        prefix = "cashuB"
+        assert tokenv4_serialized.startswith(prefix), Exception(
+            f"Token prefix not valid. Expected {prefix}."
+        )
+        token_base64 = tokenv4_serialized[len(prefix):]
+        # if base64 string is not a multiple of 4, pad it with "="
+        token_base64 += "=" * (4 - len(token_base64) % 4)
+
+        token = cbor2.loads(base64.urlsafe_b64decode(token_base64))
+        return token
+
+    def satocash_serialize_tokenv4(self, tokenv4_dic) -> str:
+        """
+        Takes a TokenV4 and serializes it as "cashuB<cbor_urlsafe_base64>.
+        """
+        prefix = "cashuB"
+        tokenv4_serialized = prefix
+        # encode the token as a base64 string
+        tokenv4_serialized += base64.urlsafe_b64encode(
+            cbor2.dumps(tokenv4_dic)
+        ).decode()
+        # remove padding
+        tokenv4_serialized = tokenv4_serialized.rstrip("=")
+        return tokenv4_serialized

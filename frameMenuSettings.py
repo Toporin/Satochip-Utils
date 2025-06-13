@@ -192,31 +192,36 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                     self.button_check_auth.configure(state="disabled")
                     self.button_about.configure(state="disabled")
 
+            if self.master.controller.cc.card_type == "Satocash":
+                self.button_factory_reset.configure(state="normal")
+                if self.master.controller.cc.setup_done:
+                    photo_image = convert_name_to_photo_image("setup_done.png")
+                    self.button_status.configure(
+                        require_redraw,
+                        text="Setup Done", image=photo_image,
+                        command=lambda: None,
+                        state='normal', text_color='white',
+                    )
+                    self.button_change_pin.configure(state="normal")
+                    self.button_edit_label.configure(state="normal")
+                    self.button_check_auth.configure(state="normal")
+                    self.button_about.configure(state="normal")
+                else:  # setup card
+                    photo_image = convert_name_to_photo_image("setup_my_card.png")
+                    self.button_status.configure(
+                        require_redraw,
+                        text="Setup my card", image=photo_image,
+                        command=lambda: self.master.show_setup_card_frame(),
+                        state='normal', text_color="green",
+                    )
+                    self.button_change_pin.configure(state="disabled")
+                    self.button_edit_label.configure(state="disabled")
+                    self.button_check_auth.configure(state="disabled")
+                    self.button_about.configure(state="disabled")
+
             if self.master.controller.cc.card_type == "Satodime":
                 # should not happen, satodime has its own menu
                 pass
-                # if self.master.controller.cc.setup_done:
-                #     photo_image = convert_name_to_photo_image("setup_done.png")
-                #     self.button_status.configure(
-                #         require_redraw,
-                #         text="Setup Done", image=photo_image,
-                #         command=lambda: None,
-                #         state="normal", text_color='white',
-                #     )
-                #     self.button_edit_label.configure(state="normal")
-                #     self.button_check_auth.configure(state="normal")
-                #     self.button_about.configure(state="normal")
-                # else: # todo check
-                #     photo_image = convert_name_to_photo_image("setup_my_card.png")
-                #     self.button_status.configure(
-                #         require_redraw,
-                #         text="Setup my card", image=photo_image,
-                #         command=lambda: self.master.show_setup_card_frame(),
-                #         state="normal", text_color="green",
-                #     )
-                #     self.button_edit_label.configure(state="disabled")
-                #     self.button_check_auth.configure(state="disabled")
-                #     self.button_about.configure(state="disabled")
 
         else: # no card
             photo_image = convert_name_to_photo_image("insert_card.jpg")

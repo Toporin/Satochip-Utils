@@ -132,6 +132,8 @@ class FrameCardFactoryReset(customtkinter.CTkFrame):
                             master.controller.cc.set_mode_factory_reset(True)
                         else:
                             factory_reset_unsupported()
+                    elif master.controller.cc.card_type == "Satocash":
+                        master.appMode = ApplicationMode.FactoryResetV2
                     else:
                         factory_reset_unsupported()
 

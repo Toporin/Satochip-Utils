@@ -111,6 +111,11 @@ class FrameCardAbout(customtkinter.CTkFrame):
             # ownership status & button
             self.ownership_widget = FrameWidgetOwnership(self)
 
+            # SATOCASH specific
+            self.satocash_nb_mints = master.create_label("Mints available", frame=self)  # updated later
+            self.satocash_nb_keysets = master.create_label("Keysets available", frame=self)  # updated later
+            self.satocash_nb_proofs = master.create_label("Proofs available", frame=self)  # updated later
+
             self.update_frame()
             self.place(relx=1.0, rely=0.5, anchor="e")
 
@@ -248,6 +253,36 @@ class FrameCardAbout(customtkinter.CTkFrame):
                 self.ownership_widget.update_frame(ownership_value, self.master.controller)
                 self.ownership_widget.place(relx=0.05, rely=rely, anchor="nw")
 
+            # Satocash specific
+            elif self.master.controller.cc.card_type == "Satocash":
+                self.card_configuration.configure(text="Satocash configuration")
+                # get status
+                try:
+                    response, sw1, sw2, satocash_status = self.master.controller.cc.satocash_get_status()
+                    logger.info(f"satocash_status: {satocash_status}", exc_info=True)
+                    # mints
+                    self.satocash_nb_mints.configure(
+                        text=f"Mints used:  {satocash_status.get('nb_mints')}/{satocash_status.get('max_nb_mints')}"
+                    )
+                    # keysets
+                    self.satocash_nb_keysets.configure(
+                        text=f"Keysets used:  {satocash_status.get('nb_keysets')}/{satocash_status.get('max_nb_keysets')}"
+                    )
+                    # proofs
+                    self.satocash_nb_proofs.configure(
+                        text=f"Unspent proofs :  {satocash_status.get('nb_unspent_proofs')}/{satocash_status.get('max_nb_proofs')} ({satocash_status.get('nb_spent_proofs')} spent proofs)"
+                    )
+                    # place info fields
+                    rely = self.rely
+                    self.satocash_nb_mints.place(relx=0.05, rely=rely, anchor="nw")
+                    rely += 0.05
+                    self.satocash_nb_keysets.place(relx=0.05, rely=rely, anchor="nw")
+                    rely += 0.05
+                    self.satocash_nb_proofs.place(relx=0.05, rely=rely, anchor="nw")
+                    rely += 0.05
+                except Exception as ex:
+                    logger.error(f"Error in satocash_get_status: {ex}", exc_info=True)
+
     def update_forget_widgets(self):
         # satochip
         self.satochip_seeded.place_forget()
@@ -259,3 +294,8 @@ class FrameCardAbout(customtkinter.CTkFrame):
 
         # satodime
         self.ownership_widget.place_forget()
+
+        # satocash
+        self.satocash_nb_mints.place_forget()
+        self.satocash_nb_keysets.place_forget()
+        self.satocash_nb_proofs.place_forget()

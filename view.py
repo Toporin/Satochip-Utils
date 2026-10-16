@@ -22,11 +22,15 @@ from frameCardFactoryReset import FrameCardFactoryReset
 from frameCardImportSeed import FrameCardImportSeed
 from frameCardSetupPin import FrameCardSetupPin
 from frameMenuNoCard import FrameMenuNoCard
+from frameMenuSatocash import FrameMenuSatocash
 from frameMenuSatodime import FrameMenuSatodime
 from frameMenuSeedkeeper import FrameMenuSeedkeeper
 from frameMenuSeedkeeperBackup import FrameMenuSeedkeeperBackup
 from frameMenuSettings import FrameMenuSettings
 from frameMenuSettingsSatodime import FrameMenuSettingsSatodime
+from frameSatocashBalances import FrameSatocashBalances
+from frameSatocashExportTokenv4 import FrameSatocashExportTokenv4
+from frameSatocashImportTokenv4 import FrameSatocashImportTokenv4
 from frameSatodimeResetVault import FrameSatodimeResetVault
 from frameSatodimeSealVault import FrameSatodimeSealVault
 from frameSatodimeUnsealVault import FrameSatodimeUnsealVault
@@ -96,6 +100,7 @@ class View(customtkinter.CTk):
             self.seedkeeper_menu_frame = None
             self.seedkeeper_backup_menu_frame = None
             self.satodime_menu_frame = None
+            self.satocash_menu_frame = None
             # settings frames
             self.setup_card_frame = None
             self.about_frame = None
@@ -131,6 +136,11 @@ class View(customtkinter.CTk):
             self.satodime_vault_frames = None # this is a list of frames, one for each vault
             self.satodime_unseal_vault_frame = None
             self.satodime_reset_vault_frame = None
+
+            # satocash frames
+            self.satocash_balances_frame = None
+            self.satocash_import_tokenv4_frame = None
+            self.satocash_export_tokenv4_frame = None
 
             # state
             # store seedkeeper secret headers
@@ -583,6 +593,8 @@ class View(customtkinter.CTk):
                 self.show_seedkeeper_menu()
             elif self.controller.cc.card_type == "Satodime":
                 self.show_satodime_menu()
+            elif self.controller.cc.card_type == "Satocash" and self.controller.cc.setup_done:
+                self.show_satocash_menu()
             else:
                 self.show_settings_menu()
         else:  # no card
@@ -602,7 +614,6 @@ class View(customtkinter.CTk):
         #self.settings_satodime_menu_frame.update_frame()
         self.settings_satodime_menu_frame.tkraise()
 
-
     def show_nocard_menu(self):
         logger.info("IN View.show_settings_menu start")
         self.nocard_menu_frame.tkraise()
@@ -614,6 +625,14 @@ class View(customtkinter.CTk):
         else:
             logger.info("show_seedkeeper_menu seedkeeper_menu_frame is not None, show it")
             self.seedkeeper_menu_frame.tkraise()
+
+    def show_satocash_menu(self):
+        logger.info("show_satocash_menu start")
+        if self.satocash_menu_frame is None:
+            self.satocash_menu_frame = FrameMenuSatocash(self)
+        else:
+            logger.info("show_satocash_menu satocash_menu_frame is not None, show it")
+            self.satocash_menu_frame.tkraise()
 
     def show_satodime_menu(self):
         logger.info("show_satodime_menu start")
@@ -1089,5 +1108,66 @@ class View(customtkinter.CTk):
             logger.error(f"Error in show_satodime_reset_vault: {ex}", exc_info=True)
 
 
+    ####################################################################################################################
+    """ METHODS TO DISPLAY A VIEW FROM SATOCASH MENU SELECTION """
 
+    def show_satocash_balances(self):
+        try:
+            logger.debug(f"show_satocash_balances start")
+            if self.satocash_balances_frame is None:
+                self.satocash_balances_frame = FrameSatocashBalances(self)
+
+            # get balances from card
+            status_dic, mint_urls, amount_unspent_by_mints, amount_spent_by_mints = self.controller.satocash_get_balances("sat")
+
+            # update frame
+            self.satocash_balances_frame.update_frame(mint_urls, amount_unspent_by_mints, amount_spent_by_mints)
+            self.satocash_balances_frame.tkraise()
+
+        except Exception as ex:
+            logger.error(f"Error in show_satocash_balances: {ex}", exc_info=True)
+            self.show(
+                "ERROR",
+                f"Failed to fetch Satocash balances: {ex}",
+                "Ok",
+                None,
+                "./pictures_db/error_popup_red.png"
+            )
+
+    def show_satocash_import_tokenv4(self):
+        try:
+            logger.debug(f"show_satocash_import_tokenv4 start")
+            if self.satocash_import_tokenv4_frame is None:
+                self.satocash_import_tokenv4_frame = FrameSatocashImportTokenv4(self)
+
+            # update frame
+            self.satocash_import_tokenv4_frame.update_frame()
+            self.satocash_import_tokenv4_frame.tkraise()
+        except Exception as ex:
+            logger.error(f"Error in show_satocash_import_tokenv4: {ex}", exc_info=True)
+            self.show(
+                "ERROR",
+                f"Failed to import token into Satocash: {ex}",
+                "Ok",
+                None,
+                "./pictures_db/error_popup_red.png"
+            )
+
+    def show_satocash_export_tokenv4(self):
+        try:
+            logger.debug(f"show_satocash_export_tokenv4 start")
+            if self.satocash_export_tokenv4_frame is None:
+                self.satocash_export_tokenv4_frame = FrameSatocashExportTokenv4(self)
+
+            # update frame
+            self.satocash_export_tokenv4_frame.tkraise()
+        except Exception as ex:
+            logger.error(f"Error in show_satocash_export_tokenv4: {ex}", exc_info=True)
+            self.show(
+                "ERROR",
+                f"Failed to export token into Satocash: {ex}",
+                "Ok",
+                None,
+                "./pictures_db/error_popup_red.png"
+            )
 

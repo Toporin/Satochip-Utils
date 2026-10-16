@@ -127,7 +127,9 @@ class FrameCardFactoryReset(customtkinter.CTkFrame):
                         else:
                             master.appMode = ApplicationMode.FactoryResetV2
                     elif master.controller.cc.card_type == "Satochip":
-                        if applet_version >= 12:
+                        if applet_version >= 16:
+                            master.appMode = ApplicationMode.FactoryResetV3
+                        elif applet_version >= 12:
                             master.appMode = ApplicationMode.FactoryResetV1
                             master.controller.cc.set_mode_factory_reset(True)
                         else:
@@ -215,7 +217,7 @@ class FrameCardFactoryReset(customtkinter.CTkFrame):
                     self.master.show('ERROR', msg, "Ok", None, "./pictures_db/error_popup_red.png")
 
             except Exception as e:
-                logger.error(f"An unexpected error occurred during the factory reset process: {e}", exc_info=True)
+                logger.error(f"An unexpected error occurred during the factory reset v1 process: {e}", exc_info=True)
 
         elif self.master.appMode == ApplicationMode.FactoryResetV2:
             try:
@@ -276,7 +278,25 @@ class FrameCardFactoryReset(customtkinter.CTkFrame):
                             logger.debug(f"Unexpected error: {str(ex)}")
 
             except Exception as e:
-                logger.error(f"unexpected error during factory reset: {e}", exc_info=True)
+                logger.error(f"unexpected error during factory reset v2: {e}", exc_info=True)
+
+        elif self.master.appMode == ApplicationMode.FactoryResetV3:
+            try:
+                logger.info("click_reset_button attempting to reset the card (v3)")
+                (response, sw1, sw2) = self.master.controller.cc.card_reset_factory_v3()
+                if sw1 == 0x90 and sw2 == 0x00:
+                    logger.debug(f"CARD RESET TO FACTORY!")
+                    self.master.controller.cc.setup_done = False  # force update cc state
+                    self.master.appMode = ApplicationMode.Normal
+                    self.master.show(
+                        'SUCCESS',
+                        "The card has been reset to factory!",
+                        "Ok",
+                        lambda: self.master.show_start_frame(),  # self.master.restart_app(),
+                        "./pictures_db/success_popup_green.png"
+                    )
+            except Exception as e:
+                logger.error(f"unexpected error during factory reset v3: {e}", exc_info=True)
 
         else:
             logger.info(f"unsupported application mode {self.master.appMode}")

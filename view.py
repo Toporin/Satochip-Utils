@@ -653,7 +653,8 @@ class View(customtkinter.CTk):
     def update_status(self, isConnected=None):
         try:
             if (self.appMode == ApplicationMode.FactoryResetV1 or
-                    self.appMode == ApplicationMode.FactoryResetV2):
+                    self.appMode == ApplicationMode.FactoryResetV2 or
+                        self.appMode == ApplicationMode.FactoryResetV3):
                 # we are in factory reset mode
                 if isConnected is True:
                     logger.info(f"Card inserted for Reset Factory!")

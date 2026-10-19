@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 # [0.4.0-beta]
 
 Add Satocash integration.
+Add binaries code signing in CI: Windows via Azure Artifact Signing, macOS via Apple Developer ID signing + notarization (on tag pushes and manual workflow dispatch).
 
 # [0.3.0-beta]
 

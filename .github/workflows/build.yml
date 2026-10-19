@@ -6,6 +6,7 @@ on:
   push:
     tags: '*'
     branches: [ master, dev, test_*, satodime-integration, satocash-integration]
+  workflow_dispatch:
 
 
 jobs:
@@ -24,14 +25,32 @@ jobs:
     - name: inject API keys in config file
       run: |
         printf '%s' '${{ secrets.API_KEYS }}' > api_keys.ini
+    - name: Set SIGN flag (true on tag push or manual dispatch)
+      shell: bash
+      run: |
+        echo "SIGN=${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}" >> $GITHUB_ENV
     - name: Build bin package
       run: |
         cd package
         ./Build-Windows.bat
-    - name: 'Archive windows bin (unsigned!)'
+    - name: Sign binaries with Azure Artifact Signing
+      if: env.SIGN == 'true'
+      uses: Azure/artifact-signing-action@b443cf8ea4124818d2ea9f043cba29fc3ec47b16 # v1
+      with:
+        azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+        endpoint: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
+        signing-account-name: ${{ secrets.AZURE_SIGNING_ACCOUNT }}
+        certificate-profile-name: ${{ secrets.AZURE_CERT_PROFILE }}
+        files-folder: dist
+        files-folder-filter: exe
+        files-folder-recurse: true
+        timeout: 600
+    - name: 'Archive windows bin'
       uses: actions/upload-artifact@v4
       with:
-        name: windist-unsigned
+        name: ${{ env.SIGN == 'true' && 'windist-signed' || 'windist-unsigned' }}
         path: |
           dist/
 
@@ -102,15 +121,38 @@ jobs:
     - name: inject API keys in config file
       run: |
         printf '%s' '${{ secrets.API_KEYS }}' > api_keys.ini
-    - name: Build bin package
+    - name: Set SIGN flag (true on tag push or manual dispatch)
+      run: |
+        echo "SIGN=${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}" >> $GITHUB_ENV
+    - name: Import signing certificate into keychain
+      if: env.SIGN == 'true'
+      env:
+        MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+        MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+        KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+      run: |
+        echo "$MACOS_CERTIFICATE" | base64 --decode -o certificate.p12
+        security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+        security default-keychain -s build.keychain
+        security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+        security set-keychain-settings -lut 21600 build.keychain
+        security import certificate.p12 -k build.keychain -P "$MACOS_CERTIFICATE_PWD" -T /usr/bin/codesign
+        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+        security list-keychains -d user -s build.keychain
+        rm certificate.p12
+    - name: Build bin package (+ sign & notarize when SIGN=true)
+      env:
+        MACOS_SIGN_IDENTITY: ${{ env.SIGN == 'true' && secrets.MACOS_SIGN_IDENTITY || '' }}
+        MACOS_NOTARY_KEY: ${{ env.SIGN == 'true' && secrets.MACOS_NOTARY_KEY || '' }}
+        MACOS_NOTARY_KEY_ID: ${{ env.SIGN == 'true' && secrets.MACOS_NOTARY_KEY_ID || '' }}
+        MACOS_NOTARY_ISSUER_ID: ${{ env.SIGN == 'true' && secrets.MACOS_NOTARY_ISSUER_ID || '' }}
       run: |
         chmod +x ./package/Build-Mac.sh
         ./package/Build-Mac.sh
-        chmod +x ./dist/satochip_utils.app/Contents/MacOS/satochip_utils
-    - name: 'Archive MacOS bin (unsigned!)'
+    - name: 'Archive MacOS bin'
       uses: actions/upload-artifact@v4
       with:
-        name: macdist-x86_64-unsigned
+        name: ${{ env.SIGN == 'true' && 'macdist-x86_64-signed' || 'macdist-x86_64-unsigned' }}
         path: |
           dist/
 
@@ -124,7 +166,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: test import tkinter
-        run: | 
+        run: |
           python3 -c 'import tkinter'
       - name: Install dependencies
         run: |
@@ -133,13 +175,37 @@ jobs:
       - name: inject API keys in config file
         run: |
           printf '%s' '${{ secrets.API_KEYS }}' > api_keys.ini
-      - name: Build bin package
+      - name: Set SIGN flag (true on tag push or manual dispatch)
+        run: |
+          echo "SIGN=${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}" >> $GITHUB_ENV
+      - name: Import signing certificate into keychain
+        if: env.SIGN == 'true'
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          echo "$MACOS_CERTIFICATE" | base64 --decode -o certificate.p12
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security set-keychain-settings -lut 21600 build.keychain
+          security import certificate.p12 -k build.keychain -P "$MACOS_CERTIFICATE_PWD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+          security list-keychains -d user -s build.keychain
+          rm certificate.p12
+      - name: Build bin package (+ sign & notarize when SIGN=true)
+        env:
+          MACOS_SIGN_IDENTITY: ${{ env.SIGN == 'true' && secrets.MACOS_SIGN_IDENTITY || '' }}
+          MACOS_NOTARY_KEY: ${{ env.SIGN == 'true' && secrets.MACOS_NOTARY_KEY || '' }}
+          MACOS_NOTARY_KEY_ID: ${{ env.SIGN == 'true' && secrets.MACOS_NOTARY_KEY_ID || '' }}
+          MACOS_NOTARY_ISSUER_ID: ${{ env.SIGN == 'true' && secrets.MACOS_NOTARY_ISSUER_ID || '' }}
         run: |
           chmod +x ./package/Build-Mac.sh
           ./package/Build-Mac.sh
-      - name: 'Archive MacOS bin (unsigned!)'
+      - name: 'Archive MacOS bin'
         uses: actions/upload-artifact@v4
         with:
-          name: macdist-arm64-unsigned
+          name: ${{ env.SIGN == 'true' && 'macdist-arm64-signed' || 'macdist-arm64-unsigned' }}
           path: |
             dist/

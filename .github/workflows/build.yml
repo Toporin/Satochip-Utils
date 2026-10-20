@@ -6,7 +6,7 @@ on:
   push:
     tags: '*'
     branches: [ master, dev, test_*, satodime-integration, satocash-integration]
-
+  workflow_dispatch:
 
 jobs:
 

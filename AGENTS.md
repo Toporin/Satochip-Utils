@@ -101,7 +101,8 @@ Binary packaging uses PyInstaller driven by `package/satochip_utils.spec`, which
 `Satochip-Utils-<os>-<arch>-<VERSION>` (VERSION imported from `version.py`).
 
 - Linux: `bash package/Build-Linux.sh` (Ubuntu 22.04 only; script checks), legacy 20.04 variant
-  `package/Build-Linux-legacy.sh`. Each creates a venv, `pip install .`, installs pinned
+  `package/Build-Linux-legacy.sh` (manual builds only; no longer in CI since GitHub retired
+  the ubuntu-20.04 runners). Each creates a venv, `pip install .`, installs pinned
   PyInstaller, runs the spec; result in `dist/`.
 - Windows: `package/Build-Windows.bat` (downloads and recompiles the PyInstaller bootloader,
   fills Windows version info via `package/build_win_verinfo.py`).
@@ -110,8 +111,8 @@ Binary packaging uses PyInstaller driven by `package/satochip_utils.spec`, which
   script also code-signs and notarizes the app bundle and the DMG (hardened runtime,
   entitlements from `package/entitlements.plist`).
 
-CI (`.github/workflows/build.yml`) builds all five targets (windows-2022, ubuntu-22.04,
-ubuntu-20.04, macos-13 x86_64, macos-latest arm64) on pushes to `master`, `dev`, `test_*`,
+CI (`.github/workflows/build.yml`) builds four targets (windows-2022, ubuntu-22.04,
+macos-13 x86_64, macos-latest arm64) on pushes to `master`, `dev`, `test_*`,
 `satodime-integration`, `satocash-integration`, on any tag and on manual `workflow_dispatch`.
 It injects the GitHub secret `API_KEYS` into `api_keys.ini` before building. On tag pushes and
 manual dispatches (SIGN flag), the Windows exe is code-signed with Azure Artifact Signing

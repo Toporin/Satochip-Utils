@@ -74,6 +74,22 @@ fi
 echo Compilation done.
 echo Binary result is in the dist folder.
 
+# Submit $1 to the Apple notary service; on rejection, dump the notary log
+# (which lists the exact issues) and abort.
+notarize() {
+    xcrun notarytool submit "$1" --key notary_key.p8 --key-id "$MACOS_NOTARY_KEY_ID" --issuer "$MACOS_NOTARY_ISSUER_ID" --wait --output-format json | tee notary_submit.json
+    NOTARY_STATUS=$(python3 -c "import json; print(json.load(open('notary_submit.json')).get('status', ''))" 2>/dev/null || true)
+    if [ "$NOTARY_STATUS" != "Accepted" ]; then
+        SUBMISSION_ID=$(python3 -c "import json; print(json.load(open('notary_submit.json'))['id'])" 2>/dev/null || true)
+        echo "ERROR: notarization of $1 failed (status: ${NOTARY_STATUS:-submission error})"
+        if [ -n "$SUBMISSION_ID" ]; then
+            xcrun notarytool log "$SUBMISSION_ID" --key notary_key.p8 --key-id "$MACOS_NOTARY_KEY_ID" --issuer "$MACOS_NOTARY_ISSUER_ID" || true
+        fi
+        exit 1
+    fi
+    rm -f notary_submit.json
+}
+
 # Code signing & notarization of the app bundle.
 # Only performed when MACOS_SIGN_IDENTITY is set (CI release builds); requires the
 # signing certificate in the keychain and the notarization credentials in
@@ -90,7 +106,7 @@ if [ -n "$MACOS_SIGN_IDENTITY" ]; then
     echo "Notarizing the app bundle..."
     echo "$MACOS_NOTARY_KEY" | base64 --decode -o notary_key.p8
     ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" satochip_utils.zip
-    xcrun notarytool submit satochip_utils.zip --key notary_key.p8 --key-id "$MACOS_NOTARY_KEY_ID" --issuer "$MACOS_NOTARY_ISSUER_ID" --wait
+    notarize satochip_utils.zip
     xcrun stapler staple -v "$APP_PATH"
     rm -f satochip_utils.zip
 fi
@@ -107,7 +123,7 @@ if [ -n "$MACOS_SIGN_IDENTITY" ]; then
     echo "Code signing the dmg..."
     codesign -f --timestamp --options runtime --sign "$MACOS_SIGN_IDENTITY" dist/satochip_utils.dmg
     echo "Notarizing the dmg..."
-    xcrun notarytool submit dist/satochip_utils.dmg --key notary_key.p8 --key-id "$MACOS_NOTARY_KEY_ID" --issuer "$MACOS_NOTARY_ISSUER_ID" --wait
+    notarize dist/satochip_utils.dmg
     xcrun stapler staple -v dist/satochip_utils.dmg
     rm -f notary_key.p8
 fi

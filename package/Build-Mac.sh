@@ -7,6 +7,9 @@
 # If needed, python3 -m venv unibenv should trigger the dev tools installation
 
 
+# stop at first error (otherwise a failed build goes unnoticed until much later)
+set -e
+
 rm -Rf build
 rm -Rf dist
 
@@ -17,7 +20,8 @@ source unibenv/bin/activate
 echo Installing pip dependencies ...
 #python -m pip install pip==21.2.1
 python -m ensurepip --upgrade
-python -m pip install --upgrade setuptools
+# setuptools >= 81 no longer ships pkg_resources, which PyInstaller 5.13.2 requires
+python -m pip install --upgrade "setuptools<81"
 python -m pip install --upgrade --force-reinstall Pillow
 python -m pip install .
 
@@ -57,10 +61,15 @@ ls -l dist/satochip_utils.app/Contents/MacOS/
 #cp -R /usr/local/Cellar/tcl-tk/8.6.14/lib/tcl8.6 dist/satochip_utils.app/Contents/MacOS
 #ls -l dist/satochip_utils.app/Contents/MacOS/
 
-setopt +o nomatch
+# the *-info glob may match nothing; only zsh needs nomatch disabled
+if [ -n "$ZSH_VERSION" ]; then
+    setopt +o nomatch
+fi
 rm -Rf dist/satochip_utils.app/Contents/MacOS/*-info
 rm -Rf dist/satochip_utils.app/Contents/Resources/*-info
-setopt -o nomatch
+if [ -n "$ZSH_VERSION" ]; then
+    setopt -o nomatch
+fi
 
 echo Compilation done.
 echo Binary result is in the dist folder.
@@ -70,7 +79,6 @@ echo Binary result is in the dist folder.
 # signing certificate in the keychain and the notarization credentials in
 # MACOS_NOTARY_KEY / MACOS_NOTARY_KEY_ID / MACOS_NOTARY_ISSUER_ID.
 if [ -n "$MACOS_SIGN_IDENTITY" ]; then
-    set -e
     echo "Code signing the app bundle with identity: $MACOS_SIGN_IDENTITY"
     APP_PATH="dist/satochip_utils.app"
     # sign nested libraries first (inside-out)
@@ -85,7 +93,6 @@ if [ -n "$MACOS_SIGN_IDENTITY" ]; then
     xcrun notarytool submit satochip_utils.zip --key notary_key.p8 --key-id "$MACOS_NOTARY_KEY_ID" --issuer "$MACOS_NOTARY_ISSUER_ID" --wait
     xcrun stapler staple -v "$APP_PATH"
     rm -f satochip_utils.zip
-    set +e
 fi
 
 echo DMG bundling.
@@ -97,14 +104,12 @@ python -m dmgbuild -s package/dmg_build.py volume_name satochip_utils.dmg
 
 # Code signing & notarization of the dmg.
 if [ -n "$MACOS_SIGN_IDENTITY" ]; then
-    set -e
     echo "Code signing the dmg..."
     codesign -f --timestamp --options runtime --sign "$MACOS_SIGN_IDENTITY" dist/satochip_utils.dmg
     echo "Notarizing the dmg..."
     xcrun notarytool submit dist/satochip_utils.dmg --key notary_key.p8 --key-id "$MACOS_NOTARY_KEY_ID" --issuer "$MACOS_NOTARY_ISSUER_ID" --wait
     xcrun stapler staple -v dist/satochip_utils.dmg
     rm -f notary_key.p8
-    set +e
 fi
 
 ls -l

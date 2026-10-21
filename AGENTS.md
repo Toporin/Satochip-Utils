@@ -112,7 +112,7 @@ Binary packaging uses PyInstaller driven by `package/satochip_utils.spec`, which
   entitlements from `package/entitlements.plist`).
 
 CI (`.github/workflows/build.yml`) builds four targets (windows-2022, ubuntu-22.04,
-macos-13 x86_64, macos-latest arm64) on pushes to `master`, `dev`, `test_*`,
+macos-15-intel x86_64, macos-latest arm64) on pushes to `master`, `dev`, `test_*`,
 `satodime-integration`, `satocash-integration`, on any tag and on manual `workflow_dispatch`.
 It injects the GitHub secret `API_KEYS` into `api_keys.ini` before building. On tag pushes and
 manual dispatches (SIGN flag), the Windows exe is code-signed with Azure Artifact Signing

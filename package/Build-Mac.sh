@@ -23,7 +23,14 @@ python -m ensurepip --upgrade
 # setuptools >= 81 no longer ships pkg_resources, which PyInstaller 5.13.2 requires
 python -m pip install --upgrade "setuptools<81"
 python -m pip install --upgrade --force-reinstall Pillow
-python -m pip install .
+# cryptography >= 49 no longer ships Intel macOS wheels; building it from source links
+# against Homebrew's OpenSSL, which then fails to load in the frozen app (pysatochip then
+# reports "No hardened EC backend found"). Pin to the last universal2 wheel (statically
+# linked OpenSSL) and never build cryptography from source.
+if [ "$(uname -m)" = "x86_64" ]; then
+    python -m pip install --only-binary=cryptography "cryptography<49"
+fi
+python -m pip install --only-binary=cryptography .
 
 python -m pip install pyinstaller==5.13.2
 
@@ -32,6 +39,14 @@ python -OO -m PyInstaller package/satochip_utils.spec
 deactivate
 
 rm -Rf dist/satochip_utils-bundle
+
+# the official cryptography wheels link OpenSSL statically; a dynamic libssl dependency
+# means a source build against Homebrew's OpenSSL, which won't load on users' machines
+if otool -L dist/satochip_utils.app/Contents/MacOS/cryptography/hazmat/bindings/_rust.abi3.so | grep -q libssl; then
+    echo "ERROR: bundled cryptography is dynamically linked to OpenSSL (built from source?)"
+    exit 1
+fi
+
 ls -l dist/satochip_utils.app/Contents/MacOS/
 chmod +x dist/satochip_utils.app/Contents/MacOS/satochip_utils
 ls -l dist/satochip_utils.app/Contents/MacOS/

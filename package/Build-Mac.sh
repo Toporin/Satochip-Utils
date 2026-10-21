@@ -90,6 +90,20 @@ notarize() {
     rm -f notary_submit.json
 }
 
+# Staple the notary ticket to $1; the ticket download from Apple's servers is
+# prone to transient network errors, so retry a few times before giving up.
+staple_with_retry() {
+    for attempt in 1 2 3 4 5; do
+        if xcrun stapler staple -v "$1"; then
+            return 0
+        fi
+        echo "Stapling $1 failed (attempt $attempt/5); retrying in 20s..."
+        sleep 20
+    done
+    echo "ERROR: stapling $1 failed after 5 attempts"
+    return 1
+}
+
 # Code signing & notarization of the app bundle.
 # Only performed when MACOS_SIGN_IDENTITY is set (CI release builds); requires the
 # signing certificate in the keychain and the notarization credentials in
@@ -113,7 +127,7 @@ if [ -n "$MACOS_SIGN_IDENTITY" ]; then
     echo "$MACOS_NOTARY_KEY" | base64 --decode -o notary_key.p8
     ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" satochip_utils.zip
     notarize satochip_utils.zip
-    xcrun stapler staple -v "$APP_PATH"
+    staple_with_retry "$APP_PATH"
     rm -f satochip_utils.zip
 fi
 
@@ -130,7 +144,7 @@ if [ -n "$MACOS_SIGN_IDENTITY" ]; then
     codesign -f --timestamp --options runtime --sign "$MACOS_SIGN_IDENTITY" dist/satochip_utils.dmg
     echo "Notarizing the dmg..."
     notarize dist/satochip_utils.dmg
-    xcrun stapler staple -v dist/satochip_utils.dmg
+    staple_with_retry dist/satochip_utils.dmg
     rm -f notary_key.p8
 fi
 

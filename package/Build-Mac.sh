@@ -97,8 +97,14 @@ notarize() {
 if [ -n "$MACOS_SIGN_IDENTITY" ]; then
     echo "Code signing the app bundle with identity: $MACOS_SIGN_IDENTITY"
     APP_PATH="dist/satochip_utils.app"
-    # sign nested libraries first (inside-out)
-    find "$APP_PATH/Contents" \( -name "*.so" -o -name "*.dylib" \) -print0 | xargs -0 codesign -f --timestamp --options runtime --sign "$MACOS_SIGN_IDENTITY"
+    # sign all nested Mach-O binaries first (inside-out); filtering by content,
+    # not extension, as e.g. the bundled Python framework library (Contents/MacOS/Python)
+    # has no extension and would otherwise keep its original (python.org) signature
+    find "$APP_PATH/Contents" -type f -print0 | while IFS= read -r -d '' f; do
+        if file "$f" | grep -q Mach-O; then
+            codesign -f --timestamp --options runtime --sign "$MACOS_SIGN_IDENTITY" "$f"
+        fi
+    done
     # sign the main executable then the whole bundle, with hardened runtime and entitlements
     codesign -f --timestamp --options runtime --entitlements package/entitlements.plist --sign "$MACOS_SIGN_IDENTITY" "$APP_PATH/Contents/MacOS/satochip_utils"
     codesign -f --timestamp --options runtime --entitlements package/entitlements.plist --sign "$MACOS_SIGN_IDENTITY" "$APP_PATH"

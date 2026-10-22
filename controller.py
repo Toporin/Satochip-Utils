@@ -214,6 +214,35 @@ class Controller:
             self.view.show("ERROR", f"Failed to edit label: {e}", "Ok", None,
                            "./pictures_db/error_popup_red.png")
 
+    def set_nfc_policy(self, policy, on_success=None):
+        try:
+            logger.info(f"New NFC policy to set: {policy}")
+
+            if policy not in (0, 1, 2):  # 0:NFC_ENABLED, 1:NFC_DISABLED, 2:NFC_BLOCKED
+                raise ValueError("NFC policy should be 0 (enabled), 1 (disabled) or 2 (blocked)")
+
+            (response, sw1, sw2) = self.cc.card_set_nfc_policy(policy)
+            if sw1 == 0x90 and sw2 == 0x00:
+                logger.info(f"New NFC policy set successfully: {policy}")
+                self.cc.nfc_policy = policy
+                self.view.show("SUCCESS",
+                               f"New NFC policy set successfully",
+                               "Ok", on_success if on_success else self.view.show_start_frame,
+                               "./pictures_db/success_popup_green.png")
+            elif sw1 == 0x6D and sw2 == 0x00:
+                logger.warning(f"Failed to set NFC policy: operation not supported on this card (code {hex(sw1 * 256 + sw2)})")
+                self.view.show("ERROR", f"Failed to set NFC policy: operation not supported (code {hex(sw1 * 256 + sw2)})", "Ok",
+                               None, "./pictures_db/error_popup_red.png")
+            else:
+                logger.warning(f"Failed to set new NFC policy (code {hex(sw1*256+sw2)})")
+                self.view.show("ERROR", f"Failed to set NFC policy (code {hex(sw1*256+sw2)})", "Ok",
+                               None, "./pictures_db/error_popup_red.png")
+
+        except Exception as e:
+            logger.error(f"Failed to set NFC policy: {e}")
+            self.view.show("ERROR", f"Failed to set NFC policy: {e}", "Ok", None,
+                           "./pictures_db/error_popup_red.png")
+
     def get_card_label_infos(self):
         """Get label info"""
         if self.cc.card_present:

@@ -23,6 +23,7 @@ from frameCardEditLabel import FrameCardEditLabel
 from frameCardFactoryReset import FrameCardFactoryReset
 from frameCardImportSeed import FrameCardImportSeed
 from frameCardSetupPin import FrameCardSetupPin
+from frameCardSwitchNfc import FrameCardSwitchNfc
 from frameMenuNoCard import FrameMenuNoCard
 from frameMenuSatocash import FrameMenuSatocash
 from frameMenuSatodime import FrameMenuSatodime
@@ -115,6 +116,8 @@ class View(customtkinter.CTk):
             self.authenticity_frame = None
             self.edit_label_frame = None
             self.edit_label_return_callback = None
+            self.switch_nfc_frame = None
+            self.switch_nfc_return_callback = None
             self.change_pin_frame = None
             self.seed_import_frame = None
             self.factory_reset_frame = None
@@ -872,6 +875,14 @@ class View(customtkinter.CTk):
         else:
             self.edit_label_frame.update_frame()
         self.edit_label_frame.tkraise()
+
+    def show_switch_nfc_frame(self, return_callback=None):
+        self.switch_nfc_return_callback = return_callback if return_callback else self.show_start_frame
+        if self.switch_nfc_frame is None:
+            self.switch_nfc_frame = FrameCardSwitchNfc(self)
+        else:
+            self.switch_nfc_frame.update_frame()
+        self.switch_nfc_frame.tkraise()
 
     def show_check_authenticity_frame(self):
         # verify PIN

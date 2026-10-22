@@ -89,9 +89,18 @@ class FrameCardAbout(customtkinter.CTkFrame):
             self.card_status = master.create_label("card status", frame=self)  # updated later
             self.card_status.place(relx=0.05, rely=rely, anchor="nw")
             rely += 0.05
-            # NFC
+            # NFC (with switch button on the left)
+            self.switch_nfc_button = customtkinter.CTkButton(
+                self, width=28, height=28, text="",
+                border_spacing=0,
+                image=convert_name_to_photo_image("icon_switch_3.jpg", 28, 28),
+                bg_color="whitesmoke", fg_color="whitesmoke",
+                hover_color="whitesmoke", cursor="hand2",
+                command=lambda: master.show_switch_nfc_frame(return_callback=master.show_about_frame)
+            )
+            self.switch_nfc_button.place(relx=0.05, rely=rely, anchor="nw")
             self.nfc = master.create_label(f"NFC status", frame=self)  # updated later
-            self.nfc.place(relx=0.05, rely=rely, anchor="nw")
+            self.nfc.place(relx=0.10, rely=rely, anchor="nw")
             rely += 0.08
 
             # TODO authentikey?

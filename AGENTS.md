@@ -46,8 +46,8 @@ Flat layout — all application modules live at the repo root (no Python package
 - `utils.py` — helpers: config path resolution, images, QR codes, entry/textbox visibility.
 - `frame*.py` — one module per screen, each defining a `customtkinter.CTkFrame` subclass.
   Naming conventions:
-  - `frameCard*` — card settings screens (setup PIN, change PIN, edit label, authenticity,
-    factory reset, about, import seed).
+  - `frameCard*` — card settings screens (setup PIN, change PIN, edit label, switch NFC,
+    authenticity, factory reset, about, import seed).
   - `frameMenu*` — left-hand navigation menus, one per card type/state (settings, no-card,
     Seedkeeper, Seedkeeper backup, Satodime, Satocash).
   - `frameSeedkeeper*` — secret generate/import/show/list, logs, backup screens.

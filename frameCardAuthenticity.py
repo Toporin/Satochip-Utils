@@ -151,6 +151,10 @@ class FrameCardAuthenticity(customtkinter.CTkFrame):
                     text=f"Your card is authentic. ",
                 )
                 self.text_box.configure(require_redraw=True, height= 228)
+                self.text_warning1.configure(text="")
+                self.text_warning2.configure(text="")
+                self.text_warning3.configure(text="")
+                self.text_warning4.configure(text="")
             else:
                 icon_image = Image.open("./pictures_db/not_genuine_card.jpg")
                 icon = customtkinter.CTkImage(light_image=icon_image, size=(30, 30))

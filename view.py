@@ -875,6 +875,8 @@ class View(customtkinter.CTk):
 
         if self.authenticity_frame is None:
             self.authenticity_frame = FrameCardAuthenticity(self)
+        else:
+            self.authenticity_frame.update_frame()
         self.authenticity_frame.place()
         self.authenticity_frame.tkraise()
 

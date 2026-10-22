@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [0.4.1-beta]
 
+Fix invisible text labels on macOS when system dark mode is enabled by pinning light appearance mode (#51).
 Fix garbled/clipped UI text on Tails OS: substitute an available system font when the "Outfit" font is not installed (#59).
 
 # [0.4.0-beta]

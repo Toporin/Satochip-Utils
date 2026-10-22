@@ -88,6 +88,10 @@ class View(customtkinter.CTk):
             logger.setLevel(logging.DEBUG)
             logger.debug("Log level set to INFO")
             logger.info("Starting View.__init__()")
+            # The UI hardcodes light backgrounds everywhere; without this, customtkinter follows
+            # the OS appearance and macOS dark mode flips default text colors to near-white,
+            # making labels invisible (issue #51).
+            customtkinter.set_appearance_mode("light")
             super().__init__()
 
             self._resolve_font_family()

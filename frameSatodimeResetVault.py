@@ -2,6 +2,7 @@ from PIL import Image, ImageTk
 import customtkinter
 import logging
 
+import constants
 from constants import ICON_PATH
 from frameWidgetHeader import FrameWidgetHeader
 from frameWidgetLabel import FrameWidgetLabel
@@ -68,7 +69,7 @@ class FrameSatodimeResetVault(customtkinter.CTkFrame):
                 self,
                 text=" I confirm that I have made a backup of the corresponding private key.",
                 text_color="red",
-                font=customtkinter.CTkFont(family="Outfit", size=16, weight="bold"),
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=16, weight="bold"),
                 command=update_checkbox_confirmation,
                 variable=self.checkbox_confirmation_value,
                 onvalue="on",

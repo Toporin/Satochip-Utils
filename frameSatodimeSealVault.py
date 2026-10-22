@@ -3,6 +3,7 @@ from os import urandom
 import customtkinter
 import logging
 
+import constants
 from constants import (BG_BUTTON, BG_HOVER_BUTTON, BG_MAIN_MENU, COIN_DICT)
 from frameWidgetExpertMode import FrameWidgetExpertMode
 from frameWidgetHeader import FrameWidgetHeader
@@ -68,8 +69,8 @@ class FrameSatodimeSealVault(customtkinter.CTkFrame):
                 dropdown_hover_color=BG_HOVER_BUTTON,  # Couleur au survol des options
                 dropdown_text_color="white",  # Couleur du texte des options
                 text_color="grey",  # Couleur du texte sélectionné
-                font=customtkinter.CTkFont(family="Outfit", size=13, weight="normal"),
-                dropdown_font=customtkinter.CTkFont(family="Outfit", size=13, weight="normal"),
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=13, weight="normal"),
+                dropdown_font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=13, weight="normal"),
                 corner_radius=10,  # Même rayon de coin que les entrées
             )
             self.blockchain_option_menu.place(relx=0.05, rely=self.rely, anchor="nw")

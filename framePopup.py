@@ -6,6 +6,7 @@ import logging
 import pyqrcode
 from PIL import Image, ImageTk
 
+import constants
 from constants import MAIN_MENU_COLOR, HOVER_COLOR
 
 logger = logging.getLogger(__name__)
@@ -53,7 +54,7 @@ class FramePopup(customtkinter.CTkToplevel):
                 image=icon,
                 text=f"\n{msg}",
                 compound='top',
-                font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal")
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=18, weight="normal")
             )
             icon_label.grid(row=0, column=0, padx=20, pady=20, sticky="ew", columnspan=2)
         else:
@@ -61,7 +62,7 @@ class FramePopup(customtkinter.CTkToplevel):
             label = customtkinter.CTkLabel(
                 self,
                 text=msg,
-                font=customtkinter.CTkFont(family="Outfit", size=14, weight="bold")
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=14, weight="bold")
             )
             label.grid(row=0, column=0, padx=20, pady=20, sticky="ew", columnspan=2)
         logger.debug("Label added to popup")
@@ -105,7 +106,7 @@ class FramePopup(customtkinter.CTkToplevel):
                 hover_color=HOVER_COLOR,
                 bg_color='whitesmoke',
                 width=120, height=35, corner_radius=34,
-                font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal"),
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=18, weight="normal"),
                 command=lambda: close_and_execute()
             )
             self.show_button.grid(row=1, column=0, padx=20, pady=20, sticky="ew")
@@ -117,7 +118,7 @@ class FramePopup(customtkinter.CTkToplevel):
                 hover_color=HOVER_COLOR,
                 bg_color='whitesmoke',
                 width=120, height=35, corner_radius=34,
-                font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal"),
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=18, weight="normal"),
                 command=lambda: close_and_execute2()
             )
             self.show_button2.grid(row=2 if qr_msg else 1 , column=1, padx=20, pady=20, sticky="ew")
@@ -130,7 +131,7 @@ class FramePopup(customtkinter.CTkToplevel):
                 hover_color=HOVER_COLOR,
                 bg_color='whitesmoke',
                 width=120, height=35, corner_radius=34,
-                font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal"),
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=18, weight="normal"),
                 command=lambda: close_and_execute()
             )
             self.show_button.grid(row=2 if qr_msg else 1, column=0, padx=20, pady=20, columnspan=2)

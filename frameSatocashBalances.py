@@ -2,6 +2,7 @@ from typing import SupportsIndex
 import customtkinter
 import logging
 
+import constants
 from constants import BG_MAIN_MENU, DEFAULT_BG_COLOR, BG_HOVER_BUTTON, TEXT_COLOR, BUTTON_TEXT_COLOR, HIGHLIGHT_COLOR
 from frameWidgetHeader import FrameWidgetHeader
 
@@ -49,7 +50,7 @@ class FrameSatocashBalances(customtkinter.CTkFrame):
             for col, width in zip(self.headers, self.header_widths):
                 self.header_button = customtkinter.CTkButton(
                     self, text=col,
-                    font=customtkinter.CTkFont(size=14, family='Outfit', weight="bold"),
+                    font=customtkinter.CTkFont(size=14, family=constants.FONT_FAMILY, weight="bold"),
                     corner_radius=0, state='disabled', text_color='white',
                     fg_color=BG_MAIN_MENU, width=width
                 )
@@ -102,7 +103,7 @@ class FrameSatocashBalances(customtkinter.CTkFrame):
                         cell_button = customtkinter.CTkButton(
                             row_frame, text=value,
                             text_color=text_color, fg_color=fg_color,
-                            font=customtkinter.CTkFont(size=14, family='Outfit'),
+                            font=customtkinter.CTkFont(size=14, family=constants.FONT_FAMILY),
                             hover_color=HIGHLIGHT_COLOR, corner_radius=0, width=width
                         )
                         cell_button.default_color = fg_color  # Store the default color

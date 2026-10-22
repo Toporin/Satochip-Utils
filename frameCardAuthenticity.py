@@ -2,6 +2,7 @@ import customtkinter
 import logging
 from PIL import Image, ImageTk
 
+import constants
 from constants import MAIN_MENU_COLOR, BUTTON_COLOR
 from frameWidgetHeader import FrameWidgetHeader
 
@@ -52,7 +53,7 @@ class FrameCardAuthenticity(customtkinter.CTkFrame):
                 self, image=icon,
                 text=f"Your card is not authentic. ",
                 compound='right', bg_color="whitesmoke", fg_color="whitesmoke",
-                font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal"),
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=18, weight="normal"),
             )
             self.icon_label.place(relx=0.2, rely=0.267, anchor="w")
             # text if not authentic
@@ -72,7 +73,7 @@ class FrameCardAuthenticity(customtkinter.CTkFrame):
                 text="Root CA certificate",
                 variable=self.certificate_radio_value,
                 value="root_ca_certificate",
-                font=customtkinter.CTkFont(family="Outfit", size=14, weight="normal"),
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=14, weight="normal"),
                 bg_color="whitesmoke", fg_color="green", hover_color="green",
                 command=self.update_radio_selection
             )
@@ -83,7 +84,7 @@ class FrameCardAuthenticity(customtkinter.CTkFrame):
                 text="Sub CA certificate",
                 variable=self.certificate_radio_value,
                 value="sub_ca_certificate",
-                font=customtkinter.CTkFont(family="Outfit", size=14, weight="normal"),
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=14, weight="normal"),
                 bg_color="whitesmoke", fg_color="green", hover_color="green",
                 command=self.update_radio_selection
             )
@@ -94,7 +95,7 @@ class FrameCardAuthenticity(customtkinter.CTkFrame):
                 text="Device certificate",
                 variable=self.certificate_radio_value,
                 value="device_certificate",
-                font=customtkinter.CTkFont(family="Outfit", size=14, weight="normal"),
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=14, weight="normal"),
                 bg_color="whitesmoke", fg_color="green", hover_color="green",
                 command=self.update_radio_selection
             )
@@ -106,7 +107,7 @@ class FrameCardAuthenticity(customtkinter.CTkFrame):
                 bg_color='whitesmoke', fg_color=BUTTON_COLOR, border_color=BUTTON_COLOR,
                 border_width=0, width=581, text_color="grey",
                 height= 150,
-                font=customtkinter.CTkFont(family="Outfit", size=13, weight="normal")
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=13, weight="normal")
             )
 
             self.cancel_button = master.create_button(

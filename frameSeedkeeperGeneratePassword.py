@@ -3,6 +3,7 @@ import logging
 import secrets
 
 from frameWidgetHeader import FrameWidgetHeader
+import constants
 from constants import BG_MAIN_MENU, BG_HOVER_BUTTON, BG_BUTTON
 
 logger = logging.getLogger(__name__)
@@ -157,7 +158,7 @@ class FrameSeedkeeperGeneratePassword(customtkinter.CTkFrame):
                 self, corner_radius=20, bg_color="whitesmoke", fg_color=BG_BUTTON,
                 border_color=BG_BUTTON, border_width=1, width=500, height=83,
                 text_color="grey",
-                font=customtkinter.CTkFont(family="Outfit", size=13, weight="normal")
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=13, weight="normal")
             )
             # self.password_textbox.configure(state='disabled') # does not allow copy-paste on some linux distro
             self.password_textbox.tag_config("tag_centered", justify="center")  # for text justification

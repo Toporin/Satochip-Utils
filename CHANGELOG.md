@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [0.4.1-beta]
+
+Fix garbled/clipped UI text on Tails OS: substitute an available system font when the "Outfit" font is not installed (#59).
+
 # [0.4.0-beta]
 
 Add Satocash integration.

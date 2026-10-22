@@ -2,6 +2,7 @@ import customtkinter
 import logging
 from PIL import Image, ImageTk
 
+import constants
 from constants import ICON_PATH
 from frameWidgetLabel import FrameWidgetLabel
 
@@ -33,7 +34,7 @@ class FrameWidgetHeader(customtkinter.CTkFrame):
             # Créer le bouton avec l'image de l'icône
             self.button = customtkinter.CTkButton(
                 self, text=self.title_text, image=self.photo_image,
-                font=customtkinter.CTkFont(family="Outfit", size=25, weight="bold"),
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=25, weight="bold"),
                 bg_color="whitesmoke", fg_color="whitesmoke", text_color="black",
                 hover_color="whitesmoke", compound="left"
             )
@@ -42,7 +43,7 @@ class FrameWidgetHeader(customtkinter.CTkFrame):
 
             # hidden text (can be used in addition)
             # self.status_label = FrameWidgetLabel(master=self, text="")
-            # self.status_label.configure(font=customtkinter.CTkFont(family="Outfit", size=25, weight="bold"))
+            # self.status_label.configure(font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=25, weight="bold"))
             # self.status_label.place(relx=0.25, rely=0.5, anchor="w")
 
 

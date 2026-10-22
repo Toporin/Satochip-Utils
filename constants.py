@@ -15,6 +15,14 @@ TEXT_COLOR = "black"
 
 ICON_PATH = "./pictures_db/"
 
+# Preferred UI font family. Resolved at startup in View._resolve_font_family() against the
+# fonts available on the system: "Outfit" is kept when installed, otherwise the first available
+# substitute is used (DejaVu Sans ships with Tails/Debian, where Tk's own fallback for missing
+# families renders garbled/clipped text — issue #59).
+FONT_FAMILY = "Outfit"
+FONT_FAMILY_SUBSTITUTES = ["DejaVu Sans", "Liberation Sans", "Noto Sans", "FreeSans", "Helvetica",
+                           "Arial"]
+
 
 """Satodime"""
 

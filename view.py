@@ -2,6 +2,7 @@ import logging
 import sys
 import os
 import tkinter
+import tkinter.font
 from typing import Optional, Dict, Callable, Any, Tuple, SupportsIndex
 
 import customtkinter
@@ -11,6 +12,7 @@ from pysatochip.JCconstants import STATE_UNINITIALIZED
 
 from FrameSeedkeeperGenerateSecretSelectType import FrameSeedkeeperGenerateSecretSelectType
 from applicationMode import ApplicationMode
+import constants
 from constants import TYPE_PUBKEY, TYPE_DATA, TYPE_DESCRIPTOR, TYPE_2FA_SECRET, TYPE_ELECTRUM_MNEMONIC, \
     TYPE_BIP39_MNEMONIC, TYPE_MASTERSEED, TYPE_PASSWORD
 from controller import Controller
@@ -87,6 +89,8 @@ class View(customtkinter.CTk):
             logger.debug("Log level set to INFO")
             logger.info("Starting View.__init__()")
             super().__init__()
+
+            self._resolve_font_family()
 
             self.loop = loop
 
@@ -241,6 +245,22 @@ class View(customtkinter.CTk):
     #     photo_image = customtkinter.CTkImage(image)
     #     return photo_image
 
+    def _resolve_font_family(self):
+        """Pick a font family available on the system (fixes garbled text on Tails, issue #59)."""
+        try:
+            available = set(tkinter.font.families())
+            for family in [constants.FONT_FAMILY] + constants.FONT_FAMILY_SUBSTITUTES:
+                if family in available:
+                    constants.FONT_FAMILY = family
+                    break
+            else:
+                constants.FONT_FAMILY = "TkDefaultFont"
+            # customtkinter's theme default ("Roboto" on Linux) is missing on minimal systems too
+            customtkinter.ThemeManager.theme["CTkFont"]["family"] = constants.FONT_FAMILY
+            logger.info(f"UI font family set to '{constants.FONT_FAMILY}'")
+        except Exception as e:
+            logger.warning(f"Could not resolve system fonts, keeping '{constants.FONT_FAMILY}': {e}")
+
     @staticmethod
     def make_text_bold(size=18):
         # logger.debug("make_text_bold start")
@@ -369,7 +389,7 @@ class View(customtkinter.CTk):
             text_color="black",
             bg_color=bg_fg_color,
             fg_color=bg_fg_color,
-            font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal")
+            font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=18, weight="normal")
         )
         return label
 
@@ -385,7 +405,7 @@ class View(customtkinter.CTk):
             frame,
             text=text,
             width=120, height=35, corner_radius=100,
-            font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal"),
+            font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=18, weight="normal"),
             bg_color='white', fg_color=MAIN_MENU_COLOR,
             hover_color=HOVER_COLOR, cursor="hand2",
             command=command)
@@ -413,7 +433,7 @@ class View(customtkinter.CTk):
             frame,
             text=button_label,
             text_color=text_color,
-            font=customtkinter.CTkFont(family="Outfit", weight="normal", size=18),
+            font=customtkinter.CTkFont(family=constants.FONT_FAMILY, weight="normal", size=18),
             image=photo_image,
             bg_color=BG_MAIN_MENU,
             fg_color=BG_MAIN_MENU,
@@ -482,8 +502,8 @@ class View(customtkinter.CTk):
             dropdown_hover_color=BG_HOVER_BUTTON,  # Couleur au survol des options
             dropdown_text_color="white",  # Couleur du texte des options
             text_color="grey",  # Couleur du texte sélectionné
-            font=customtkinter.CTkFont(family="Outfit", size=13, weight="normal"),
-            dropdown_font=customtkinter.CTkFont(family="Outfit", size=13, weight="normal"),
+            font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=13, weight="normal"),
+            dropdown_font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=13, weight="normal"),
             corner_radius=10,  # Même rayon de coin que les entrées
         )
         return variable, option_menu
@@ -559,14 +579,14 @@ class View(customtkinter.CTk):
                     image=icon,
                     text=f"\n{msg}",
                     compound='top',
-                    font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal")
+                    font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=18, weight="normal")
                 )
                 self.icon_label.pack(pady=(20, 10))  # Ajout d'un padding différent pour l'icône
                 logger.debug("Icon added to popup")
             else:
                 # Ajout d'un label dans le popup
                 label = customtkinter.CTkLabel(popup, text=msg,
-                                               font=customtkinter.CTkFont(family="Outfit", size=14, weight="bold"))
+                                               font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=14, weight="bold"))
                 label.pack(pady=20)
                 logger.debug("Label added to popup")
 
@@ -585,7 +605,7 @@ class View(customtkinter.CTk):
                 popup, text=button_txt, fg_color=MAIN_MENU_COLOR,
                 hover_color=HOVER_COLOR, bg_color='whitesmoke',
                 width=120, height=35, corner_radius=34,
-                font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal"),
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=18, weight="normal"),
                 command=lambda: close_and_execute()
             )
             self.show_button.pack(pady=20)
@@ -761,7 +781,7 @@ class View(customtkinter.CTk):
             icon_label = customtkinter.CTkLabel(
                 popup, image=icon, text=msg,  # f"\nEnter the PIN code of your card.",
                 compound='top',
-                font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal")
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=18, weight="normal")
             )
             icon_label.pack(pady=(0, 10))  # Ajout d'un padding différent pour l'icône
             logger.debug("Label added to popup")
@@ -790,7 +810,7 @@ class View(customtkinter.CTk):
                 width=120, height=35, corner_radius=34,
                 hover_color=HOVER_COLOR, text="Submit",
                 command=submit_passphrase,
-                font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal")
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=18, weight="normal")
             )
             submit_button.pack(pady=10)
             logger.debug("Submit button added to popup")

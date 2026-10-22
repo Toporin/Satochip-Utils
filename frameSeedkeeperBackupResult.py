@@ -1,6 +1,7 @@
 import customtkinter
 import logging
 
+import constants
 from constants import (HIGHLIGHT_COLOR, BG_MAIN_MENU, DEFAULT_BG_COLOR,
                         BG_HOVER_BUTTON, TEXT_COLOR, BUTTON_TEXT_COLOR)
 from frameWidgetHeader import FrameWidgetHeader
@@ -51,7 +52,7 @@ class FrameSeedkeeperBackupResult(customtkinter.CTkFrame):
             for col, width in zip(self.headers, self.header_widths):
                 header_button = customtkinter.CTkButton(
                     self.header_frame, text=col,
-                    font=customtkinter.CTkFont(size=14, family='Outfit', weight="bold"),
+                    font=customtkinter.CTkFont(size=14, family=constants.FONT_FAMILY, weight="bold"),
                     corner_radius=0, state='disabled', text_color='white',
                     fg_color=BG_MAIN_MENU, width=width
                 )
@@ -112,7 +113,7 @@ class FrameSeedkeeperBackupResult(customtkinter.CTkFrame):
                 cell_button = customtkinter.CTkButton(
                     row_frame, text=value, text_color=text_color,
                     fg_color=fg_color,
-                    font=customtkinter.CTkFont(size=14, family='Outfit'),
+                    font=customtkinter.CTkFont(size=14, family=constants.FONT_FAMILY),
                     hover_color=HIGHLIGHT_COLOR, width=width, corner_radius=0
                 )
                 cell_button.default_color = fg_color

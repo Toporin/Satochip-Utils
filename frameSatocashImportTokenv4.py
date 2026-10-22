@@ -2,6 +2,7 @@ import customtkinter
 import logging
 
 from frameWidgetHeader import FrameWidgetHeader
+import constants
 from constants import BG_BUTTON
 from utils import update_textbox
 
@@ -37,7 +38,7 @@ class FrameSatocashImportTokenv4(customtkinter.CTkFrame):
                 self, corner_radius=20, bg_color="whitesmoke", fg_color=BG_BUTTON,
                 border_color=BG_BUTTON, border_width=1, width=500, height=200,
                 text_color="grey",
-                font=customtkinter.CTkFont(family="Outfit", size=13, weight="normal")
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=13, weight="normal")
             )
             self.token_textbox.place(relx=0.15, rely=0.36, anchor="nw")
 

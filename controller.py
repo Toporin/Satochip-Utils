@@ -39,8 +39,9 @@ class Controller:
             self.cc = CardConnector(self, loglevel=loglevel)
             logger.info("CardConnector initialized successfully.")
         except Exception as ex:
+            self.cc = None
+            self.cardconnector_error = ex
             logger.error(f"Failed to initialize CardConnector {ex}", exc_info=True)
-            raise
 
         # get apikeys from file
         self.apikeys = {}

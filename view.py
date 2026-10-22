@@ -158,14 +158,24 @@ class View(customtkinter.CTk):
             # Initializing main window
             self.main_window()
 
+            # widgets
+            self.icon_label = None  # popup icon+label called in different contexts todo: refactor
+            self.show_button = None  # popup button called in different contexts todo: refactor
+
+            if self.controller.cc is None:
+                # PC/SC smartcard service unavailable (e.g. pcscd not running): inform and exit
+                msg = ("Cannot connect to the smartcard service (PC/SC).\n\n"
+                       "On Linux, install and start it with:\n"
+                       "sudo apt install pcscd && sudo systemctl start pcscd\n\n"
+                       "Then restart Satochip-Utils.")
+                self.protocol("WM_DELETE_WINDOW", lambda: [self.destroy()])
+                self.show("Smartcard service unavailable", msg, button_txt="Exit", cmd=self.destroy)
+                return
+
             # Creating main frame
             self.main_frame = customtkinter.CTkFrame(self, width=1000, height=600, bg_color="white",
                                                      fg_color="white")
             self.main_frame.place(relx=0.5, rely=0.5, anchor="center")
-
-            # widgets
-            self.icon_label = None  # popup icon+label called in different contexts todo: refactor
-            self.show_button = None  # popup button called in different contexts todo: refactor
 
             # Launching initialization starting with welcome view
             self.nocard_menu_frame = FrameMenuNoCard(self)
@@ -210,8 +220,9 @@ class View(customtkinter.CTk):
             logger.debug("Main window destroyed")
 
             # Déconnexion de la carte
-            self.controller.cc.card_disconnect()
-            logger.debug("Card disconnected successfully")
+            if self.controller.cc is not None:
+                self.controller.cc.card_disconnect()
+                logger.debug("Card disconnected successfully")
         except Exception as e:
             logger.error(f"An unexpected error occurred in on_close: {e}", exc_info=True)
         logger.debug("OUT View.on_close")

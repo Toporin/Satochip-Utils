@@ -68,9 +68,18 @@ class FrameCardAbout(customtkinter.CTkFrame):
             self.applet_version = master.create_label(f"Applet version",  frame=self)
             self.applet_version.place(relx=0.05, rely=rely, anchor="nw")
             rely += 0.05
-            # label
+            # label (with edit button on the left, as label length varies)
+            self.edit_label_button = customtkinter.CTkButton(
+                self, width=28, height=28, text="",
+                border_spacing=0,
+                image=convert_name_to_photo_image("edit_label_rounded.png", 28, 28),
+                bg_color="whitesmoke", fg_color="whitesmoke",
+                hover_color="whitesmoke", cursor="hand2",
+                command=lambda: master.show_edit_label_frame(return_callback=master.show_about_frame)
+            )
+            self.edit_label_button.place(relx=0.05, rely=rely, anchor="nw")
             self.card_label = master.create_label(f"Label: [PIN required]", frame=self)
-            self.card_label.place(relx=0.05, rely=rely, anchor="nw")
+            self.card_label.place(relx=0.10, rely=rely, anchor="nw")
             rely += 0.05
             # authenticity
             self.card_genuine = master.create_label(f"Genuine: [PIN required]", frame=self)

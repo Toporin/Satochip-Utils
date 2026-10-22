@@ -114,6 +114,7 @@ class View(customtkinter.CTk):
             self.about_frame = None
             self.authenticity_frame = None
             self.edit_label_frame = None
+            self.edit_label_return_callback = None
             self.change_pin_frame = None
             self.seed_import_frame = None
             self.factory_reset_frame = None
@@ -864,9 +865,12 @@ class View(customtkinter.CTk):
             self.change_pin_frame = FrameCardChangePin(self)
         self.change_pin_frame.tkraise()
 
-    def show_edit_label_frame(self):
+    def show_edit_label_frame(self, return_callback=None):
+        self.edit_label_return_callback = return_callback if return_callback else self.show_start_frame
         if self.edit_label_frame is None:
             self.edit_label_frame = FrameCardEditLabel(self)
+        else:
+            self.edit_label_frame.update_frame()
         self.edit_label_frame.tkraise()
 
     def show_check_authenticity_frame(self):

@@ -182,7 +182,7 @@ class Controller:
             self.view.show("ERROR", "Failed to import seed.", "Ok", None,
                            "./pictures_db/error_popup_red.png")
 
-    def edit_label(self, label):
+    def edit_label(self, label, on_success=None):
         try:
             logger.info(f"New label to set: {label}")
 
@@ -194,11 +194,19 @@ class Controller:
                 logger.info(f"New label set successfully: {label}")
                 self.view.show("SUCCESS",
                                f"New label set successfully",
-                               "Ok", self.view.show_start_frame(),
+                               "Ok", on_success if on_success else self.view.show_start_frame,
                                "./pictures_db/success_popup_green.png")
+            elif sw1 == 0x9c and sw2 == 0x04:
+                logger.warning(f"Failed to set label (code {hex(sw1*256+sw2)})")
+                if self.cc.card_type == "Satodime":
+                    self.view.show("ERROR", f"Failed to set label. Take the card ownership first (code {hex(sw1 * 256 + sw2)})",
+                                   "Ok", None, "./pictures_db/error_popup_red.png")
+                else:
+                    self.view.show("ERROR", f"Failed to set label. The card is not setup (code {hex(sw1 * 256 + sw2)})",
+                                   "Ok", None, "./pictures_db/error_popup_red.png")
             else:
-                logger.warning("Failed to set new label.")
-                self.view.show("ERROR", f"Failed to set label (code {hex(sw1*256+sw2)})", "oK",
+                logger.warning(f"Failed to set label (code {hex(sw1*256+sw2)})")
+                self.view.show("ERROR", f"Failed to set label (code {hex(sw1*256+sw2)})", "Ok",
                                None, "./pictures_db/error_popup_red.png")
 
         except Exception as e:

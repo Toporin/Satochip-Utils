@@ -60,21 +60,12 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                 command=lambda: master.show_change_pin_frame(),
                 state='disabled'
             )
-            # edit label
-            self.button_edit_label = master.create_menu_button(
-                self,
-                "Edit Label",
-                "edit_label.png",
-                0.40, 0.05,
-                command=lambda: master.show_edit_label_frame(),
-                state='disabled'
-            )
             # check authenticity
             self.button_check_auth = master.create_menu_button(
                 self,
                 "Check Authenticity",
                 "check_authenticity.png",
-                0.47, 0.05,
+                0.40, 0.05,
                 command=lambda: master.show_check_authenticity_frame(),
                 state='disabled'
             )
@@ -83,7 +74,7 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                 self,
                 "Reset my Card",
                 "reset.png",
-                0.54, 0.05,
+                0.47, 0.05,
                 command=lambda: master.show_factory_reset_frame(),
                 state='disabled'
             )
@@ -92,7 +83,7 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                 self,
                 "About",
                 "about.jpg",
-                0.61, 0.05,  # 0.73, 0.05,
+                0.54, 0.05,
                 command=lambda: master.show_about_frame(),
                 state='disabled'
             )
@@ -133,7 +124,6 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                 self.button_factory_reset.configure(state="normal")
                 if self.master.controller.cc.setup_done:
                     self.button_change_pin.configure(state="normal")
-                    self.button_edit_label.configure(state="normal")
                     self.button_check_auth.configure(state="normal")
                     self.button_about.configure(state="normal")
                     if self.master.controller.cc.is_seeded:
@@ -161,7 +151,6 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                         state='normal', text_color="green",
                     )
                     self.button_change_pin.configure(state="disabled")
-                    self.button_edit_label.configure(state="disabled")
                     self.button_check_auth.configure(state="disabled")
                     self.button_about.configure(state="disabled")
 
@@ -176,7 +165,6 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                         state='normal', text_color='white',
                     )
                     self.button_change_pin.configure(state="normal")
-                    self.button_edit_label.configure(state="normal")
                     self.button_check_auth.configure(state="normal")
                     self.button_about.configure(state="normal")
                 else:  # setup card
@@ -188,7 +176,6 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                         state='normal', text_color="green",
                     )
                     self.button_change_pin.configure(state="disabled")
-                    self.button_edit_label.configure(state="disabled")
                     self.button_check_auth.configure(state="disabled")
                     self.button_about.configure(state="disabled")
 
@@ -203,7 +190,6 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                         state='normal', text_color='white',
                     )
                     self.button_change_pin.configure(state="normal")
-                    self.button_edit_label.configure(state="normal")
                     self.button_check_auth.configure(state="normal")
                     self.button_about.configure(state="normal")
                 else:  # setup card
@@ -215,7 +201,6 @@ class FrameMenuSettings(customtkinter.CTkFrame):
                         state='normal', text_color="green",
                     )
                     self.button_change_pin.configure(state="disabled")
-                    self.button_edit_label.configure(state="disabled")
                     self.button_check_auth.configure(state="disabled")
                     self.button_about.configure(state="disabled")
 
@@ -227,7 +212,6 @@ class FrameMenuSettings(customtkinter.CTkFrame):
             photo_image = convert_name_to_photo_image("insert_card.jpg")
             self.button_status.configure(text="Insert card", image=photo_image, command=lambda: None, text_color='white')
             self.button_change_pin.configure(state="disabled")
-            self.button_edit_label.configure(state="disabled")
             self.button_check_auth.configure(state="disabled")
             self.button_about.configure(state="disabled")
             self.button_factory_reset.configure(state="disabled")

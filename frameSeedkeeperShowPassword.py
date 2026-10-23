@@ -3,7 +3,7 @@ import logging
 
 from framePopup import FramePopup
 from frameWidgetHeader import FrameWidgetHeader
-from utils import toggle_entry_visibility, show_qr_code, update_entry
+from utils import toggle_entry_visibility, show_qr_code, create_qr_button, update_entry
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +44,7 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
             self.login_label_rely= rely
             self.login_label = master.create_label("Login:", frame=self)
             self.login_label.place(relx=0.05, rely=rely, anchor="nw")
+            self.login_qr_button = create_qr_button(self, self.login_label)  # command set in update_frame()
             rely += 0.05
             self.login_entry_rely = rely
             self.login_entry = master.create_entry(frame=self)
@@ -54,6 +55,7 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
             self.url_label_rely = rely
             self.url_label = master.create_label("Url:", frame=self)
             self.url_label.place(relx=0.05, rely=rely, anchor="nw")
+            self.url_qr_button = create_qr_button(self, self.url_label)  # command set in update_frame()
             rely += 0.05
             self.url_entry_rely = rely
             self.url_entry = master.create_entry(frame=self)
@@ -63,6 +65,7 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
             # password
             self.password_label = master.create_label("Password:", frame=self)
             self.password_label.place(relx=0.05, rely=rely, anchor="nw")
+            self.password_qr_button = create_qr_button(self, self.password_label)  # command set in update_frame()
             rely += 0.05
             self.password_entry = master.create_entry(frame=self)
             self.password_entry.place(relx=0.05, rely=rely, anchor="nw")
@@ -76,14 +79,7 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
                 command=lambda: None,  # will be updated in update
                 frame=self
             )
-            self.delete_button.place(relx=0.55, rely=0.95, anchor="e")
-            # seed_qr button #todo use icons on the side?
-            self.qr_button = master.create_button(
-                text="QR code",
-                command=lambda: None,  # will be updated in update_frame()
-                frame=self
-            )
-            self.qr_button.place(relx=0.75, rely=0.95, anchor="e")
+            self.delete_button.place(relx=0.75, rely=0.95, anchor="e")
             # show
             self.show_button = master.create_button(
                 text="Hide",
@@ -118,7 +114,7 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
             update_entry(self.login_entry, login)
         # update url (opt)
         url = secret.get('url', "")
-        if login == "":
+        if url == "":
             self.url_label.place_forget()
             self.url_entry.place_forget()
         else:
@@ -129,9 +125,15 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
         password = secret.get('password')
         update_entry(self.password_entry, password)
 
-        # qr-code
-        self.qr_button.configure(
-            command=lambda data=password: show_qr_code(data, self.master)
+        # qr-codes (use decoded values, as the widgets may be masked)
+        self.login_qr_button.configure(
+            command=lambda data=login: show_qr_code(data, self.master, "Login")
+        )
+        self.url_qr_button.configure(
+            command=lambda data=url: show_qr_code(data, self.master, "Url")
+        )
+        self.password_qr_button.configure(
+            command=lambda data=password: show_qr_code(data, self.master, "Password")
         )
 
         self.show_button.configure(

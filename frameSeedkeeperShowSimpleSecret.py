@@ -4,7 +4,7 @@ import logging
 from constants import TYPE_DIC
 from framePopup import FramePopup
 from frameWidgetHeader import FrameWidgetHeader
-from utils import show_qr_code, toggle_entry_visibility, toggle_textbox_visibility, \
+from utils import show_qr_code, create_qr_button, toggle_entry_visibility, toggle_textbox_visibility, \
     update_textbox, update_entry, make_textbox_readonly
 
 logger = logging.getLogger(__name__)
@@ -45,6 +45,7 @@ class FrameSeedkeeperShowSecret(customtkinter.CTkFrame):
             # Create secret field
             self.secret_label = master.create_label("Secret:", frame=self)
             self.secret_label.place(relx=0.05, rely=rely, anchor="nw")
+            self.secret_qr_button = create_qr_button(self, self.secret_label)  # command set in update_frame()
             rely += 0.05
             self.secret_textbox = master.create_textbox(frame=self)
             self.secret_textbox.place(relx=0.05, rely=rely, relheight=0.23, anchor="nw")
@@ -60,14 +61,7 @@ class FrameSeedkeeperShowSecret(customtkinter.CTkFrame):
                 command=lambda: None, # will be updated in update
                 frame=self
             )
-            self.delete_button.place(relx=0.55, rely=0.95, anchor="e")
-            # seed_qr button #todo use icons on the side?
-            self.qr_button = master.create_button(
-                text="QR code",
-                command=lambda: None,  # will be updated in update_frame()
-                frame=self
-            )
-            self.qr_button.place(relx=0.75, rely=0.95, anchor="e")
+            self.delete_button.place(relx=0.75, rely=0.95, anchor="e")
             # show
             self.show_button = master.create_button(
                 text="Hide",
@@ -97,9 +91,9 @@ class FrameSeedkeeperShowSecret(customtkinter.CTkFrame):
             secret_decoded = secret['secret_decoded']
         update_textbox(self.secret_textbox, secret_decoded)
 
-        # qr-code
-        self.qr_button.configure(
-            command=lambda data=secret_decoded: show_qr_code(data, self.master)
+        # qr-code (use decoded value, as the widget may be masked)
+        self.secret_qr_button.configure(
+            command=lambda data=secret_decoded: show_qr_code(data, self.master, "Secret")
         )
 
         self.show_button.configure(

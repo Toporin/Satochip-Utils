@@ -4,7 +4,7 @@ import logging
 from constants import TYPE_MASTERSEED, TYPE_DIC
 from framePopup import FramePopup
 from frameWidgetHeader import FrameWidgetHeader
-from utils import (show_qr_code, toggle_entry_visibility, toggle_textbox_visibility,
+from utils import (show_qr_code, create_qr_button, toggle_entry_visibility, toggle_textbox_visibility,
                    update_textbox, update_entry, make_textbox_readonly,
                    mnemonic_to_entropy_string, reset_entry_visibility)
 
@@ -47,6 +47,7 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
             self.passphrase_label_rely = rely
             self.passphrase_label = master.create_label("Passphrase:", frame=self)
             self.passphrase_label.place(relx=0.05, rely=rely, anchor="nw")
+            self.passphrase_qr_button = create_qr_button(self, self.passphrase_label)  # command set in update_frame()
             rely += 0.05
             self.passphrase_entry_rely = rely
             self.passphrase_entry = master.create_entry(frame=self)
@@ -56,6 +57,7 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
             # Create mnemonic field
             self.mnemonic_label = master.create_label("Mnemonic:", frame=self)
             self.mnemonic_label.place(relx=0.05, rely=rely, anchor="nw")
+            self.mnemonic_qr_button = create_qr_button(self, self.mnemonic_label)  # command set in update_frame()
             rely += 0.05
             self.mnemonic_textbox = master.create_textbox(frame=self)
             self.mnemonic_textbox.place(relx=0.05, rely=rely, relheight=0.15, anchor="nw")
@@ -83,7 +85,7 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
                 command=lambda: None,  # will be updated in update
                 frame=self
             )
-            self.delete_button.place(relx=0.35, rely=0.95, anchor="e")
+            self.delete_button.place(relx=0.55, rely=0.95, anchor="e")
 
             # seed_qr button #todo use icons on the side?
             self.seedqr_button = master.create_button(
@@ -91,15 +93,7 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
                 command=lambda: None,  # will be updated in update_frame()
                 frame=self
             )
-            self.seedqr_button.place(relx=0.55, rely=0.95, anchor="e")
-
-            # qr button #todo use icons on the side?
-            self.qr_button = master.create_button(
-                text="QR code",
-                command=lambda: None,  # will be updated in update_frame()
-                frame=self
-            )
-            self.qr_button.place(relx=0.75, rely=0.95, anchor="e")
+            self.seedqr_button.place(relx=0.75, rely=0.95, anchor="e")
 
             # show
             self.show_button = master.create_button(
@@ -168,9 +162,12 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
             command=lambda data=mnemonic: show_qr_code(mnemonic_to_entropy_string(data), self.master, "SeedQR")
         )
 
-        # qr-code
-        self.qr_button.configure(
-            command=lambda data=mnemonic: show_qr_code(data, self.master)
+        # qr-codes (use decoded values, as the widgets may be masked)
+        self.mnemonic_qr_button.configure(
+            command=lambda data=mnemonic: show_qr_code(data, self.master, "Mnemonic")
+        )
+        self.passphrase_qr_button.configure(
+            command=lambda data=passphrase: show_qr_code(data, self.master, "Passphrase")
         )
 
         # show/hide button

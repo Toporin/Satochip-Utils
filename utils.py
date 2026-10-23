@@ -131,6 +131,21 @@ def show_qr_code(qr_data: str, parent, title: str = "QR code"):
     FramePopup(parent, title, "Scan this QR code", button_txt="Close", qr_msg=qr_data)
 
 
+def create_qr_button(master, label: customtkinter.CTkLabel, command=None, bg_color="whitesmoke"):
+    # QR code icon button, placed just right of the given label (hidden whenever the label is hidden)
+    qr_icon = convert_name_to_photo_image("qr_code_icon.png", 24, 24)
+    button = customtkinter.CTkButton(
+        master, width=24, height=24, text="",
+        border_spacing=0,
+        image=qr_icon,
+        bg_color=bg_color, fg_color=bg_color,
+        hover_color=bg_color, cursor="hand2",
+        command=command
+    )
+    button.place(in_=label, relx=1.0, x=5, rely=0.5, anchor="w")
+    return button
+
+
 def mnemonic_to_entropy_bytes(mnemonic) -> bytearray:
     MNEMONIC = Mnemonic("english")
     if not MNEMONIC.check(mnemonic):

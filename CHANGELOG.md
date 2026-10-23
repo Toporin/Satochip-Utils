@@ -13,6 +13,7 @@ Fix Satodime vault reset possible without checking the confirmation checkbox (#4
 Fix Seedkeeper secret details screens: output fields are now read-only (selection and copy to clipboard still work) (#47).
 Fix large QR codes not fitting on screen: Seedkeeper "QR code" and "SeedQR" buttons now open the QR code in a popup, scaled to fit the screen (#48).
 Add QR code buttons next to the Satodime vault "Private key:" and "WIF:" labels, showing the key as a QR code in a popup (#36).
+Seedkeeper mnemonic details: add QR code buttons next to the "Mnemonic:" and "Passphrase:" labels, so the passphrase can be exported as a separate QR code; remove the duplicate "QR code" button (SeedQR is kept) (#53).
 Fix authenticity check displaying a stale result when a card was checked after a genuine one.
 Move label editing from the settings menus to the About screen, via a pen icon button next to the card label.
 Add NFC enable/disable screen with radio state selector and blocked-state warning, accessible via a switch icon button next to the NFC status on the About screen.

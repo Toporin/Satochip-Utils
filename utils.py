@@ -7,7 +7,9 @@ from PIL import Image, ImageTk
 import customtkinter
 import logging
 import hashlib
+import hmac
 from mnemonic import Mnemonic
+from pycryptotools.main import privtopub, bin_hash160
 
 from constants import COIN_DECIMALS_DICT, ICON_PATH
 from framePopup import FramePopup
@@ -217,6 +219,31 @@ def normalize_string(txt) -> str:
         raise TypeError("String value expected")
 
     return unicodedata.normalize("NFKD", utxt)
+
+
+def get_master_fingerprint(seed: bytes) -> str:
+    # BIP32 master key fingerprint: first 4 bytes of hash160(compressed master pubkey)
+    master_privkey = hmac.new(b"Bitcoin seed", seed, hashlib.sha512).digest()[:32]
+    master_pubkey = privtopub(master_privkey + b"\x01")  # '01' suffix for compressed pubkey
+    return bin_hash160(master_pubkey)[:4].hex()
+
+
+def bip39_mnemonic_to_seed(mnemonic: str, passphrase: str = "") -> bytes:
+    return Mnemonic.to_seed(mnemonic, passphrase)
+
+
+def electrum_mnemonic_to_seed(mnemonic: str, passphrase: str = "") -> bytes:
+    # Electrum normalization: NFKD, lowercase, no accents, single spaces (CJK specifics not handled)
+    def normalize_electrum(txt):
+        txt = unicodedata.normalize("NFKD", txt).lower()
+        txt = "".join(c for c in txt if not unicodedata.combining(c))
+        return " ".join(txt.split())
+    return hashlib.pbkdf2_hmac(
+        "sha512",
+        normalize_electrum(mnemonic).encode("utf-8"),
+        b"electrum" + normalize_electrum(passphrase).encode("utf-8"),
+        2048
+    )
 
 
 def format_asset_balances(asset: Dict[str, Any]) -> (str, str):

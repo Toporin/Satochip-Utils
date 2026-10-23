@@ -20,7 +20,7 @@ from pycryptotools.coins import UnsupportedCoin, Bitcoin, BitcoinCash, Litecoin,
 from constants import INS_DIC, RES_DIC, TYPE_PASSWORD, TYPE_MASTERSEED, TYPE_DATA, TYPE_DESCRIPTOR, TYPE_PUBKEY, \
     TYPE_BIP39_MNEMONIC, TYPE_ELECTRUM_MNEMONIC, TYPE_2FA_SECRET, TYPE_DIC, DEBUG_ADDR, STATUS_DIC, STATUS_COLOR_DIC, \
     COIN_DICT
-from utils import get_config_path
+from utils import get_config_path, get_master_fingerprint, bip39_mnemonic_to_seed, electrum_mnemonic_to_seed
 
 logger = logging.getLogger(__name__)
 
@@ -601,6 +601,13 @@ class Controller:
             else:
                 result['passphrase'] = ""
 
+            # master fingerprint
+            if secret_dict.get('type') == TYPE_ELECTRUM_MNEMONIC:
+                seed = electrum_mnemonic_to_seed(result['mnemonic'], result['passphrase'])
+            else:
+                seed = bip39_mnemonic_to_seed(result['mnemonic'], result['passphrase'])
+            result['master_fingerprint'] = get_master_fingerprint(seed)
+
             return result
         except Exception as e:
             error_msg = f"Error decoding password secret: {str(e)}"
@@ -619,6 +626,7 @@ class Controller:
             masterseed_bytes = secret_bytes[offset:offset + masterseed_size]
             result['masterseed_bytes'] = masterseed_bytes
             result['masterseed'] = result['secret_decoded'] = masterseed_bytes.hex()
+            result['master_fingerprint'] = get_master_fingerprint(masterseed_bytes)
             offset += masterseed_size
 
             # wordlist selector

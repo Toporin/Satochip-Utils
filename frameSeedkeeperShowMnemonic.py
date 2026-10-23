@@ -38,9 +38,14 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
             # Create field for label
             self.label_label = master.create_label("Label:", frame=self)
             self.label_label.place(relx=0.05, rely=rely, anchor="nw")
+            # Create field for master fingerprint, on the same row as label (right-aligned with other fields)
+            self.fingerprint_label = master.create_label("Fingerprint:", frame=self)
+            self.fingerprint_label.place(relx=0.59, rely=rely, anchor="nw")
             rely += 0.05
-            self.label_entry = master.create_entry(frame=self)
+            self.label_entry = master.create_entry(width=385, frame=self)
             self.label_entry.place(relx=0.05, rely=rely, anchor="nw")
+            self.fingerprint_entry = master.create_entry(width=150, frame=self)
+            self.fingerprint_entry.place(relx=0.59, rely=rely, anchor="nw")
             rely += 0.08
 
             # Create passphrase field
@@ -144,6 +149,8 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
             self.passphrase_entry.place(relx=0.05, rely=self.passphrase_entry_rely, anchor="nw")
             update_entry(self.passphrase_entry, passphrase)
             reset_entry_visibility(self.passphrase_entry) # always show in plaintext to start
+        # update master fingerprint (empty if export not allowed)
+        update_entry(self.fingerprint_entry, secret.get('master_fingerprint', ""))
         # update mnemonic
         mnemonic = secret.get('mnemonic', "")
         update_textbox(self.mnemonic_textbox, mnemonic)

@@ -5,6 +5,7 @@ import logging
 
 from constants import TAB_BG_COLOR
 from frameWidgetLabel import FrameWidgetLabel
+from utils import convert_name_to_photo_image, show_qr_code
 
 logger = logging.getLogger(__name__)
 
@@ -24,11 +25,18 @@ class FrameWidgetPrivkeyTab(customtkinter.CTkTabview):
             # set token as default
             self.set("Private key")
 
+            # qr code icon, used by buttons next to the privkey & wif labels
+            self.qr_icon = convert_name_to_photo_image("qr_code_icon.png", 24, 24)
+
             # set content frame
             # tab_privkey
             self.privkey_label = FrameWidgetLabel(master=tab_privkey, text="Private key:")
             self.privkey_label.configure(fg_color=TAB_BG_COLOR)
             self.privkey_label.place(relx=0.05, rely=0.05, anchor="nw")
+            self.privkey_qr_button = self._create_qr_button(
+                tab_privkey, self.privkey_label,
+                lambda: show_qr_code(self.privkey_entry.get(), self.winfo_toplevel(), "Private key")
+            )
             self.privkey_entry = customtkinter.CTkEntry(
                 tab_privkey, width=500, height=37, corner_radius=10,
                 bg_color=TAB_BG_COLOR, fg_color=TAB_BG_COLOR, border_color=TAB_BG_COLOR,
@@ -41,6 +49,10 @@ class FrameWidgetPrivkeyTab(customtkinter.CTkTabview):
             self.wif_label = FrameWidgetLabel(master=tab_wif, text="WIF:")
             self.wif_label.configure(fg_color=TAB_BG_COLOR)
             self.wif_label.place(relx=0.05, rely=0.05, anchor="nw")
+            self.wif_qr_button = self._create_qr_button(
+                tab_wif, self.wif_label,
+                lambda: show_qr_code(self.wif_entry.get(), self.winfo_toplevel(), "WIF")
+            )
             self.wif_entry = customtkinter.CTkEntry(
                 tab_wif, width=500, height=37, corner_radius=10,
                 bg_color=TAB_BG_COLOR, fg_color=TAB_BG_COLOR, border_color=TAB_BG_COLOR,
@@ -113,6 +125,19 @@ class FrameWidgetPrivkeyTab(customtkinter.CTkTabview):
 
         except Exception as e:
             logger.error(f"Init error : {e}", exc_info=True)
+
+    def _create_qr_button(self, tab, label, command):
+        # icon button placed just right of the given label
+        button = customtkinter.CTkButton(
+            tab, width=24, height=24, text="",
+            border_spacing=0,
+            image=self.qr_icon,
+            bg_color=TAB_BG_COLOR, fg_color=TAB_BG_COLOR,
+            hover_color=TAB_BG_COLOR, cursor="hand2",
+            command=command
+        )
+        button.place(in_=label, relx=1.0, x=5, rely=0.5, anchor="w")
+        return button
 
     def update_tab(self, privkey_bytes: bytes, entropy_bytes: bytes, wif:str):
 

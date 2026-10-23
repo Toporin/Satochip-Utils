@@ -3,7 +3,7 @@ import logging
 
 from framePopup import FramePopup
 from frameWidgetHeader import FrameWidgetHeader
-from utils import toggle_entry_visibility, show_qr_code, reset_qr_code
+from utils import toggle_entry_visibility, show_qr_code, reset_qr_code, update_entry
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -110,8 +110,7 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
 
         # update label
         label = secret.get('label', "")
-        self.label_entry.delete(0, "end")
-        self.label_entry.insert(0, label)
+        update_entry(self.label_entry, label)
         # update login (opt)
         login = secret.get('login', "")
         if login == "":
@@ -120,8 +119,7 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
         else:
             self.login_label.place(relx=0.05, rely=self.login_label_rely)
             self.login_entry.place(relx=0.05, rely=self.login_entry_rely)
-            self.login_entry.delete(0, "end")
-            self.login_entry.insert(0, login)
+            update_entry(self.login_entry, login)
         # update url (opt)
         url = secret.get('url', "")
         if login == "":
@@ -130,12 +128,10 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
         else:
             self.url_label.place(relx=0.05, rely=self.url_label_rely)
             self.url_entry.place(relx=0.05, rely=self.url_entry_rely)
-            self.url_entry.delete(0, "end")
-            self.url_entry.insert(0, url)
+            update_entry(self.url_entry, url)
         # update password
         password = secret.get('password')
-        self.password_entry.delete(0, "end")
-        self.password_entry.insert(0, password)
+        update_entry(self.password_entry, password)
 
         # qr-code
         reset_qr_code(self.qr_label)

@@ -63,12 +63,10 @@ def toggle_textbox_visibility(textbox: customtkinter.CTkTextbox, original_text):
             # Si la textbox contient uniquement des étoiles, afficher le texte original
             textbox.delete("1.0", "end")
             textbox.insert("1.0", original_text)
-            #textbox.configure(state='disabled')
         else:
             # Sinon, masquer le texte avec des étoiles
             textbox.delete("1.0", "end")
             textbox.insert("1.0", '*' * len(original_text))
-            #textbox.configure(state='disabled')
     except Exception as e:
         logger.error(f"018 Error toggling mnemonic visibility: {e}", exc_info=True)
 
@@ -78,6 +76,56 @@ def update_textbox(textbox: customtkinter.CTkTextbox, new_text):
     textbox.delete("1.0", "end")
     textbox.insert("1.0", new_text)
     #textbox.configure(state='disabled')
+
+
+def update_entry(entry: customtkinter.CTkEntry, new_text, make_readonly=True):
+    entry.configure(state='normal')  # allows to modify content
+    entry.delete(0, "end")
+    entry.insert(0, new_text)
+    if make_readonly:
+        entry.configure(state='readonly')  # display-only, but selection/copy still possible
+
+
+def make_textbox_readonly(textbox: customtkinter.CTkTextbox):
+    """Make a textbox non-editable while keeping text selection and copy to clipboard.
+
+    Blocks keyboard/mouse events that would modify the content; navigation,
+    selection and copy shortcuts still work. Programmatic updates
+    (delete/insert, e.g. via update_textbox) are not affected.
+    """
+    allowed_keysyms = {
+        # navigation & selection
+        "Left", "Right", "Up", "Down", "Home", "End", "Prior", "Next", "Insert",
+        # modifiers (pressed alone, e.g. as part of a combo)
+        "Shift_L", "Shift_R", "Control_L", "Control_R",
+        "Alt_L", "Alt_R", "Meta_L", "Meta_R", "Super_L", "Super_R",
+        "Caps_Lock", "Num_Lock", "Scroll_Lock",
+        # misc non-editing keys
+        "Escape",
+    }
+    copy_select_keysyms = {"c", "C", "a", "A"}
+
+    def block_edit_events(event):
+        keysym = event.keysym
+        if keysym in allowed_keysyms:
+            return  # navigation/selection keys & bare modifiers
+        if keysym in copy_select_keysyms:
+            if event.state & 0x4:  # Ctrl+C / Ctrl+A (Linux, Windows)
+                return
+            if sys.platform == "darwin" and event.state & 0x78:  # Cmd+C / Cmd+A (macOS)
+                return
+        # block any other key (printable chars, Delete, BackSpace, Tab...)
+        # note: do NOT whitelist modifier bits here (e.g. 0x10): on X11, Num Lock
+        # maps to Mod2 (0x10), which would let every keypress through
+        return "break"
+
+    # CTkTextbox does not proxy bind() to its internal tkinter.Text
+    inner_textbox = getattr(textbox, "_textbox", textbox)
+    inner_textbox.bind("<Key>", block_edit_events)
+    inner_textbox.bind("<<Cut>>", lambda event: "break")
+    inner_textbox.bind("<<Paste>>", lambda event: "break")
+    # block middle-click paste (X11 PRIMARY selection)
+    inner_textbox.bind("<ButtonRelease-2>", lambda event: "break")
 
 
 def show_qr_code(qr_data: str, label: customtkinter.CTkLabel): #todo implement seedqr!!

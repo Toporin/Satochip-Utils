@@ -5,7 +5,8 @@ from constants import TYPE_MASTERSEED, TYPE_DIC
 from framePopup import FramePopup
 from frameWidgetHeader import FrameWidgetHeader
 from utils import (show_qr_code, toggle_entry_visibility, toggle_textbox_visibility, reset_qr_code,
-                   update_textbox, mnemonic_to_entropy_string, reset_entry_visibility)
+                   update_textbox, update_entry, make_textbox_readonly,
+                   mnemonic_to_entropy_string, reset_entry_visibility)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -59,6 +60,7 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
             rely += 0.05
             self.mnemonic_textbox = master.create_textbox(frame=self)
             self.mnemonic_textbox.place(relx=0.05, rely=rely, relheight=0.15, anchor="nw")
+            make_textbox_readonly(self.mnemonic_textbox)  # display-only, selection/copy kept
 
             # qr label
             self.qr_label = master.create_label("", frame=self)
@@ -73,6 +75,7 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
             self.descriptor_textbox_rely = rely
             self.descriptor_textbox = master.create_textbox(frame=self)
             self.descriptor_textbox.place(relx=0.05, rely=rely, relheight=0.20, anchor="nw")
+            make_textbox_readonly(self.descriptor_textbox)  # display-only, selection/copy kept
             # self.descriptor_box = FrameWidgetCustomTextbox(self, label="Secret:", content="MyContent", height=120)
             # self.descriptor_box.place(relx=0.0, rely=rely, anchor="nw")
 
@@ -119,8 +122,7 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
     def update_frame(self, secret):
         logger.debug(f"update_frame() start")
         # update label
-        self.label_entry.delete(0, "end")
-        self.label_entry.insert(0, secret['label'])
+        update_entry(self.label_entry, secret['label'])
 
         # update header
         if secret.get('type') == TYPE_MASTERSEED:
@@ -150,8 +152,7 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
         else:
             self.passphrase_label.place(relx=0.05, rely=self.passphrase_label_rely, anchor="nw")
             self.passphrase_entry.place(relx=0.05, rely=self.passphrase_entry_rely, anchor="nw")
-            self.passphrase_entry.delete(0, "end")
-            self.passphrase_entry.insert(0, passphrase)
+            update_entry(self.passphrase_entry, passphrase)
             reset_entry_visibility(self.passphrase_entry) # always show in plaintext to start
         # update mnemonic
         mnemonic = secret.get('mnemonic', "")

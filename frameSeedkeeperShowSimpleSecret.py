@@ -4,7 +4,8 @@ import logging
 from constants import TYPE_DIC
 from framePopup import FramePopup
 from frameWidgetHeader import FrameWidgetHeader
-from utils import show_qr_code, toggle_entry_visibility, toggle_textbox_visibility, reset_qr_code, update_textbox
+from utils import show_qr_code, toggle_entry_visibility, toggle_textbox_visibility, reset_qr_code, \
+    update_textbox, update_entry, make_textbox_readonly
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -48,6 +49,7 @@ class FrameSeedkeeperShowSecret(customtkinter.CTkFrame):
             rely += 0.05
             self.secret_textbox = master.create_textbox(frame=self)
             self.secret_textbox.place(relx=0.05, rely=rely, relheight=0.23, anchor="nw")
+            make_textbox_readonly(self.secret_textbox)  # display-only, selection/copy kept
 
             # seed_qr label
             self.qr_label = master.create_label("", frame=self)
@@ -86,8 +88,7 @@ class FrameSeedkeeperShowSecret(customtkinter.CTkFrame):
 
     def update_frame(self, secret):
         logger.debug(f"update_frame() secret: {secret}")
-        self.label_entry.delete(0, "end")
-        self.label_entry.insert(0, secret['label'])
+        update_entry(self.label_entry, secret['label'])
 
         # update header
         self.header.button.configure(text=f"   {TYPE_DIC.get(secret.get('type'), 'Unknown secret')} details")

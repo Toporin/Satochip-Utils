@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 Fix invisible text labels on macOS when system dark mode is enabled by pinning light appearance mode (#51).
 Fix garbled/clipped UI text on Tails OS: substitute an available system font when the "Outfit" font is not installed (#59).
 Show a clear error popup and exit cleanly when the PC/SC service (pcscd) is unavailable (#60).
+Fix Satodime vault reset possible without checking the confirmation checkbox (#40).
 Fix authenticity check displaying a stale result when a card was checked after a genuine one.
 Move label editing from the settings menus to the About screen, via a pen icon button next to the card label.
 Add NFC enable/disable screen with radio state selector and blocked-state warning, accessible via a switch icon button next to the NFC status on the About screen.

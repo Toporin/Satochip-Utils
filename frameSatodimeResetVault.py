@@ -89,6 +89,7 @@ class FrameSatodimeResetVault(customtkinter.CTkFrame):
                 command=None,  # will be updated in update
                 frame=self
             )
+            self.right_button.configure(state="disabled")  # enabled by confirmation checkbox
             self.right_button.place(relx=0.95, rely=0.95, anchor="e")
 
             # place frame
@@ -106,6 +107,7 @@ class FrameSatodimeResetVault(customtkinter.CTkFrame):
 
         # reset confirmation checkbox
         self.checkbox_confirmation_value.set(value="off")
+        self.right_button.configure(state="disabled")
 
         # fetch cached vault info
         status_int = self.master.controller.satodime_vaults_status[vault_nbr]

@@ -86,7 +86,7 @@ class FrameMenuSatocash(customtkinter.CTkFrame):
                 self, "Online help", "help.png",
                 0.88, 0.05,
                 state='normal',
-                command=lambda: webbrowser.open("https://satochip.io/setup-use-seedkeeper-on-desktop/", new=2)
+                command=lambda: webbrowser.open("https://satochip.io/setup-use-satocash-on-desktop/", new=2)
             )
 
             self.button_webshop = master.create_menu_button(

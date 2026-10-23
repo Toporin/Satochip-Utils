@@ -2,12 +2,12 @@ import customtkinter
 import logging
 from PIL import Image, ImageTk
 import webbrowser
-import pyperclip
 
 import constants
 from constants import ICON_PATH, STATUS_DIC, STATUS_COLOR_DIC
 from framePopup import FramePopup
 from frameWidgetLabel import FrameWidgetLabel
+from utils import copy_to_clipboard
 
 logger = logging.getLogger(__name__)
 
@@ -148,7 +148,7 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
         self.blockchain_value.configure(text=blockchain)
         self.address_value.configure(text=address, font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=15, weight="normal"))
         self.button_explore.configure(command=lambda: webbrowser.open(url, new=2))
-        self.button_copy.configure(command=lambda: pyperclip.copy(address))
+        self.button_copy.configure(command=lambda: copy_to_clipboard(self, address))
         self.balance_value.configure(text=balance)
         self.balance_value2.configure(text=balance2)
 

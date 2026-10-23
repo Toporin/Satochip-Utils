@@ -19,7 +19,7 @@ License: GPLv3. Current version: `0.4.0-beta` (single source of truth in `versio
 - **Smart card communication**: `pysatochip` 0.18.5 (`CardConnector`, APDUs) on top of `pyscard` (PC/SC).
   Card insertion/removal is detected via pyscard's `CardMonitor`/`CardObserver`.
 - **Blockchains**: `pycryptotools` 0.3.1 (coin/address/explorer logic), `mnemonic` (BIP39).
-- **Misc**: `pyqrcode`, `pyperclip`, `cbor2` (Cashu token serialization).
+- **Misc**: `pyqrcode`, `cbor2` (Cashu token serialization).
 - **Packaging**: PyInstaller (`package/satochip_utils.spec`); pinned PyInstaller 6.7.0 on Linux,
   5.13.2 on Windows/macOS (Windows build recompiles the bootloader from source).
 - There is a local `.venv` (Python 3.12) at the repo root; system package `python3-pyscard`

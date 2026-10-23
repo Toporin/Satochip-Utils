@@ -17,6 +17,7 @@ Seedkeeper mnemonic details: add QR code buttons next to the "Mnemonic:" and "Pa
 Seedkeeper mnemonic details: display the BIP32 master fingerprint of the seed (including passphrase), so wallets such as SeedSigner can be checked (#53).
 Seedkeeper password and data/descriptor details: add QR code buttons next to the "Login:", "Url:", "Password:" and "Secret:" labels, and remove the duplicate "QR code" button.
 Fix Seedkeeper password details: the URL field was shown or hidden depending on the login instead of the URL.
+Fix "copy to clipboard" crashing on Linux when xclip/xsel is not installed: use the Tk clipboard instead of pyperclip (dependency removed).
 Fix authenticity check displaying a stale result when a card was checked after a genuine one.
 Move label editing from the settings menus to the About screen, via a pen icon button next to the card label.
 Add NFC enable/disable screen with radio state selector and blocked-state warning, accessible via a switch icon button next to the NFC status on the About screen.

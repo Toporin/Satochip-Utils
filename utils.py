@@ -133,6 +133,13 @@ def show_qr_code(qr_data: str, parent, title: str = "QR code"):
     FramePopup(parent, title, "Scan this QR code", button_txt="Close", qr_msg=qr_data)
 
 
+def copy_to_clipboard(widget, text: str):
+    # use Tk clipboard: works on all OS without external tools (unlike pyperclip, which needs xclip/xsel on Linux)
+    widget.clipboard_clear()
+    widget.clipboard_append(text)
+    widget.update()  # keep clipboard content available after the call returns (needed on some X11 setups)
+
+
 def create_qr_button(master, label: customtkinter.CTkLabel, command=None, bg_color="whitesmoke"):
     # QR code icon button, placed just right of the given label (hidden whenever the label is hidden)
     qr_icon = convert_name_to_photo_image("qr_code_icon.png", 24, 24)

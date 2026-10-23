@@ -31,6 +31,7 @@ from frameMenuSeedkeeper import FrameMenuSeedkeeper
 from frameMenuSeedkeeperBackup import FrameMenuSeedkeeperBackup
 from frameMenuSettings import FrameMenuSettings
 from frameMenuSettingsSatodime import FrameMenuSettingsSatodime
+from frameSatochipResetSeed import FrameSatochipResetSeed
 from frameSatocashBalances import FrameSatocashBalances
 from frameSatocashExportTokenv4 import FrameSatocashExportTokenv4
 from frameSatocashImportTokenv4 import FrameSatocashImportTokenv4
@@ -118,6 +119,8 @@ class View(customtkinter.CTk):
             self.edit_label_return_callback = None
             self.switch_nfc_frame = None
             self.switch_nfc_return_callback = None
+            self.reset_seed_frame = None
+            self.reset_seed_return_callback = None
             self.change_pin_frame = None
             self.seed_import_frame = None
             self.factory_reset_frame = None
@@ -883,6 +886,14 @@ class View(customtkinter.CTk):
         else:
             self.switch_nfc_frame.update_frame()
         self.switch_nfc_frame.tkraise()
+
+    def show_reset_seed_frame(self, return_callback=None):
+        self.reset_seed_return_callback = return_callback if return_callback else self.show_start_frame
+        if self.reset_seed_frame is None:
+            self.reset_seed_frame = FrameSatochipResetSeed(self)
+        else:
+            self.reset_seed_frame.update_frame()
+        self.reset_seed_frame.tkraise()
 
     def show_check_authenticity_frame(self):
         # verify PIN

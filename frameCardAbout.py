@@ -114,7 +114,17 @@ class FrameCardAbout(customtkinter.CTkFrame):
             self.rely = rely
 
             # SATOCHIP specific
-            # card seeded
+            # card seeded (with import/reset seed button on the left, updated later)
+            self.seed_button_pen_icon = convert_name_to_photo_image("edit_label_rounded.png", 28, 28)
+            self.seed_button_trash_icon = convert_name_to_photo_image("icon_trash.jpeg", 28, 28)
+            self.seed_button = customtkinter.CTkButton(
+                self, width=28, height=28, text="",
+                border_spacing=0,
+                image=self.seed_button_pen_icon,
+                bg_color="whitesmoke", fg_color="whitesmoke",
+                hover_color="whitesmoke", cursor="hand2",
+                command=lambda: None  # updated in update_frame()
+            )
             self.satochip_seeded = master.create_label("Card seeded", frame=self)  # updated later
             # 2FA
             self.satochip_2FA = master.create_label("2FA status", frame=self)  # updated later
@@ -203,11 +213,23 @@ class FrameCardAbout(customtkinter.CTkFrame):
             if self.master.controller.cc.card_type == "Satochip":
                 rely = self.rely
                 self.card_configuration.configure(text="Satochip configuration")
-                # seeded
-                self.satochip_seeded.configure(
-                    text=f"Card seeded" if self.master.controller.cc.is_seeded else f"Card not seeded"
-                )
-                self.satochip_seeded.place(relx=0.05, rely=rely, anchor="nw")
+                # seeded (button icon/action depends on seeded state)
+                if self.master.controller.cc.is_seeded:
+                    self.satochip_seeded.configure(text="Card seeded")
+                    self.seed_button.configure(
+                        image=self.seed_button_trash_icon,
+                        command=lambda: self.master.show_reset_seed_frame(
+                            return_callback=self.master.show_about_frame
+                        )
+                    )
+                else:
+                    self.satochip_seeded.configure(text="Card not seeded")
+                    self.seed_button.configure(
+                        image=self.seed_button_pen_icon,
+                        command=lambda: self.master.show_seed_import_frame()
+                    )
+                self.seed_button.place(relx=0.05, rely=rely, anchor="nw")
+                self.satochip_seeded.place(relx=0.10, rely=rely, anchor="nw")
                 rely += 0.05
                 # 2FA
                 self.satochip_2FA.configure(
@@ -303,6 +325,7 @@ class FrameCardAbout(customtkinter.CTkFrame):
 
     def update_forget_widgets(self):
         # satochip
+        self.seed_button.place_forget()
         self.satochip_seeded.place_forget()
         self.satochip_2FA.place_forget()
 

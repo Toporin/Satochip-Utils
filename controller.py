@@ -243,6 +243,30 @@ class Controller:
             self.view.show("ERROR", f"Failed to set NFC policy: {e}", "Ok", None,
                            "./pictures_db/error_popup_red.png")
 
+    def reset_seed(self, on_success=None):
+        try:
+            logger.info("Resetting card seed")
+
+            if self.cc.pin is None:
+                raise ValueError("PIN required to reset the seed")
+
+            (response, sw1, sw2) = self.cc.card_reset_seed(self.cc.pin)
+            if sw1 == 0x90 and sw2 == 0x00:
+                logger.info("Seed reset successfully")
+                self.view.show("SUCCESS",
+                               f"Seed reset successfully",
+                               "Ok", on_success if on_success else self.view.show_start_frame,
+                               "./pictures_db/success_popup_green.png")
+            else:
+                logger.warning(f"Failed to reset seed (code {hex(sw1*256+sw2)})")
+                self.view.show("ERROR", f"Failed to reset seed (code {hex(sw1*256+sw2)})", "Ok",
+                               None, "./pictures_db/error_popup_red.png")
+
+        except Exception as e:
+            logger.error(f"Failed to reset seed: {e}")
+            self.view.show("ERROR", f"Failed to reset seed: {e}", "Ok", None,
+                           "./pictures_db/error_popup_red.png")
+
     def get_card_label_infos(self):
         """Get label info"""
         if self.cc.card_present:

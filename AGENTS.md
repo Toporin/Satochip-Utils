@@ -51,6 +51,7 @@ Flat layout — all application modules live at the repo root (no Python package
   - `frameMenu*` — left-hand navigation menus, one per card type/state (settings, no-card,
     Seedkeeper, Seedkeeper backup, Satodime, Satocash).
   - `frameSeedkeeper*` — secret generate/import/show/list, logs, backup screens.
+  - `frameSatochip*` — Satochip-specific screens (reset seed).
   - `frameSatodime*` — overview, vault, seal/unseal/reset screens.
   - `frameSatocash*` — balances, token import/export screens.
   - `frameWidget*` — reusable widgets (header, labels, scrollable frame, asset rows, ...).

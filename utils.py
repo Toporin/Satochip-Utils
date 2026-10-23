@@ -1,6 +1,5 @@
 import os
 import sys
-import tkinter
 import unicodedata
 from decimal import Decimal
 from typing import Dict, Any
@@ -8,10 +7,10 @@ from PIL import Image, ImageTk
 import customtkinter
 import logging
 import hashlib
-import pyqrcode
 from mnemonic import Mnemonic
 
 from constants import COIN_DECIMALS_DICT, ICON_PATH
+from framePopup import FramePopup
 
 logger = logging.getLogger(__name__)
 
@@ -127,31 +126,9 @@ def make_textbox_readonly(textbox: customtkinter.CTkTextbox):
     inner_textbox.bind("<ButtonRelease-2>", lambda event: "break")
 
 
-def show_qr_code(qr_data: str, label: customtkinter.CTkLabel): #todo implement seedqr!!
-    # Fonction pour générer et afficher le QR code
-    qr = pyqrcode.create(qr_data, error='L')
-    qr_xbm = qr.xbm(scale=3) #if len(mnemonic.split()) <= 12 else qr.xbm(scale=2) # todo: tune scale
-    # Convert XBM code to Tkinter image
-    qr_bmp = tkinter.BitmapImage(data=qr_xbm)
-    label.configure(image=qr_bmp)
-    label.image = qr_bmp  # prevent garbage collection
-    label.place()
-
-
-def reset_qr_code(label: customtkinter.CTkLabel):
-    # define a small blank image to replace existing qr code
-    qr_xbm = """
-#define im_width 8
-#define im_height 1
-static char im_bits[] = {
-0x00
-};
-"""
-    # Convert XBM code to Tkinter image
-    qr_bmp = tkinter.BitmapImage(data=qr_xbm)
-    label.configure(image=qr_bmp)
-    label.image = qr_bmp  # prevent garbage collection
-    label.place()
+def show_qr_code(qr_data: str, parent, title: str = "QR code"):
+    # Display the QR code in a popup window, sized to fit the screen (see issue #48)
+    FramePopup(parent, title, "Scan this QR code", button_txt="Close", qr_msg=qr_data)
 
 
 def mnemonic_to_entropy_bytes(mnemonic) -> bytearray:

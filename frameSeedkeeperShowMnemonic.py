@@ -4,7 +4,7 @@ import logging
 from constants import TYPE_MASTERSEED, TYPE_DIC
 from framePopup import FramePopup
 from frameWidgetHeader import FrameWidgetHeader
-from utils import (show_qr_code, toggle_entry_visibility, toggle_textbox_visibility, reset_qr_code,
+from utils import (show_qr_code, toggle_entry_visibility, toggle_textbox_visibility,
                    update_textbox, update_entry, make_textbox_readonly,
                    mnemonic_to_entropy_string, reset_entry_visibility)
 
@@ -61,9 +61,6 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
             self.mnemonic_textbox.place(relx=0.05, rely=rely, relheight=0.15, anchor="nw")
             make_textbox_readonly(self.mnemonic_textbox)  # display-only, selection/copy kept
 
-            # qr label
-            self.qr_label = master.create_label("", frame=self)
-            self.qr_label.place(relx=0.8, rely=rely)
             rely += 0.16
 
             # Create descriptor field
@@ -167,14 +164,13 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
             update_textbox(self.descriptor_textbox, descriptor)
 
         # seedqr-code
-        reset_qr_code(self.qr_label)
         self.seedqr_button.configure(
-            command=lambda params=(mnemonic, self.qr_label): show_qr_code(mnemonic_to_entropy_string(params[0]), params[1])
+            command=lambda data=mnemonic: show_qr_code(mnemonic_to_entropy_string(data), self.master, "SeedQR")
         )
 
         # qr-code
         self.qr_button.configure(
-            command=lambda params=(mnemonic, self.qr_label): show_qr_code(params[0], params[1])
+            command=lambda data=mnemonic: show_qr_code(data, self.master)
         )
 
         # show/hide button

@@ -4,7 +4,7 @@ import logging
 from constants import TYPE_DIC
 from framePopup import FramePopup
 from frameWidgetHeader import FrameWidgetHeader
-from utils import show_qr_code, toggle_entry_visibility, toggle_textbox_visibility, reset_qr_code, \
+from utils import show_qr_code, toggle_entry_visibility, toggle_textbox_visibility, \
     update_textbox, update_entry, make_textbox_readonly
 
 logger = logging.getLogger(__name__)
@@ -50,9 +50,6 @@ class FrameSeedkeeperShowSecret(customtkinter.CTkFrame):
             self.secret_textbox.place(relx=0.05, rely=rely, relheight=0.23, anchor="nw")
             make_textbox_readonly(self.secret_textbox)  # display-only, selection/copy kept
 
-            # seed_qr label
-            self.qr_label = master.create_label("", frame=self)
-            self.qr_label.place(relx=0.8, rely=rely)
             rely+=0.1
 
             # Create action buttons
@@ -101,9 +98,8 @@ class FrameSeedkeeperShowSecret(customtkinter.CTkFrame):
         update_textbox(self.secret_textbox, secret_decoded)
 
         # qr-code
-        reset_qr_code(self.qr_label)
         self.qr_button.configure(
-            command=lambda params=(secret_decoded, self.qr_label): show_qr_code(params[0], params[1])
+            command=lambda data=secret_decoded: show_qr_code(data, self.master)
         )
 
         self.show_button.configure(

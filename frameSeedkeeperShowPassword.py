@@ -3,7 +3,7 @@ import logging
 
 from framePopup import FramePopup
 from frameWidgetHeader import FrameWidgetHeader
-from utils import toggle_entry_visibility, show_qr_code, reset_qr_code, update_entry
+from utils import toggle_entry_visibility, show_qr_code, update_entry
 
 logger = logging.getLogger(__name__)
 
@@ -67,9 +67,6 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
             self.password_entry = master.create_entry(frame=self)
             self.password_entry.place(relx=0.05, rely=rely, anchor="nw")
 
-            # qr label
-            self.qr_label = master.create_label("", frame=self)
-            self.qr_label.place(relx=0.95, rely=rely, anchor="e")
             rely += 0.08
 
             # Create action buttons
@@ -133,9 +130,8 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
         update_entry(self.password_entry, password)
 
         # qr-code
-        reset_qr_code(self.qr_label)
         self.qr_button.configure(
-            command=lambda params=(password, self.qr_label): show_qr_code(params[0], params[1])
+            command=lambda data=password: show_qr_code(data, self.master)
         )
 
         self.show_button.configure(

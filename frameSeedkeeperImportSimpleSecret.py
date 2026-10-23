@@ -6,7 +6,6 @@ import constants
 from constants import BG_BUTTON
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameSeedkeeperImportSimpleSecret(customtkinter.CTkFrame):
@@ -58,7 +57,7 @@ class FrameSeedkeeperImportSimpleSecret(customtkinter.CTkFrame):
             # password import to card
             def _save_secret_to_card():
                 try:
-                    logger.info(f"Saving {secret_type} to card")
+                    logger.debug(f"Saving {secret_type} to card")
                     label = self.label_entry.get()
                     secret = self.secret_textbox.get("1.0", "end").strip()
 

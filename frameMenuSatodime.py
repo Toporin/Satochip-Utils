@@ -10,7 +10,6 @@ from framePopup import FramePopup
 from frameWidgetLabel import FrameWidgetLabel
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameMenuSatodime(customtkinter.CTkFrame):
@@ -133,9 +132,8 @@ class FrameMenuSatodime(customtkinter.CTkFrame):
                         (self.master.controller.card_status["protocol_minor_version"] << 16) +
                         (self.master.controller.card_status["applet_major_version"] << 8) +
                         self.master.controller.card_status["applet_minor_version"])
-        logger.info(f"Satodime card full_version: {full_version}")
+        logger.debug(f"Satodime card full_version: {full_version}")
         if full_version <= 0x00010001 and not self.master.controller.cc.setup_done:
-            logger.warning(f"DEBUG DEBUG before POPUP ")
             FramePopup(
                 self,
                 "Take ownership?",
@@ -149,12 +147,3 @@ class FrameMenuSatodime(customtkinter.CTkFrame):
                 button2_txt="Cancel",
                 cmd2=lambda: logger.info(f"take ownership action cancelled"),
             )
-            logger.warning(f"DEBUG DEBUG after POPUP ")
-
-
-
-
-
-
-
-

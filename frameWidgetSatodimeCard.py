@@ -10,7 +10,6 @@ from framePopup import FramePopup
 from frameWidgetLabel import FrameWidgetLabel
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameWidgetSatodimeCard(customtkinter.CTkFrame):

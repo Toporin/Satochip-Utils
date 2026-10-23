@@ -8,7 +8,6 @@ from frameWidgetSatodimeCard import FrameWidgetSatodimeCard
 from utils import format_asset_balances
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameSatodimeOverview(customtkinter.CTkFrame):

@@ -9,7 +9,6 @@ from utils import (show_qr_code, toggle_entry_visibility, toggle_textbox_visibil
                    mnemonic_to_entropy_string, reset_entry_visibility)
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):

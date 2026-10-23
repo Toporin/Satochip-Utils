@@ -56,17 +56,7 @@ from frameSeedkeeperShowSimpleSecret import FrameSeedkeeperShowSecret
 from frameStart import FrameStart
 from frameWelcome import FrameWelcome
 
-if (len(sys.argv) >= 2) and (sys.argv[1] in ['-v', '--verbose']):
-    logging.basicConfig(level=logging.DEBUG,
-                        format='%(asctime)s - [%(filename)s:%(lineno)d] - %(levelname)s - %(name)s - %(funcName)s() - %(message)s',
-                        datefmt='%Y-%m-%d %H:%M:%S')
-else:
-    logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s - [%(filename)s:%(lineno)d] - %(levelname)s - %(name)s - %(funcName)s() - %(message)s',
-                        datefmt='%Y-%m-%d %H:%M:%S')
-
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 # Constants
 BG_MAIN_MENU = "#21283b"
@@ -84,11 +74,8 @@ ICON_PATH = "./pictures_db/"
 
 
 class View(customtkinter.CTk):
-    def __init__(self, loop, loglevel=logging.INFO):
+    def __init__(self):
         try:
-            # logger.setLevel(loglevel)
-            logger.setLevel(logging.DEBUG)
-            logger.debug("Log level set to INFO")
             logger.info("Starting View.__init__()")
             # The UI hardcodes light backgrounds everywhere; without this, customtkinter follows
             # the OS appearance and macOS dark mode flips default text colors to near-white,
@@ -97,8 +84,6 @@ class View(customtkinter.CTk):
             super().__init__()
 
             self._resolve_font_family()
-
-            self.loop = loop
 
             # frame declaration
             # these frames will be created when needed using show_* methods
@@ -168,7 +153,7 @@ class View(customtkinter.CTk):
             self.appMode = ApplicationMode.Normal
 
             # Initializing controller
-            self.controller = Controller(self, loglevel=loglevel)
+            self.controller = Controller(self)
 
             # Initializing main window
             self.main_window()
@@ -331,7 +316,7 @@ class View(customtkinter.CTk):
             x,
             y
     ) -> customtkinter.CTkFrame:
-        logger.info("_create_scrollable_frame start")
+        logger.debug("_create_scrollable_frame start")
 
         # Create a frame to hold the canvas and scrollbar
         container = customtkinter.CTkFrame(parent_frame, width=width, height=height, fg_color=DEFAULT_BG_COLOR)
@@ -433,7 +418,6 @@ class View(customtkinter.CTk):
             command: Optional[Callable] = None,
             text_color: str = 'white',
     ) -> Optional[customtkinter.CTkButton]:
-        # logger.info(f"001 Starting main menu button creation for '{button_label}'")
 
         icon_path = f"{ICON_PATH}{icon_name}"
         image = Image.open(icon_path)
@@ -499,7 +483,7 @@ class View(customtkinter.CTk):
             width: int = 300,
 
     ) -> Tuple[tkinter.StringVar, CTkOptionMenu]:
-        logger.info(f"Creating option list with options: {options}")
+        logger.debug(f"Creating option list with options: {options}")
         variable = customtkinter.StringVar(value=default_value if default_value else options[0])
         option_menu = customtkinter.CTkOptionMenu(
             master=frame,
@@ -522,7 +506,7 @@ class View(customtkinter.CTk):
     @staticmethod
     def create_background_photo(picture_path):
         try:
-            logger.info(f"create_background_photo method with path: {picture_path}")
+            logger.debug(f"create_background_photo method with path: {picture_path}")
             if getattr(sys, 'frozen', False):
                 application_path = sys._MEIPASS
                 logger.info(f"Running in a bundled application, application path: {application_path}")
@@ -554,7 +538,7 @@ class View(customtkinter.CTk):
 
     def show(self, title, msg: str, button_txt="Ok", cmd=None, icon_path=None):
         try:
-            logger.info(f"Show Popup  {title} {msg}")
+            logger.debug(f"Show Popup  {title} {msg}")
 
             # Création de la fenêtre popup
             popup = customtkinter.CTkToplevel(self)
@@ -629,7 +613,7 @@ class View(customtkinter.CTk):
     """ MAIN MENU """
 
     def show_menu_frame(self):
-        logger.info("IN View.show_menu_frame start")
+        logger.debug("IN View.show_menu_frame start")
         if self.controller.cc.card_present:
             if self.controller.cc.card_type == "SeedKeeper" and self.controller.cc.setup_done:
                 self.show_seedkeeper_menu()
@@ -643,48 +627,46 @@ class View(customtkinter.CTk):
             self.show_nocard_menu()
 
     def show_settings_menu(self):
-        logger.info("In show_settings_menu start")
+        logger.debug("In show_settings_menu start")
         if self.settings_menu_frame is None:
             self.settings_menu_frame = FrameMenuSettings(self)
         self.settings_menu_frame.update_frame()
         self.settings_menu_frame.tkraise()
 
     def show_settings_satodime_menu(self):
-        logger.info("In show_settings_satodime_menu start")
+        logger.debug("In show_settings_satodime_menu start")
         if self.settings_satodime_menu_frame is None:
             self.settings_satodime_menu_frame = FrameMenuSettingsSatodime(self)
         #self.settings_satodime_menu_frame.update_frame()
         self.settings_satodime_menu_frame.tkraise()
 
     def show_nocard_menu(self):
-        logger.info("IN View.show_settings_menu start")
+        logger.debug("IN View.show_settings_menu start")
         self.nocard_menu_frame.tkraise()
 
     def show_seedkeeper_menu(self):
-        logger.info("show_seedkeeper_menu start")
+        logger.debug("show_seedkeeper_menu start")
         if self.seedkeeper_menu_frame is None:
             self.seedkeeper_menu_frame = FrameMenuSeedkeeper(self)
         else:
-            logger.info("show_seedkeeper_menu seedkeeper_menu_frame is not None, show it")
             self.seedkeeper_menu_frame.tkraise()
 
     def show_satocash_menu(self):
-        logger.info("show_satocash_menu start")
+        logger.debug("show_satocash_menu start")
         if self.satocash_menu_frame is None:
             self.satocash_menu_frame = FrameMenuSatocash(self)
         else:
-            logger.info("show_satocash_menu satocash_menu_frame is not None, show it")
             self.satocash_menu_frame.tkraise()
 
     def show_satodime_menu(self):
-        logger.info("show_satodime_menu start")
+        logger.debug("show_satodime_menu start")
         if self.satodime_menu_frame is None:
             self.satodime_menu_frame = FrameMenuSatodime(self)
         self.satodime_menu_frame.update_frame()
         self.satodime_menu_frame.tkraise()
 
     def show_seedkeeper_backup_menu(self):
-        logger.info("show_seedkeeper_backup_menu start")
+        logger.debug("show_seedkeeper_backup_menu start")
         if self.seedkeeper_backup_menu_frame is None:
             self.seedkeeper_backup_menu_frame = FrameMenuSeedkeeperBackup(self)
         self.seedkeeper_backup_menu_frame.tkraise()
@@ -720,18 +702,18 @@ class View(customtkinter.CTk):
 
             else:
                 # normal mode
-                logger.info("View.update_status start (normal mode)")
+                logger.debug("View.update_status start (normal mode)")
                 if isConnected is True:
                     # get card status (also cached in controller)
                     card_status = self.controller.get_card_status()
 
-                    logger.info(f"View.update_status card_type: {self.controller.cc.card_type}")
+                    logger.debug(f"View.update_status card_type: {self.controller.cc.card_type}")
 
                     # do some actions according to card type
                     if self.controller.cc.card_type == "Satodime":
-                        logger.info("View.update_status satodime card inserted (normal mode)")
+                        logger.debug("View.update_status satodime card inserted (normal mode)")
                         self.controller.satodime_on_connect()
-                        logger.info("View.update_status satodime satodime_get_vaults_info...")
+                        logger.debug("View.update_status satodime satodime_get_vaults_info...")
                         self.controller.satodime_vaults_get_info()
 
                     # show start screen
@@ -767,7 +749,7 @@ class View(customtkinter.CTk):
 
     def get_pin(self, msg):
         try:
-            logger.info("View.get_pin start")
+            logger.debug("View.get_pin start")
 
             # Création d'une nouvelle fenêtre pour le popup
             popup = customtkinter.CTkToplevel(self)
@@ -846,7 +828,7 @@ class View(customtkinter.CTk):
     """ VIEWS """
 
     def show_start_frame(self):
-        logger.info("IN View.show_start_frame() start")
+        logger.debug("IN View.show_start_frame() start")
         if self.start_frame is None:
             self.start_frame = FrameStart(self)
         else:
@@ -918,7 +900,7 @@ class View(customtkinter.CTk):
         self.show_seedkeeper_backup_menu()
 
     def show_about_frame(self):
-        logger.info("show_about_frame start")
+        logger.debug("show_about_frame start")
         if self.about_frame is None:
             self.about_frame = FrameCardAbout(self)
         self.about_frame.update_frame()

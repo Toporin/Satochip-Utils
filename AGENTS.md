@@ -29,7 +29,8 @@ License: GPLv3. Current version: `0.4.0-beta` (single source of truth in `versio
 
 Flat layout — all application modules live at the repo root (no Python package directories).
 
-- `satochip_utils.py` — entry point. Configures logging (`-v`/`--verbose` flag for DEBUG),
+- `satochip_utils.py` — entry point. Configures logging for the app and pysatochip (`-v`/`--verbose`
+  for DEBUG, `-l`/`--log-file [PATH]` to also log to a file; modules must not call `setLevel`),
   chdirs to the application path, creates the `View` and starts the mainloop.
 - `view.py` — `View(customtkinter.CTk)`, the main window. Owns every frame, all `show_*`
   navigation methods, popup dialogs (`show()`, `get_pin()`), and `update_status()` which reacts

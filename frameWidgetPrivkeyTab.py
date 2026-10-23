@@ -7,7 +7,6 @@ from constants import TAB_BG_COLOR
 from frameWidgetLabel import FrameWidgetLabel
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameWidgetPrivkeyTab(customtkinter.CTkTabview):

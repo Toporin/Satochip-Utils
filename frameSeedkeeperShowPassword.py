@@ -6,7 +6,6 @@ from frameWidgetHeader import FrameWidgetHeader
 from utils import toggle_entry_visibility, show_qr_code, reset_qr_code, update_entry
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):

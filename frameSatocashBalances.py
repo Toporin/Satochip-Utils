@@ -7,7 +7,6 @@ from constants import BG_MAIN_MENU, DEFAULT_BG_COLOR, BG_HOVER_BUTTON, TEXT_COLO
 from frameWidgetHeader import FrameWidgetHeader
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameSatocashBalances(customtkinter.CTkFrame):

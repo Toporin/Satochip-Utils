@@ -11,7 +11,6 @@ from version import VERSION
 from constants import ICON_PATH
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameCardAbout(customtkinter.CTkFrame):
@@ -299,7 +298,7 @@ class FrameCardAbout(customtkinter.CTkFrame):
                 # get status
                 try:
                     response, sw1, sw2, satocash_status = self.master.controller.cc.satocash_get_status()
-                    logger.info(f"satocash_status: {satocash_status}", exc_info=True)
+                    logger.debug(f"satocash_status: {satocash_status}", exc_info=True)
                     # mints
                     self.satocash_nb_mints.configure(
                         text=f"Mints used:  {satocash_status.get('nb_mints')}/{satocash_status.get('max_nb_mints')}"

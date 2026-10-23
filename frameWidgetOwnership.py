@@ -13,7 +13,6 @@ from frameWidgetLabel import FrameWidgetLabel
 from utils import convert_name_to_photo_image
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameWidgetOwnership(customtkinter.CTkFrame):

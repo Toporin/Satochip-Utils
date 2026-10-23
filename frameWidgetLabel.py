@@ -4,7 +4,6 @@ import logging
 import constants
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameWidgetLabel(customtkinter.CTkLabel):

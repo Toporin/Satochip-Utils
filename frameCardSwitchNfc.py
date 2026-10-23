@@ -5,7 +5,6 @@ import constants
 from frameWidgetHeader import FrameWidgetHeader
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameCardSwitchNfc(customtkinter.CTkFrame):
@@ -122,7 +121,7 @@ class FrameCardSwitchNfc(customtkinter.CTkFrame):
         self.update_radio_selection()
 
     def update_radio_selection(self):
-        logger.info(f"NFC state selected: {self.nfc_radio_value.get()}")
+        logger.debug(f"NFC state selected: {self.nfc_radio_value.get()}")
         if self.nfc_radio_value.get() == "2":
             self.text_warning1.configure(text="Warning!")
             self.text_warning2.configure(

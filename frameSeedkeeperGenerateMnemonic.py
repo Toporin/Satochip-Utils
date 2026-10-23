@@ -4,7 +4,6 @@ import logging
 from frameWidgetHeader import FrameWidgetHeader
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameSeedkeeperGenerateMnemonic(customtkinter.CTkFrame):
@@ -113,7 +112,7 @@ class FrameSeedkeeperGenerateMnemonic(customtkinter.CTkFrame):
 
             def import_mnemonic_on_card():
                 try:
-                    logger.info("Saving mnemonic to card")
+                    logger.debug("Saving mnemonic to card")
                     label = self.label_entry.get()
                     mnemonic = self.mnemonic_textbox.get("1.0", "end").strip()
                     passphrase = self.passphrase_entry.get() if self.use_passphrase.get() else None

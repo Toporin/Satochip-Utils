@@ -8,7 +8,6 @@ from utils import show_qr_code, toggle_entry_visibility, toggle_textbox_visibili
     update_textbox, update_entry, make_textbox_readonly
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameSeedkeeperShowSecret(customtkinter.CTkFrame):
@@ -87,7 +86,7 @@ class FrameSeedkeeperShowSecret(customtkinter.CTkFrame):
             logger.error(f"FrameSeedkeeperShowSecret init error: {e}", exc_info=True)
 
     def update_frame(self, secret):
-        logger.debug(f"update_frame() secret: {secret}")
+        logger.debug(f"update_frame() secret id: {secret.get('id')} type: {secret.get('type')}")
         update_entry(self.label_entry, secret['label'])
 
         # update header

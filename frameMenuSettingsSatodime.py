@@ -8,7 +8,6 @@ from constants import MAIN_MENU_COLOR, ICON_PATH
 from utils import convert_name_to_photo_image
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameMenuSettingsSatodime(customtkinter.CTkFrame):

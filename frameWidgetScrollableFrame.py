@@ -6,7 +6,6 @@ from constants import (HIGHLIGHT_COLOR, BG_MAIN_MENU, DEFAULT_BG_COLOR,
 from frameWidgetHeader import FrameWidgetHeader
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameWidgetScrollableFrame(customtkinter.CTkFrame):

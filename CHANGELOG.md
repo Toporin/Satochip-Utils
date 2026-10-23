@@ -15,6 +15,9 @@ Fix authenticity check displaying a stale result when a card was checked after a
 Move label editing from the settings menus to the About screen, via a pen icon button next to the card label.
 Add NFC enable/disable screen with radio state selector and blocked-state warning, accessible via a switch icon button next to the NFC status on the About screen.
 Add Satochip "Reset seed" screen with backup confirmation checkbox, accessible via a seeded-state button (pen/trash icon) next to the seeded status on the About screen.
+Add `-l`/`--log-file [PATH]` option to write logs to a file (default `~/.satotools/satotools.log` for binaries, where no console is shown).
+Fix logging: `-v`/`--verbose` now controls the level of all app modules and pysatochip (DEBUG logs were always shown, while pysatochip DEBUG logs were never shown); uncaught exceptions are now logged.
+Stop logging sensitive data: Satocash token contents (proofs) and Seedkeeper secret values are no longer written to logs.
 
 
 # [0.4.0-beta]

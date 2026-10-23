@@ -7,7 +7,6 @@ import constants
 from constants import BG_MAIN_MENU, BG_HOVER_BUTTON, BG_BUTTON
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameSeedkeeperGeneratePassword(customtkinter.CTkFrame):
@@ -72,7 +71,7 @@ class FrameSeedkeeperGeneratePassword(customtkinter.CTkFrame):
                     elif int_value >= 10:
                         self.length_slider.configure(button_color="green", progress_color="green")
                 except Exception as e:
-                    logger.error(f"077 Error updating slider value: {e}", exc_info=True)
+                    logger.error(f"Error updating slider value: {e}", exc_info=True)
 
             self.length_slider = customtkinter.CTkSlider(
                 self,
@@ -213,7 +212,7 @@ class FrameSeedkeeperGeneratePassword(customtkinter.CTkFrame):
             # password import to card
             def _save_password_to_card():
                 try:
-                    logger.info("Saving login/password to card")
+                    logger.debug("Saving login/password to card")
                     label = self.label_entry.get()
                     login = self.login_entry.get()
                     url = self.url_entry.get()

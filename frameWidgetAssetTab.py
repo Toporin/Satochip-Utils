@@ -6,7 +6,6 @@ from pycryptotools.coins import AssetType
 from frameWidgetAssetTable import FrameWidgetAssetTable
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameWidgetAssetTab(customtkinter.CTkTabview):

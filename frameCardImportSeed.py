@@ -6,7 +6,6 @@ from constants import BUTTON_COLOR
 from frameWidgetHeader import FrameWidgetHeader
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameCardImportSeed(customtkinter.CTkFrame):

@@ -10,7 +10,6 @@ from constants import (HIGHLIGHT_COLOR, BG_MAIN_MENU, DEFAULT_BG_COLOR,
                        BG_HOVER_BUTTON, TEXT_COLOR, BUTTON_TEXT_COLOR)
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameWidgetAssetRow(customtkinter.CTkFrame):

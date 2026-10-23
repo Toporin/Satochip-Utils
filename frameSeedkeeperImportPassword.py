@@ -6,7 +6,6 @@ import constants
 from constants import BG_BUTTON
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameSeedkeeperImportPassword(customtkinter.CTkFrame):
@@ -72,7 +71,7 @@ class FrameSeedkeeperImportPassword(customtkinter.CTkFrame):
             # password import to card
             def _save_password_to_card():
                 try:
-                    logger.info("Saving login/password to card")
+                    logger.debug("Saving login/password to card")
                     label = self.label_entry.get()
                     login = self.login_entry.get()
                     url = self.url_entry.get()

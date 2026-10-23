@@ -4,7 +4,6 @@ import logging
 from constants import MAIN_MENU_COLOR
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameWelcome(customtkinter.CTkFrame):

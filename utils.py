@@ -14,7 +14,6 @@ from mnemonic import Mnemonic
 from constants import COIN_DECIMALS_DICT, ICON_PATH
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 def get_config_path():
@@ -44,14 +43,14 @@ def toggle_entry_visibility(entry: customtkinter.CTkEntry):
         new_state = "" if current_state == "*" else "*"
         entry.configure(show=new_state)
     except Exception as e:
-        logger.error(f"018 Error toggling passphrase visibility: {e}", exc_info=True)
+        logger.error(f"Error toggling passphrase visibility: {e}", exc_info=True)
 
 def reset_entry_visibility(entry: customtkinter.CTkEntry):
     try:
         new_state = ""
         entry.configure(show=new_state)
     except Exception as e:
-        logger.error(f"018 Error toggling passphrase visibility: {e}", exc_info=True)
+        logger.error(f"Error toggling passphrase visibility: {e}", exc_info=True)
 
 def toggle_textbox_visibility(textbox: customtkinter.CTkTextbox, original_text):
     try:
@@ -172,7 +171,7 @@ def mnemonic_to_entropy_string(mnemonic) -> str:
             application_path = sys._MEIPASS
         else:
             application_path = os.path.dirname(os.path.abspath(__file__))
-        logging.debug(f"Application path: {application_path}")
+        logger.debug(f"Application path: {application_path}")
 
         # Construct the path to the wordlist directory
         wordlist_dir = os.path.join(application_path, 'wordlist')

@@ -6,7 +6,6 @@ from constants import BG_BUTTON
 from frameWidgetLabel import FrameWidgetLabel
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameWidgetExpertMode(customtkinter.CTkFrame):

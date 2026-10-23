@@ -8,7 +8,6 @@ from utils import get_fingerprint_from_authentikey_bytes
 from constants import BG_MAIN_MENU, BG_HOVER_BUTTON
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameSeedkeeperBackupCard(customtkinter.CTkFrame):
@@ -286,7 +285,6 @@ class FrameSeedkeeperBackupCard(customtkinter.CTkFrame):
                         self.secrets_to_backup += [secret]
                         logger.debug(f"exported secret with label: {secret['label']} and id: {secret['id']}")
                         logger.debug(f"exported secret using self.backup_authentikey_id: {self.backup_authentikey_id}")
-                        logger.debug(f"exported secret: {secret}")
                     except Exception as e:
                         logger.error(f"Error during secret export: {e}", exc_info=True)
                         self.is_backup_error = True
@@ -344,7 +342,7 @@ class FrameSeedkeeperBackupCard(customtkinter.CTkFrame):
             # import encrypted secret using master authentikey for pairing
             for secret in self.secrets_to_backup:
                 try:
-                    logger.debug(f"secret to import: {secret}")
+                    logger.debug(f"secret to import with label: {secret.get('label')} and id: {secret.get('id')}")
                     # Import the secret
                     sid, fingerprint = self.master.controller.cc.seedkeeper_import_secret(
                         secret,

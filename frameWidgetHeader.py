@@ -7,7 +7,6 @@ from constants import ICON_PATH
 from frameWidgetLabel import FrameWidgetLabel
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameWidgetHeader(customtkinter.CTkFrame):

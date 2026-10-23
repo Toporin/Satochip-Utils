@@ -69,6 +69,14 @@ For verbose logs run:
 ```bash
 python satochip_utils.py -v
 ```
+To also save logs to a file, add `-l`/`--log-file`, with an optional path (by default `satotools.log`
+in the source directory):
+```bash
+python satochip_utils.py -v --log-file
+python satochip_utils.py -v --log-file /path/to/satotools.log
+```
+The same options work with the released binaries, which do not display a console: without a path,
+logs are saved to `~/.satotools/satotools.log`.
 On Windows, use `python` or `py`. On Linux/macOS, use `python3` if `python` is not available.
 
 ### Troubleshooting

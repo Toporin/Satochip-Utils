@@ -10,7 +10,6 @@ import constants
 from constants import MAIN_MENU_COLOR, HOVER_COLOR
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FramePopup(customtkinter.CTkToplevel):

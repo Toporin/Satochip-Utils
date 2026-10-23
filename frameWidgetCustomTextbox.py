@@ -8,7 +8,6 @@ import constants
 from constants import ICON_PATH, BG_BUTTON
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameWidgetCustomTextbox(customtkinter.CTkFrame):

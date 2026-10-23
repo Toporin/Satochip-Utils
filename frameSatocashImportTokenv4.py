@@ -7,7 +7,6 @@ from constants import BG_BUTTON
 from utils import update_textbox
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameSatocashImportTokenv4(customtkinter.CTkFrame):
@@ -46,7 +45,7 @@ class FrameSatocashImportTokenv4(customtkinter.CTkFrame):
             # token import to card
             def _save_secret_to_card():
                 try:
-                    logger.info(f"Saving tokenv4 to card")
+                    logger.debug(f"Saving tokenv4 to card")
 
                     tokenv4 = self.token_textbox.get("1.0", "end").strip()
 

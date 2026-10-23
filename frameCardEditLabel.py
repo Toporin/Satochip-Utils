@@ -4,7 +4,6 @@ import logging
 from frameWidgetHeader import FrameWidgetHeader
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameCardEditLabel(customtkinter.CTkFrame):

@@ -7,7 +7,6 @@ from constants import (DEFAULT_BG_COLOR, BG_MAIN_MENU, BG_HOVER_BUTTON,
 from frameWidgetHeader import FrameWidgetHeader
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameSeedkeeperListSecrets(customtkinter.CTkFrame):
@@ -135,9 +134,9 @@ class FrameSeedkeeperListSecrets(customtkinter.CTkFrame):
                 # add row to list (keep ref to destroy them on card removal)
                 self.secret_rows += [row_frame]
 
-                logger.debug(f"016 Row created for secret ID: {secret['id']}")
+                logger.debug(f"Row created for secret ID: {secret['id']}")
             except Exception as e:
-                logger.error(f"017 Error creating row for secret {secret['id']}: {str(e)}")
+                logger.error(f"Error creating row for secret {secret['id']}: {str(e)}")
 
         # update status flag
         # todo detect changes in secret_headers to update list when needed

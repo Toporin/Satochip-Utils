@@ -8,7 +8,6 @@ from applicationMode import ApplicationMode
 from frameWidgetHeader import FrameWidgetHeader
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameCardFactoryReset(customtkinter.CTkFrame):
@@ -84,7 +83,7 @@ class FrameCardFactoryReset(customtkinter.CTkFrame):
             # Cancel button
 
             def click_cancel_button():
-                logger.info("Executing quit button action")
+                logger.debug("Executing quit button action")
                 master.controller.cc.set_mode_factory_reset(False)
                 master.appMode = ApplicationMode.Normal
                 master.show_start_frame()
@@ -173,7 +172,7 @@ class FrameCardFactoryReset(customtkinter.CTkFrame):
     def click_reset_button(self):
         if self.master.appMode == ApplicationMode.FactoryResetV1:
             try:
-                logger.info("click_reset_button attempting to reset the card (V1)")
+                logger.debug("click_reset_button attempting to reset the card (V1)")
 
                 (response, sw1, sw2) = self.master.controller.cc.card_reset_factory_signal()
                 logger.info(f"card_reset_factory response: {hex(256 * sw1 + sw2)}")
@@ -245,9 +244,7 @@ class FrameCardFactoryReset(customtkinter.CTkFrame):
                         )
                         self.master.show_button.configure(state='disabled')
                 except Exception as ex:
-                    logger.debug(f"exception: {str(ex)}")
-                    import traceback
-                    print(traceback.format_exc())
+                    logger.debug(f"exception: {str(ex)}", exc_info=True)
 
                 response, sw1, sw2, card_status = self.master.controller.cc.card_get_status()
                 if card_status["PIN0_remaining_tries"] == 0:

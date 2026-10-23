@@ -5,7 +5,6 @@ import constants
 from frameWidgetHeader import FrameWidgetHeader
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameSatochipResetSeed(customtkinter.CTkFrame):

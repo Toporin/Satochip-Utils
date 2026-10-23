@@ -7,7 +7,6 @@ from PIL import Image, ImageTk
 from constants import MAIN_MENU_COLOR, ICON_PATH
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameMenuNoCard(customtkinter.CTkFrame):

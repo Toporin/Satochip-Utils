@@ -7,7 +7,6 @@ from constants import MAIN_MENU_COLOR, BUTTON_COLOR
 from frameWidgetHeader import FrameWidgetHeader
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameCardAuthenticity(customtkinter.CTkFrame):
@@ -123,7 +122,7 @@ class FrameCardAuthenticity(customtkinter.CTkFrame):
             logger.error(f"An unexpected error occurred in check_authenticity: {e}", exc_info=True)
 
     def update_radio_selection(self):
-        logger.info(f"Button clicked: {self.certificate_radio_value.get()}")
+        logger.debug(f"Button clicked: {self.certificate_radio_value.get()}")
         if self.certificate_radio_value.get() == 'root_ca_certificate':
             self.master.update_textbox(self.text_box, self.txt_ca)
             self.text_box.place(relx=0.05, rely=0.4, anchor="nw")
@@ -137,7 +136,7 @@ class FrameCardAuthenticity(customtkinter.CTkFrame):
     def update_frame(self):
 
         if self.master.controller.cc.card_present:
-            logger.info("FrameCardAuthenticity update_frame() Card detected: checking authenticity")
+            logger.debug("FrameCardAuthenticity update_frame() Card detected: checking authenticity")
             is_authentic, self.txt_ca, self.txt_subca, self.txt_device, self.txt_error = self.master.controller.cc.card_verify_authenticity()
             if self.txt_error != "":
                 self.txt_device = self.txt_error + "\n------------------\n" + self.txt_device

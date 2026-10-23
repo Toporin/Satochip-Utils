@@ -10,7 +10,6 @@ from frameWidgetHeader import FrameWidgetHeader
 from frameWidgetLabel import FrameWidgetLabel
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameSatodimeSealVault(customtkinter.CTkFrame):

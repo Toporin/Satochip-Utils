@@ -4,8 +4,8 @@ import logging
 from constants import TYPE_DIC
 from framePopup import FramePopup
 from frameWidgetHeader import FrameWidgetHeader
-from utils import show_qr_code, create_qr_button, toggle_entry_visibility, toggle_textbox_visibility, \
-    update_textbox, update_entry, make_textbox_readonly
+from utils import show_qr_code, create_qr_button, create_copy_button, copy_to_clipboard, \
+    toggle_entry_visibility, toggle_textbox_visibility, update_textbox, update_entry, make_textbox_readonly
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +46,7 @@ class FrameSeedkeeperShowSecret(customtkinter.CTkFrame):
             self.secret_label = master.create_label("Secret:", frame=self)
             self.secret_label.place(relx=0.05, rely=rely, anchor="nw")
             self.secret_qr_button = create_qr_button(self, self.secret_label)  # command set in update_frame()
+            self.secret_copy_button = create_copy_button(self, self.secret_qr_button)  # command set in update_frame()
             rely += 0.05
             self.secret_textbox = master.create_textbox(frame=self)
             self.secret_textbox.place(relx=0.05, rely=rely, relheight=0.23, anchor="nw")
@@ -91,9 +92,12 @@ class FrameSeedkeeperShowSecret(customtkinter.CTkFrame):
             secret_decoded = secret['secret_decoded']
         update_textbox(self.secret_textbox, secret_decoded)
 
-        # qr-code (use decoded value, as the widget may be masked)
+        # qr-code & copy to clipboard (use decoded value, as the widget may be masked)
         self.secret_qr_button.configure(
             command=lambda data=secret_decoded: show_qr_code(data, self.master, "Secret")
+        )
+        self.secret_copy_button.configure(
+            command=lambda data=secret_decoded: copy_to_clipboard(self, data)
         )
 
         self.show_button.configure(

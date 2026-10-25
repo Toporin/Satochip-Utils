@@ -3,7 +3,8 @@ import logging
 
 from framePopup import FramePopup
 from frameWidgetHeader import FrameWidgetHeader
-from utils import toggle_entry_visibility, show_qr_code, create_qr_button, update_entry
+from utils import (toggle_entry_visibility, show_qr_code, create_qr_button, create_copy_button, copy_to_clipboard,
+                   update_entry)
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +46,7 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
             self.login_label = master.create_label("Login:", frame=self)
             self.login_label.place(relx=0.05, rely=rely, anchor="nw")
             self.login_qr_button = create_qr_button(self, self.login_label)  # command set in update_frame()
+            self.login_copy_button = create_copy_button(self, self.login_qr_button)  # command set in update_frame()
             rely += 0.05
             self.login_entry_rely = rely
             self.login_entry = master.create_entry(frame=self)
@@ -56,6 +58,7 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
             self.url_label = master.create_label("Url:", frame=self)
             self.url_label.place(relx=0.05, rely=rely, anchor="nw")
             self.url_qr_button = create_qr_button(self, self.url_label)  # command set in update_frame()
+            self.url_copy_button = create_copy_button(self, self.url_qr_button)  # command set in update_frame()
             rely += 0.05
             self.url_entry_rely = rely
             self.url_entry = master.create_entry(frame=self)
@@ -66,6 +69,7 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
             self.password_label = master.create_label("Password:", frame=self)
             self.password_label.place(relx=0.05, rely=rely, anchor="nw")
             self.password_qr_button = create_qr_button(self, self.password_label)  # command set in update_frame()
+            self.password_copy_button = create_copy_button(self, self.password_qr_button)  # command set in update_frame()
             rely += 0.05
             self.password_entry = master.create_entry(frame=self)
             self.password_entry.place(relx=0.05, rely=rely, anchor="nw")
@@ -125,15 +129,24 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
         password = secret.get('password')
         update_entry(self.password_entry, password)
 
-        # qr-codes (use decoded values, as the widgets may be masked)
+        # qr-codes & copy to clipboard (use decoded values, as the widgets may be masked)
         self.login_qr_button.configure(
             command=lambda data=login: show_qr_code(data, self.master, "Login")
+        )
+        self.login_copy_button.configure(
+            command=lambda data=login: copy_to_clipboard(self, data)
         )
         self.url_qr_button.configure(
             command=lambda data=url: show_qr_code(data, self.master, "Url")
         )
+        self.url_copy_button.configure(
+            command=lambda data=url: copy_to_clipboard(self, data)
+        )
         self.password_qr_button.configure(
             command=lambda data=password: show_qr_code(data, self.master, "Password")
+        )
+        self.password_copy_button.configure(
+            command=lambda data=password: copy_to_clipboard(self, data)
         )
 
         self.show_button.configure(

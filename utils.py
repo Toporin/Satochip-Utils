@@ -140,19 +140,29 @@ def copy_to_clipboard(widget, text: str):
     widget.update()  # keep clipboard content available after the call returns (needed on some X11 setups)
 
 
-def create_qr_button(master, label: customtkinter.CTkLabel, command=None, bg_color="whitesmoke"):
-    # QR code icon button, placed just right of the given label (hidden whenever the label is hidden)
-    qr_icon = convert_name_to_photo_image("qr_code_icon.png", 24, 24)
+def create_icon_button(master, anchor_widget, icon_name: str, command=None, bg_color="whitesmoke"):
+    # small icon button, placed just right of anchor_widget (hidden whenever anchor_widget is hidden)
+    icon = convert_name_to_photo_image(icon_name, 24, 24)
     button = customtkinter.CTkButton(
         master, width=24, height=24, text="",
         border_spacing=0,
-        image=qr_icon,
+        image=icon,
         bg_color=bg_color, fg_color=bg_color,
         hover_color=bg_color, cursor="hand2",
         command=command
     )
-    button.place(in_=label, relx=1.0, x=5, rely=0.5, anchor="w")
+    button.place(in_=anchor_widget, relx=1.0, x=5, rely=0.5, anchor="w")
     return button
+
+
+def create_qr_button(master, label: customtkinter.CTkLabel, command=None, bg_color="whitesmoke"):
+    # QR code icon button, placed just right of the given label
+    return create_icon_button(master, label, "qr_code_icon.png", command, bg_color)
+
+
+def create_copy_button(master, qr_button: customtkinter.CTkButton, command=None, bg_color="whitesmoke"):
+    # copy to clipboard icon button, placed just right of the given QR code button
+    return create_icon_button(master, qr_button, "copy_icon.png", command, bg_color)
 
 
 def mnemonic_to_entropy_bytes(mnemonic) -> bytearray:

@@ -8,10 +8,11 @@ import customtkinter
 import logging
 import hashlib
 import hmac
+import tkinter
 from mnemonic import Mnemonic
 from pycryptotools.main import privtopub, bin_hash160
 
-from constants import COIN_DECIMALS_DICT, ICON_PATH
+from constants import COIN_DECIMALS_DICT, ICON_PATH, CLIPBOARD_CLEAR_DELAY
 from framePopup import FramePopup
 
 logger = logging.getLogger(__name__)
@@ -133,11 +134,42 @@ def show_qr_code(qr_data: str, parent, title: str = "QR code"):
     FramePopup(parent, title, "Scan this QR code", button_txt="Close", qr_msg=qr_data)
 
 
+# last text copied by the app, and pending clipboard clear timer (only one at a time)
+_clipboard_state = {"text": None, "after_id": None}
+
+
 def copy_to_clipboard(widget, text: str):
     # use Tk clipboard: works on all OS without external tools (unlike pyperclip, which needs xclip/xsel on Linux)
-    widget.clipboard_clear()
-    widget.clipboard_append(text)
-    widget.update()  # keep clipboard content available after the call returns (needed on some X11 setups)
+    root = widget.winfo_toplevel()  # main window, outlives the frames that schedule the clear timer
+    root.clipboard_clear()
+    root.clipboard_append(text)
+    root.update()  # keep clipboard content available after the call returns (needed on some X11 setups)
+
+    # clear clipboard after a delay, as copied data may be sensitive (restart timer on each copy)
+    if _clipboard_state["after_id"] is not None:
+        root.after_cancel(_clipboard_state["after_id"])
+    _clipboard_state["text"] = text
+    _clipboard_state["after_id"] = root.after(
+        CLIPBOARD_CLEAR_DELAY * 1000, lambda: clear_copied_from_clipboard(root)
+    )
+
+
+def clear_copied_from_clipboard(root):
+    # clear clipboard only if it still contains the text copied by the app (keep data copied from elsewhere)
+    if _clipboard_state["after_id"] is not None:
+        root.after_cancel(_clipboard_state["after_id"])
+        _clipboard_state["after_id"] = None
+    if _clipboard_state["text"] is None:
+        return
+    try:
+        current_text = root.clipboard_get()
+    except tkinter.TclError:  # clipboard empty or not text
+        current_text = None
+    if current_text == _clipboard_state["text"]:
+        root.clipboard_clear()
+        root.update()
+        logger.debug("Clipboard cleared")
+    _clipboard_state["text"] = None
 
 
 def create_icon_button(master, anchor_widget, icon_name: str, command=None, bg_color="whitesmoke"):

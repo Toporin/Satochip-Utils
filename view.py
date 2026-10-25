@@ -55,6 +55,7 @@ from frameSeedkeeperShowPassword import FrameSeedkeeperShowPasswordSecret
 from frameSeedkeeperShowSimpleSecret import FrameSeedkeeperShowSecret
 from frameStart import FrameStart
 from frameWelcome import FrameWelcome
+from utils import clear_copied_from_clipboard
 
 logger = logging.getLogger(__name__)
 
@@ -215,6 +216,9 @@ class View(customtkinter.CTk):
     def on_close(self):
         logger.info("IN View.on_close : Closing App")
         try:
+            # Do not leave sensitive data copied by the app in the clipboard
+            clear_copied_from_clipboard(self)
+
             # Destruction de la fenêtre principale
             self.destroy()
             logger.debug("Main window destroyed")

@@ -15,6 +15,9 @@ TEXT_COLOR = "black"
 
 ICON_PATH = "./pictures_db/"
 
+# Delay (in seconds) after which data copied to the clipboard by the app is cleared
+CLIPBOARD_CLEAR_DELAY = 30
+
 # Preferred UI font family. Resolved at startup in View._resolve_font_family() against the
 # fonts available on the system: "Outfit" is kept when installed, otherwise the first available
 # substitute is used (DejaVu Sans ships with Tails/Debian, where Tk's own fallback for missing

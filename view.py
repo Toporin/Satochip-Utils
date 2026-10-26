@@ -1050,6 +1050,30 @@ class View(customtkinter.CTk):
                 "./pictures_db/error_popup_red.png"
             )
 
+    def refresh_satodime_vault_balance(self, vault_nbr: SupportsIndex):
+        """Fetch up-to-date balances of a vault, then refresh every frame displaying them"""
+        logger.debug(f"refresh_satodime_vault_balance start vault: {vault_nbr}")
+        self.configure(cursor="watch")
+        self.update_idletasks()
+        try:
+            is_ok = self.controller.satodime_vault_refresh_balance(vault_nbr)
+        finally:
+            self.configure(cursor="")
+
+        if self.satodime_overview_frame is not None:
+            self.satodime_overview_frame.update_frame_vault(vault_nbr)
+        if self.satodime_vault_frames is not None and isinstance(self.satodime_vault_frames[vault_nbr], FrameSatodimeVault):
+            self.satodime_vault_frames[vault_nbr].update_balance(vault_nbr)
+
+        if not is_ok:
+            self.show(
+                "ERROR",
+                "Failed to refresh balance!\nPlease check your internet connection and try again.",
+                "Ok",
+                None,
+                "./pictures_db/error_popup_red.png"
+            )
+
     def show_satodime_vault(self, vault_nbr: SupportsIndex):
         try:
             logger.debug(f"show_satodime_vault start vault: {vault_nbr}")

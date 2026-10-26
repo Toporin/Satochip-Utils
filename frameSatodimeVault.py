@@ -115,6 +115,7 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
             url=url,
             balance=balance_str,
             balance2=balance2_str,
+            on_refresh=lambda: self.master.refresh_satodime_vault_balance(vault_nbr),
         )
 
         # update frame based on status (buttons action + vaultcard status)
@@ -124,6 +125,20 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
         self.asset_list = self.master.controller.satodime_vaults_asset_list[vault_nbr]
         if len(self.asset_list) > 0:
             self.asset_tab.update_tab(self.asset_list)
+        else:
+            self.asset_tab.place_forget()
+
+    def update_balance(self, vault_nbr):
+        """Update balances and asset list from cached data, without changing the displayed tab"""
+        coin_info = self.master.controller.satodime_vaults_coin_info[vault_nbr]
+        (balance_str, balance2_str) = format_asset_balances(coin_info)
+        self.vaultcard.update_balance(balance_str, balance2_str)
+
+        self.asset_list = self.master.controller.satodime_vaults_asset_list[vault_nbr]
+        if len(self.asset_list) > 0:
+            self.asset_tab.update_tab(self.asset_list)
+            if self.show_asset_tab:
+                self.asset_tab.place(relx=0.0, rely=self.tabs_rely, anchor="nw")
         else:
             self.asset_tab.place_forget()
 

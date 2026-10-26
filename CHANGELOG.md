@@ -13,6 +13,7 @@ Fix Satodime vault reset possible without checking the confirmation checkbox (#4
 Fix Satodime ownership status not refreshed when another card is inserted: the previous card's ownership (and unlock secret) was kept, so the new card showed "You are the owner" and vault operations failed (#43).
 Fix crash when inserting a Satodime with more vaults than the previously inserted one (vault data was not resized).
 Satodime vaults are now numbered from 1 in the UI (menu, vault screens and popups), matching the mobile apps (#38).
+Satodime: add a refresh button at the end of the "Balance" row (overview and vault screens) to fetch up-to-date balances and assets from the blockchain explorers without restarting the app (#35).
 Fix Seedkeeper secret details screens: output fields are now read-only (selection and copy to clipboard still work) (#47).
 Fix large QR codes not fitting on screen: Seedkeeper "QR code" and "SeedQR" buttons now open the QR code in a popup, scaled to fit the screen (#48).
 Add QR code buttons next to the Satodime vault "Private key:" and "WIF:" labels, showing the key as a QR code in a popup (#36).

@@ -1453,9 +1453,11 @@ class Controller:
                     coin_info = coin.get_coin_info(addr)
                     self.satodime_vaults_coin_info[vault_nbr] = coin_info
                     logger.debug(f"VAULT #{vault_nbr} coin_info: {coin_info}")
+                    return True
                 except Exception as ex:
                     logger.warning(f"Exception in satodime_vault_get_coin_info: {str(ex)}")
-                    logger.warning(f"Exception in satodime_vault_get_coin_info: coin: {vault_info['coin']} addr: {vault_info['address']}")
+                    logger.warning(f"Exception in satodime_vault_get_coin_info: coin: {vault_info.get('coin')} addr: {vault_info.get('address')}")
+        return False
 
     def satodime_vault_get_asset_list(self, vault_nbr):
         logger.debug(f'In satodime_vault_get_asset_info vault: {vault_nbr}')
@@ -1471,9 +1473,18 @@ class Controller:
                     asset_list = coin.get_asset_list(addr)
                     self.satodime_vaults_asset_list[vault_nbr] = asset_list
                     logger.debug(f"VAULT #{vault_nbr} asset_list: {asset_list}")
+                    return True
                 except Exception as ex:
                     logger.warning(f"Exception in satodime_vault_get_asset_list: {str(ex)}")
-                    logger.warning(f"Exception in satodime_vault_get_asset_list: coin: {vault_info['coin']} addr: {vault_info['address']}")
+                    logger.warning(f"Exception in satodime_vault_get_asset_list: coin: {vault_info.get('coin')} addr: {vault_info.get('address')}")
+        return False
+
+    def satodime_vault_refresh_balance(self, vault_nbr):
+        """Fetch up-to-date balance and asset list of a vault from blockchain explorers"""
+        logger.debug(f'In satodime_vault_refresh_balance vault: {vault_nbr}')
+        is_coin_info_ok = self.satodime_vault_get_coin_info(vault_nbr)
+        is_asset_list_ok = self.satodime_vault_get_asset_list(vault_nbr)
+        return is_coin_info_ok and is_asset_list_ok
 
     def satodime_seal_vault(self, vault_nbr, blockchain, is_testnet, entropy_bytes):
         logger.debug(f'In satodime_seal_vault vault: {vault_nbr} blockchain:{blockchain} is_testnet:{is_testnet}')

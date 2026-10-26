@@ -123,9 +123,29 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
             self.balance_label.grid(row=3, column=0, padx=5, pady=5, sticky="w")
             self.balance_value = FrameWidgetLabel(master=self, text="")
             self.balance_value.grid(row=3, column=1, padx=5, pady=0, sticky="w")
-            self.balance_value2 = FrameWidgetLabel(master=self, text="")
+            # frame with second balance and refresh button, stretched over column 2 so that the refresh
+            # button is right-aligned with the address buttons (same right padding as address_frame)
+            self.balance_frame = customtkinter.CTkFrame(self)
+            self.balance_frame.configure(bg_color="whitesmoke", fg_color="whitesmoke")
+            self.balance_frame.grid(row=3, column=2, padx=(0, 5), pady=0, sticky="ew")
+            self.balance_frame.grid_columnconfigure(0, weight=1)
+            self.balance_value2 = FrameWidgetLabel(master=self.balance_frame, text="")
             self.balance_value2.configure(font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=16, weight="normal"))
-            self.balance_value2.grid(row=3, column=2, padx=5, pady=0, sticky="w")
+            self.balance_value2.grid(row=0, column=0, padx=5, pady=0, sticky="w")
+
+            # button to refresh balances (shown in update_frame() if a refresh command is provided)
+            self.icon_path4 = f"{ICON_PATH}{'refresh_icon.png'}"
+            self.image = Image.open(self.icon_path4)
+            self.image = self.image.resize((24, 24), Image.LANCZOS)
+            self.photo_image4 = ImageTk.PhotoImage(self.image)
+            self.button_refresh = customtkinter.CTkButton(
+                self.balance_frame, width=28, height=28, text="",
+                border_spacing=0,
+                image=self.photo_image4,
+                bg_color=bg_color, fg_color=bg_color,
+                hover_color=bg_color, cursor="hand2",
+            )
+            self.button_refresh.image = self.photo_image4  # keep a reference of image
 
         except Exception as e:
             logger.error(f"An unexpected error occurred in init: {e}", exc_info=True)
@@ -138,7 +158,8 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
             address: str,
             url: str,
             balance: str,
-            balance2: str
+            balance2: str,
+            on_refresh=None
     ):
         logger.debug("FrameWidgetSatodimeCard update_frame")
         status_str = STATUS_DIC.get(status, 'unknown')
@@ -149,8 +170,12 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
         self.address_value.configure(text=address, font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=15, weight="normal"))
         self.button_explore.configure(command=lambda: webbrowser.open(url, new=2))
         self.button_copy.configure(command=lambda: copy_to_clipboard(self, address))
-        self.balance_value.configure(text=balance)
-        self.balance_value2.configure(text=balance2)
+        self.update_balance(balance, balance2)
+        if on_refresh is not None:
+            self.button_refresh.configure(command=on_refresh)
+            self.button_refresh.grid(row=0, column=1, padx=0, pady=0, sticky="e")
+        else:
+            self.button_refresh.grid_remove()
 
         # update coin icon
         icon_path = f"{ICON_PATH}{symbol}{'.png'}" # todo
@@ -172,3 +197,7 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
                 qr_msg=address,
             )
         )
+
+    def update_balance(self, balance: str, balance2: str):
+        self.balance_value.configure(text=balance)
+        self.balance_value2.configure(text=balance2)

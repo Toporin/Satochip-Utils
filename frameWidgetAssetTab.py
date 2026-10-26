@@ -19,9 +19,10 @@ class FrameWidgetAssetTab(customtkinter.CTkTabview):
             token_tab = self.add("Token")
             nft_tab = self.add("NFT")
 
-            # set table dimension a little smaller
-            table_width = width-10
-            table_height = height - 10
+            # set table dimension to fit in the tab content area (tabview minus segmented button & borders),
+            # otherwise the last rows of the table are cut and cannot be scrolled to
+            table_width = width - 12
+            table_height = height - 50
 
             # set token as default
             self.set("Token")

@@ -55,7 +55,7 @@ from frameSeedkeeperShowPassword import FrameSeedkeeperShowPasswordSecret
 from frameSeedkeeperShowSimpleSecret import FrameSeedkeeperShowSecret
 from frameStart import FrameStart
 from frameWelcome import FrameWelcome
-from utils import clear_copied_from_clipboard, bind_mousewheel_scrolling
+from utils import clear_copied_from_clipboard
 
 logger = logging.getLogger(__name__)
 
@@ -311,67 +311,6 @@ class View(customtkinter.CTk):
             bg_color=bg_fg_color,
             fg_color=bg_fg_color)
         return new_frame
-
-    def _create_scrollable_frame(
-            self,
-            parent_frame,
-            width,
-            height,
-            x,
-            y
-    ) -> customtkinter.CTkFrame:
-        logger.debug("_create_scrollable_frame start")
-
-        # Create a frame to hold the canvas and scrollbar
-        container = customtkinter.CTkFrame(parent_frame, width=width, height=height, fg_color=DEFAULT_BG_COLOR)
-        container.place(x=x, y=y)
-        container.pack_propagate(False)  # Prevent the frame from shrinking to fit its contents
-
-        # Create a canvas with specific dimensions
-        canvas = customtkinter.CTkCanvas(container, bg=DEFAULT_BG_COLOR, highlightthickness=0)
-        canvas.pack(side="left", fill="both", expand=True)
-
-        # Add a scrollbar to the canvas
-        scrollbar = customtkinter.CTkScrollbar(container, orientation="vertical", command=canvas.yview)
-        scrollbar.pack(side="right", fill="y")
-
-        # Configure scrollbar colors
-        # scrollbar.configure(fg_color=DEFAULT_BG_COLOR, button_color=DEFAULT_BG_COLOR,
-        #                    button_hover_color=BG_HOVER_BUTTON)
-        scrollbar.configure(fg_color=DEFAULT_BG_COLOR, button_color=BG_HOVER_BUTTON,
-                            button_hover_color=BG_HOVER_BUTTON)
-
-        # Configure the canvas
-        canvas.configure(yscrollcommand=scrollbar.set)
-
-        # Create a frame inside the canvas
-        # plain tkinter frame: a CTkFrame draws its background on a canvas as large as the whole list,
-        # which is slow to redraw and fails with X BadAlloc on long lists
-        inner_frame = tkinter.Frame(canvas, bg=DEFAULT_BG_COLOR)
-
-        # Add that frame to a window in the canvas
-        canvas_window = canvas.create_window((0, 0), window=inner_frame, anchor="nw")
-
-        def _configure_inner_frame(event):
-            # Update the scrollregion to encompass the inner frame
-            canvas.configure(scrollregion=canvas.bbox("all"))
-
-            # Resize the inner frame to fit the canvas width
-            canvas.itemconfig(canvas_window, width=canvas.winfo_width())
-
-        inner_frame.bind("<Configure>", _configure_inner_frame)
-
-        def _configure_canvas(event):
-            # Resize the inner frame to fit the canvas width
-            canvas.itemconfig(canvas_window, width=event.width)
-
-        canvas.bind("<Configure>", _configure_canvas)
-
-        # Scroll with mouse wheel while the pointer is over the container
-        bind_mousewheel_scrolling(container, canvas)
-
-        return inner_frame
-
 
     def create_label(self, text, bg_fg_color: str = "whitesmoke", frame=None) -> customtkinter.CTkLabel:
         # logger.debug("view.create_label start")

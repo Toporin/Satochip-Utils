@@ -24,6 +24,7 @@ Seedkeeper secret details: secrets (mnemonic, passphrase, password, secret data)
 Seedkeeper secret details: the "export not allowed" message is always displayed in plaintext, with the Show/Hide button disabled.
 Seedkeeper secret list: add a search field (filter by label) and a secret type filter (All, Mnemonic, Password, Descriptors, Data); the list updates as you type (#31).
 Seedkeeper secret list: draw the table on a single canvas, so that long lists display and filter instantly (displaying many secrets was very slow and could crash with an X BadAlloc error on Linux).
+Use the same canvas table for all lists (Seedkeeper card logs and backup result, Satocash balances, Satodime tokens/NFTs): long lists now display instantly. Satodime asset tables no longer duplicate their rows on each refresh, and their last rows are no longer cut off.
 Fix mouse wheel scrolling in lists: scrolling now works on Linux, and applies to the list under the pointer (the last created list used to capture all mouse wheel events).
 Fix authenticity check displaying a stale result when a card was checked after a genuine one.
 Move label editing from the settings menus to the About screen, via a pen icon button next to the card label.

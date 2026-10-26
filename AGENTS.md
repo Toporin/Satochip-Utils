@@ -55,7 +55,7 @@ Flat layout — all application modules live at the repo root (no Python package
   - `frameSatochip*` — Satochip-specific screens (reset seed).
   - `frameSatodime*` — overview, vault, seal/unseal/reset screens.
   - `frameSatocash*` — balances, token import/export screens.
-  - `frameWidget*` — reusable widgets (header, labels, scrollable frame, asset rows, ...).
+  - `frameWidget*` — reusable widgets (header, labels, canvas table used by all lists, asset table, ...).
   - Note: `FrameSeedkeeperGenerateSecretSelectType.py` deviates with a leading capital F.
 - `pictures_db/` — PNG/JPG assets loaded at runtime via relative paths (`./pictures_db/...`).
 - `wordlist/english.txt` — BIP39 wordlist (also bundled into `pycryptotools/` in the spec as a hack).

@@ -67,11 +67,19 @@ class FrameCardAbout(customtkinter.CTkFrame):
             self.applet_version = master.create_label(f"Applet version",  frame=self)
             self.applet_version.place(relx=0.05, rely=rely, anchor="nw")
             rely += 0.05
+            # status
+            self.card_status = master.create_label("card status", frame=self)  # updated later
+            self.card_status.place(relx=0.05, rely=rely, anchor="nw")
+            rely += 0.05
+            # authenticity
+            self.card_genuine = master.create_label(f"Genuine: [PIN required]", frame=self)
+            self.card_genuine.place(relx=0.05, rely=rely, anchor="nw")
+            rely += 0.05
             # label (with edit button on the left, as label length varies)
             self.edit_label_button = customtkinter.CTkButton(
                 self, width=28, height=28, text="",
                 border_spacing=0,
-                image=convert_name_to_photo_image("edit_label_rounded.png", 28, 28),
+                image=convert_name_to_photo_image("edit_label_popup.jpg", 28, 28),
                 bg_color="whitesmoke", fg_color="whitesmoke",
                 hover_color="whitesmoke", cursor="hand2",
                 command=lambda: master.show_edit_label_frame(return_callback=master.show_about_frame)
@@ -80,19 +88,11 @@ class FrameCardAbout(customtkinter.CTkFrame):
             self.card_label = master.create_label(f"Label: [PIN required]", frame=self)
             self.card_label.place(relx=0.10, rely=rely, anchor="nw")
             rely += 0.05
-            # authenticity
-            self.card_genuine = master.create_label(f"Genuine: [PIN required]", frame=self)
-            self.card_genuine.place(relx=0.05, rely=rely, anchor="nw")
-            rely += 0.05
-            # status
-            self.card_status = master.create_label("card status", frame=self)  # updated later
-            self.card_status.place(relx=0.05, rely=rely, anchor="nw")
-            rely += 0.05
             # NFC (with switch button on the left)
             self.switch_nfc_button = customtkinter.CTkButton(
                 self, width=28, height=28, text="",
                 border_spacing=0,
-                image=convert_name_to_photo_image("icon_switch_3.jpg", 28, 28),
+                image=convert_name_to_photo_image("edit_label_popup.jpg", 28, 28),
                 bg_color="whitesmoke", fg_color="whitesmoke",
                 hover_color="whitesmoke", cursor="hand2",
                 command=lambda: master.show_switch_nfc_frame(return_callback=master.show_about_frame)
@@ -105,7 +105,7 @@ class FrameCardAbout(customtkinter.CTkFrame):
             self.configure_ndef_button = customtkinter.CTkButton(
                 self, width=28, height=28, text="",
                 border_spacing=0,
-                image=convert_name_to_photo_image("edit_label_rounded.png", 28, 28),
+                image=convert_name_to_photo_image("edit_label_popup.jpg", 28, 28),
                 bg_color="whitesmoke", fg_color="whitesmoke",
                 hover_color="whitesmoke", cursor="hand2",
                 command=lambda: master.show_configure_ndef_frame(return_callback=master.show_about_frame)
@@ -127,7 +127,7 @@ class FrameCardAbout(customtkinter.CTkFrame):
 
             # SATOCHIP specific
             # card seeded (with import/reset seed button on the left, updated later)
-            self.seed_button_pen_icon = convert_name_to_photo_image("edit_label_rounded.png", 28, 28)
+            self.seed_button_pen_icon = convert_name_to_photo_image("edit_label_popup.jpg", 28, 28)
             self.seed_button_trash_icon = convert_name_to_photo_image("icon_trash.jpeg", 28, 28)
             self.seed_button = customtkinter.CTkButton(
                 self, width=28, height=28, text="",

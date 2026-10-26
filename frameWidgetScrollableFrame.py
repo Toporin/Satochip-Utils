@@ -4,6 +4,7 @@ import logging
 from constants import (HIGHLIGHT_COLOR, BG_MAIN_MENU, DEFAULT_BG_COLOR,
                         BG_HOVER_BUTTON, TEXT_COLOR, BUTTON_TEXT_COLOR)
 from frameWidgetHeader import FrameWidgetHeader
+from utils import bind_mousewheel_scrolling
 
 logger = logging.getLogger(__name__)
 
@@ -64,18 +65,8 @@ class FrameWidgetScrollableFrame(customtkinter.CTkFrame):
 
             self.canvas.bind("<Configure>", _configure_canvas)
 
-            def _on_mousewheel(event):
-                # Check if there's actually something to scroll
-                if self.canvas.bbox("all")[3] <= self.canvas.winfo_height():
-                    return  # No scrolling needed, so do nothing
-
-                if event.delta > 0:
-                    self.canvas.yview_scroll(-1, "units")
-                elif event.delta < 0:
-                    self.canvas.yview_scroll(1, "units")
-
-            # Bind mouse wheel to the canvas
-            self.canvas.bind_all("<MouseWheel>", _on_mousewheel)
+            # Scroll with mouse wheel while the pointer is over this frame
+            bind_mousewheel_scrolling(self, self.canvas)
 
         except Exception as e:
             logger.error(f"Init error : {e}", exc_info=True)

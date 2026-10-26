@@ -55,7 +55,7 @@ from frameSeedkeeperShowPassword import FrameSeedkeeperShowPasswordSecret
 from frameSeedkeeperShowSimpleSecret import FrameSeedkeeperShowSecret
 from frameStart import FrameStart
 from frameWelcome import FrameWelcome
-from utils import clear_copied_from_clipboard
+from utils import clear_copied_from_clipboard, bind_mousewheel_scrolling
 
 logger = logging.getLogger(__name__)
 
@@ -345,7 +345,9 @@ class View(customtkinter.CTk):
         canvas.configure(yscrollcommand=scrollbar.set)
 
         # Create a frame inside the canvas
-        inner_frame = customtkinter.CTkFrame(canvas, fg_color=DEFAULT_BG_COLOR)
+        # plain tkinter frame: a CTkFrame draws its background on a canvas as large as the whole list,
+        # which is slow to redraw and fails with X BadAlloc on long lists
+        inner_frame = tkinter.Frame(canvas, bg=DEFAULT_BG_COLOR)
 
         # Add that frame to a window in the canvas
         canvas_window = canvas.create_window((0, 0), window=inner_frame, anchor="nw")
@@ -365,18 +367,8 @@ class View(customtkinter.CTk):
 
         canvas.bind("<Configure>", _configure_canvas)
 
-        def _on_mousewheel(event):
-            # Check if there's actually something to scroll
-            if canvas.bbox("all")[3] <= canvas.winfo_height():
-                return  # No scrolling needed, so do nothing
-
-            if event.delta > 0:
-                canvas.yview_scroll(-1, "units")
-            elif event.delta < 0:
-                canvas.yview_scroll(1, "units")
-
-        # Bind mouse wheel to the canvas
-        canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        # Scroll with mouse wheel while the pointer is over the container
+        bind_mousewheel_scrolling(container, canvas)
 
         return inner_frame
 

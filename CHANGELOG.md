@@ -22,6 +22,9 @@ Add "copy to clipboard" icon buttons next to every QR code icon (Seedkeeper mnem
 Clear data copied to the clipboard by the app after 30 seconds, and when the app is closed (only if the clipboard still holds that data).
 Seedkeeper secret details: secrets (mnemonic, passphrase, password, secret data) are now hidden by default; the bottom-right button shows "Show" and switches to "Hide" once the secret is displayed. The hidden state is reset each time a secret is opened (#45).
 Seedkeeper secret details: the "export not allowed" message is always displayed in plaintext, with the Show/Hide button disabled.
+Seedkeeper secret list: add a search field (filter by label) and a secret type filter (All, Mnemonic, Password, Descriptors, Data); the list updates as you type (#31).
+Seedkeeper secret list: draw the table on a single canvas, so that long lists display and filter instantly (displaying many secrets was very slow and could crash with an X BadAlloc error on Linux).
+Fix mouse wheel scrolling in lists: scrolling now works on Linux, and applies to the list under the pointer (the last created list used to capture all mouse wheel events).
 Fix authenticity check displaying a stale result when a card was checked after a genuine one.
 Move label editing from the settings menus to the About screen, via a pen icon button next to the card label.
 Add NFC enable/disable screen with radio state selector and blocked-state warning, accessible via a switch icon button next to the NFC status on the About screen.

@@ -1,21 +1,62 @@
+import tkinter.font
 import customtkinter
 import logging
 
 import constants
 from constants import (DEFAULT_BG_COLOR, BG_MAIN_MENU, BG_HOVER_BUTTON,
-                       TEXT_COLOR, BUTTON_TEXT_COLOR, HIGHLIGHT_COLOR, TYPE_MASTERSEED, TYPE_DIC)
+                       TEXT_COLOR, BUTTON_TEXT_COLOR, HIGHLIGHT_COLOR, TYPE_MASTERSEED, TYPE_DIC,
+                       TYPE_BIP39_MNEMONIC, TYPE_ELECTRUM_MNEMONIC, TYPE_PASSWORD, TYPE_DESCRIPTOR, TYPE_DATA)
 from frameWidgetHeader import FrameWidgetHeader
+from utils import bind_mousewheel_scrolling
 
 logger = logging.getLogger(__name__)
+
+# Filter options of the type dropdown, and the secret types they match ('All' matches every type)
+FILTER_ALL = "All"
+FILTER_TYPES = {
+    "Mnemonic": {TYPE_BIP39_MNEMONIC, TYPE_ELECTRUM_MNEMONIC},  # + masterseed with mnemonic subtype
+    "Password": {TYPE_PASSWORD, 0x91},  # password & master password
+    "Descriptors": {TYPE_DESCRIPTOR},
+    "Data": {TYPE_DATA},
+}
+# delay before filtering after a keystroke in the search field, to coalesce fast typing
+SEARCH_DEBOUNCE_MS = 150
+
+# table geometry (unscaled): column widths, gap between columns, row height and gap between rows
+COLUMN_WIDTHS = [50, 200, 350]
+COLUMN_GAP = 2
+ROW_HEIGHT = 28
+ROW_GAP = 4
+TABLE_X = 33.5
+TABLE_WIDTH = sum(COLUMN_WIDTHS) + COLUMN_GAP * (len(COLUMN_WIDTHS) - 1)
+
+
+def get_secret_category(secret) -> str:
+    # return the filter option matching the secret type (None if only matched by 'All')
+    if secret['type'] == TYPE_MASTERSEED and secret.get('subtype') == 0x01:
+        return "Mnemonic"
+    for category, types in FILTER_TYPES.items():
+        if secret['type'] in types:
+            return category
+    return None
+
+
+def get_secret_type_name(secret) -> str:
+    if secret['type'] == TYPE_MASTERSEED and secret.get('subtype') == 0x01:
+        return "Mnemonic"
+    return TYPE_DIC.get(secret['type'], "Unknown type")
 
 
 class FrameSeedkeeperListSecrets(customtkinter.CTkFrame):
     """
          This class manages to:
              - Show a list of all secrets stored on the card.
+             - Filter the list by secret type and label (search field).
              - Select and display details about each secret from the list.
-             - Include specific widgets and buttons according to the secret type/subtype.
-             - This method is built using a structural encapsulation approach, meaning that each function within it contains everything necessary for its operation, ensuring modularity and self-sufficiency.
+
+         The table is drawn as items on a single canvas instead of one widget per cell:
+         creating/mapping (customtkinter) widgets is slow, while canvas items are cheap,
+         so the list can be redrawn instantly on each filter change, whatever the number of secrets.
     """
     def __init__(self, master):
         super().__init__(master)
@@ -37,41 +78,84 @@ class FrameSeedkeeperListSecrets(customtkinter.CTkFrame):
             )
             self.header.place(relx=0.05, rely=0.05, anchor="nw")
 
-            # Creating secrets table
-
             # Introduce table
             self.label_text = master.create_label(text="Click on a secret to manage it:", frame=self)
             self.label_text.place(relx=0.05, rely=0.15, anchor="nw")
 
-            # Define headers
-            self.headers = ["Id", "Type of secret", "Label"]
-            rely = 0.3
-            absx = 33.5
+            # Search & filter row, centered above the table
+            self.search_frame = customtkinter.CTkFrame(self, fg_color=DEFAULT_BG_COLOR, bg_color=DEFAULT_BG_COLOR)
+            self.search_frame.place(x=TABLE_X + TABLE_WIDTH / 2, y=126, anchor="n")
+            self.search_label = master.create_label("Search:", frame=self.search_frame)
+            self.search_label.pack(side="left", padx=(0, 10))
+            self.search_var = customtkinter.StringVar(value="")
+            self.search_entry = customtkinter.CTkEntry(
+                self.search_frame, width=280, height=32, corner_radius=10,
+                fg_color=constants.BUTTON_COLOR, border_color=constants.BUTTON_COLOR, text_color='grey',
+                textvariable=self.search_var
+            )
+            self.search_entry.pack(side="left", padx=(0, 10))
+            self.type_var, self.type_menu = master.create_option_list(
+                self.search_frame, [FILTER_ALL] + list(FILTER_TYPES), width=150
+            )
+            self.type_menu.configure(command=lambda _: self.apply_filter())
+            self.type_menu.pack(side="left")
+            self._search_after_id = None
+            self.search_var.trace_add("write", lambda *_: self._schedule_filter())
 
             # Create header labels
-            # self.header_frame = customtkinter.CTkFrame(
-            #     self, width=600, bg_color=DEFAULT_BG_COLOR,
-            #     corner_radius=0, fg_color=DEFAULT_BG_COLOR)
-            # self.header_frame.place(relx=0.05, rely=rely, relwidth=0.9, anchor="w")
-
-            self.header_widths = [50, 200, 350]  # Define specific widths for each header
-            for col, width in zip(self.headers, self.header_widths):
-                self.header_button = customtkinter.CTkButton(
+            absx = TABLE_X
+            for col, width in zip(["Id", "Type of secret", "Label"], COLUMN_WIDTHS):
+                header_button = customtkinter.CTkButton(
                     self, text=col,
                     font=customtkinter.CTkFont(size=14, family=constants.FONT_FAMILY, weight="bold"),
                     corner_radius=0, state='disabled', text_color='white',
                     fg_color=BG_MAIN_MENU, width=width
                 )
-                #self.header_button.pack(side="left", expand=True, fill="both")
-                #self.header_button.place(relx=0.05, rely=rely, anchor="w")
-                self.header_button.place(x=absx, rely=0.23, anchor="nw")
-                absx=absx+width+2
+                header_button.place(x=absx, y=172, anchor="nw")
+                absx = absx + width + COLUMN_GAP
 
-            self.table_frame = master._create_scrollable_frame(
-                self, width=600, height=400, x=33.5, y=175
+            # Table: canvas + scrollbar (the container applies customtkinter scaling to its size & position)
+            self.table_container = customtkinter.CTkFrame(
+                self, width=TABLE_WIDTH + 20, height=375, corner_radius=0,
+                fg_color=DEFAULT_BG_COLOR, bg_color=DEFAULT_BG_COLOR
             )
+            self.table_container.place(x=TABLE_X, y=205)
+            self.table_container.pack_propagate(False)
+            self.table_canvas = customtkinter.CTkCanvas(
+                self.table_container, bg=DEFAULT_BG_COLOR, highlightthickness=0
+            )
+            self.table_canvas.pack(side="left", fill="both", expand=True)
+            self.table_scrollbar = customtkinter.CTkScrollbar(
+                self.table_container, orientation="vertical", command=self.table_canvas.yview,
+                fg_color=DEFAULT_BG_COLOR, button_color=BG_HOVER_BUTTON, button_hover_color=BG_HOVER_BUTTON
+            )
+            self.table_scrollbar.pack(side="right", fill="y")
+            self.table_canvas.configure(yscrollcommand=self.table_scrollbar.set)
+            bind_mousewheel_scrolling(self.table_container, self.table_canvas)
 
+            # row interactions: the row under the pointer is computed from the pointer position
+            self.table_canvas.bind("<Motion>", self._on_mouse_motion)
+            self.table_canvas.bind("<Leave>", lambda _: self._set_hovered_row(None))
+            self.table_canvas.bind("<Button-1>", self._on_click)
+            self._hovered_row = None
+
+            # scaled geometry & font for canvas drawing (canvas items are not scaled by customtkinter)
+            scaling = customtkinter.ScalingTracker.get_widget_scaling(self.table_container)
+            self._column_widths = [round(w * scaling) for w in COLUMN_WIDTHS]
+            self._column_gap = round(COLUMN_GAP * scaling)
+            self._row_height = round(ROW_HEIGHT * scaling)
+            self._row_pitch = self._row_height + round(ROW_GAP * scaling)
+            self._table_width = sum(self._column_widths) + self._column_gap * (len(self._column_widths) - 1)
+            self._text_padding = round(8 * scaling)
+            self.row_font = tkinter.font.Font(family=constants.FONT_FAMILY, size=-round(14 * scaling))
+            # measuring text is slow (a few ms per call on some systems): bound & cache measures
+            self._wide_char_width = self.row_font.measure("W")
+            self._fit_text_cache = {}
+
+            # all rows: dicts with 'secret', 'category', 'label' (lowercase, for search) & 'values' (cell texts)
             self.secret_rows = []
+            # rows currently displayed (filtered), in display order
+            self.visible_rows = []
 
             self.place(relx=1.0, rely=0.5, anchor="e")
 
@@ -80,64 +164,123 @@ class FrameSeedkeeperListSecrets(customtkinter.CTkFrame):
             logger.error(error_msg, exc_info=True)
 
     def update_frame(self, secret_headers):
+        self.secret_rows = []
+        for secret in secret_headers:
+            values = [str(secret['id']), get_secret_type_name(secret), str(secret.get('label', ""))]
+            self.secret_rows.append({
+                'secret': secret,
+                'category': get_secret_category(secret),
+                'label': values[2].lower(),
+                # cell texts: type & label shortened with an ellipsis to fit their column (ids always fit)
+                'values': [values[0]] + [self._fit_text(value, width - 2 * self._text_padding)
+                                         for value, width in zip(values[1:], self._column_widths[1:])],
+            })
+        logger.debug(f"Rows created for {len(self.secret_rows)} secrets")
 
-        # def _on_mouse_on_secret(event, buttons):
-        #     for button in buttons:
-        #         button.configure(fg_color=HIGHLIGHT_COLOR, cursor="hand2")
-        #
-        # def _on_mouse_out_secret(event, buttons):
-        #     for button in buttons:
-        #         button.configure(fg_color=button.default_color)
-
-        # clear rows
-        if len(self.secret_rows)>0:
-            for i, row in enumerate(self.secret_rows):
-                self.secret_rows[i].destroy()
-            self.secret_rows=[]
-
-        # Create rows of labels with alternating colors
-        #rely = 0.3
-        for i, secret in enumerate(secret_headers):
-            try:
-                #rely += 0.06
-                row_frame = customtkinter.CTkFrame(
-                    self.table_frame, width=750,
-                    bg_color=DEFAULT_BG_COLOR,
-                    fg_color=DEFAULT_BG_COLOR
-                )
-                row_frame.pack(pady=2, fill="x")
-
-                fg_color = DEFAULT_BG_COLOR if i % 2 == 0 else BG_HOVER_BUTTON
-                text_color = TEXT_COLOR if i % 2 == 0 else BUTTON_TEXT_COLOR
-
-                #buttons = []
-                secret_type = None
-                if secret['type'] == TYPE_MASTERSEED and secret['subtype'] == 0x01:
-                    secret_type = "Mnemonic"
-                else:
-                    secret_type = TYPE_DIC.get(secret['type'], "Unknown type")
-                values = [secret['id'], secret_type, secret['label']]
-                for value, width in zip(values, self.header_widths):
-                    cell_button = customtkinter.CTkButton(
-                        row_frame, text=value,
-                        text_color=text_color, fg_color=fg_color,
-                        font=customtkinter.CTkFont(size=14, family=constants.FONT_FAMILY),
-                        hover_color=HIGHLIGHT_COLOR, corner_radius=0, width=width
-                    )
-                    cell_button.default_color = fg_color  # Store the default color
-                    cell_button.pack(side='left', expand=True, fill="both")
-                    #cell_button.bind("<Enter>", lambda event, btns=buttons: _on_mouse_on_secret(event, btns))
-                    #cell_button.bind("<Leave>", lambda event, btns=buttons: _on_mouse_out_secret(event, btns))
-                    cell_button.configure(command=lambda s=secret: self.master.show_seedkeeper_secret(s))
-                    #buttons.append(cell_button)
-
-                # add row to list (keep ref to destroy them on card removal)
-                self.secret_rows += [row_frame]
-
-                logger.debug(f"Row created for secret ID: {secret['id']}")
-            except Exception as e:
-                logger.error(f"Error creating row for secret {secret['id']}: {str(e)}")
+        self.apply_filter(force=True)
 
         # update status flag
         # todo detect changes in secret_headers to update list when needed
         self.master.seedkeeper_secret_headers_need_update = False
+
+    def _schedule_filter(self):
+        # debounce: filter once the user pauses typing
+        if self._search_after_id is not None:
+            self.after_cancel(self._search_after_id)
+        self._search_after_id = self.after(SEARCH_DEBOUNCE_MS, self.apply_filter)
+
+    def apply_filter(self, force=False):
+        # show only rows matching the selected type and containing the search text in their label
+        self._search_after_id = None
+        search_text = self.search_var.get().strip().lower()
+        category = self.type_var.get()
+        visible_rows = [
+            row for row in self.secret_rows
+            if (category == FILTER_ALL or row['category'] == category) and search_text in row['label']
+        ]
+        if not force and visible_rows == self.visible_rows:
+            return  # nothing changed, avoid useless redraw
+        self.visible_rows = visible_rows
+        self._draw_rows()
+
+    def _get_row_colors(self, index):
+        # alternating colors: (background, text)
+        if index % 2 == 0:
+            return DEFAULT_BG_COLOR, TEXT_COLOR
+        return BG_HOVER_BUTTON, BUTTON_TEXT_COLOR
+
+    def _draw_rows(self):
+        canvas = self.table_canvas
+        canvas.delete("all")
+        self._hovered_row = None
+        canvas.configure(cursor="")
+
+        for index, row in enumerate(self.visible_rows):
+            fg_color, text_color = self._get_row_colors(index)
+            y0 = index * self._row_pitch + (self._row_pitch - self._row_height) // 2
+            y1 = y0 + self._row_height
+            x0 = 0
+            for value, width in zip(row['values'], self._column_widths):
+                canvas.create_rectangle(x0, y0, x0 + width, y1, fill=fg_color, outline="", tags=f"bg{index}")
+                canvas.create_text(
+                    x0 + width / 2, (y0 + y1) / 2, text=value, fill=text_color, font=self.row_font
+                )
+                x0 += width + self._column_gap
+
+        if not self.visible_rows:
+            message = "No secret matches the search." if self.secret_rows else "No secret stored on the card."
+            canvas.create_text(
+                self._table_width / 2, 3 * self._row_height, text=message, fill=TEXT_COLOR, font=self.row_font
+            )
+
+        canvas.configure(scrollregion=(0, 0, self._table_width, len(self.visible_rows) * self._row_pitch))
+        # go back to the top of the list, as the previous position may be out of range
+        canvas.yview_moveto(0)
+
+    def _fit_text(self, text: str, max_width: int) -> str:
+        # shorten text with an ellipsis so that it fits in max_width pixels
+        if len(text) * self._wide_char_width <= max_width:
+            return text  # short text fits for sure, no need to measure it
+        key = (text, max_width)
+        if key not in self._fit_text_cache:
+            self._fit_text_cache[key] = self._shorten_text(text, max_width)
+        return self._fit_text_cache[key]
+
+    def _shorten_text(self, text: str, max_width: int) -> str:
+        if self.row_font.measure(text) <= max_width:
+            return text
+        low, high = 0, len(text)
+        while low < high:
+            middle = (low + high + 1) // 2
+            if self.row_font.measure(text[:middle] + "…") <= max_width:
+                low = middle
+            else:
+                high = middle - 1
+        return text[:low] + "…"
+
+    def _get_row_index_at(self, x, y):
+        # index of the visible row at widget coordinates (x, y), or None
+        canvas_y = self.table_canvas.canvasy(y)
+        if x < 0 or x > self._table_width or canvas_y < 0:
+            return None
+        index = int(canvas_y // self._row_pitch)
+        return index if index < len(self.visible_rows) else None
+
+    def _set_hovered_row(self, index):
+        # highlight the row under the pointer
+        if index == self._hovered_row:
+            return
+        if self._hovered_row is not None:
+            self.table_canvas.itemconfigure(f"bg{self._hovered_row}", fill=self._get_row_colors(self._hovered_row)[0])
+        if index is not None:
+            self.table_canvas.itemconfigure(f"bg{index}", fill=HIGHLIGHT_COLOR)
+        self.table_canvas.configure(cursor="hand2" if index is not None else "")
+        self._hovered_row = index
+
+    def _on_mouse_motion(self, event):
+        self._set_hovered_row(self._get_row_index_at(event.x, event.y))
+
+    def _on_click(self, event):
+        index = self._get_row_index_at(event.x, event.y)
+        if index is not None:
+            self.master.show_seedkeeper_secret(self.visible_rows[index]['secret'])

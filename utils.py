@@ -149,6 +149,45 @@ def clear_copied_from_clipboard(root):
     _clipboard_state["text"] = None
 
 
+# scrollable areas (container, canvas) handled by the mouse wheel dispatcher below
+_mousewheel_scroll_areas = []
+
+
+def bind_mousewheel_scrolling(container, canvas):
+    # Scroll canvas with the mouse wheel while the pointer is over container.
+    # A single application-wide handler dispatches events to the area under the pointer, since
+    # bind_all() is global: binding it per area would make the last created area grab all events.
+    # Linux (X11, Tk 8.6) sends <Button-4>/<Button-5> instead of <MouseWheel>.
+    _mousewheel_scroll_areas.append((container, canvas))
+    canvas.bind_all("<MouseWheel>", _on_mousewheel)  # bind_all is not allowed on customtkinter widgets
+    canvas.bind_all("<Button-4>", _on_mousewheel)  # bind_all is not allowed on customtkinter widgets
+    canvas.bind_all("<Button-5>", _on_mousewheel)  # bind_all is not allowed on customtkinter widgets
+
+
+def _on_mousewheel(event):
+    # forget destroyed areas
+    _mousewheel_scroll_areas[:] = [area for area in _mousewheel_scroll_areas if area[0].winfo_exists()]
+    for container, canvas in _mousewheel_scroll_areas:
+        if not container.winfo_ismapped():
+            continue
+        try:
+            widget_under_pointer = container.winfo_containing(event.x_root, event.y_root)
+        except KeyError:  # pointer over a widget unknown to tkinter (e.g. Tk internal)
+            continue
+        path = str(widget_under_pointer) if widget_under_pointer is not None else ""
+        if path != str(container) and not path.startswith(str(container) + "."):
+            continue
+        # check if there's actually something to scroll
+        bbox = canvas.bbox("all")
+        if bbox is None or bbox[3] <= canvas.winfo_height():
+            return
+        if event.num == 4 or event.delta > 0:
+            canvas.yview_scroll(-1, "units")
+        elif event.num == 5 or event.delta < 0:
+            canvas.yview_scroll(1, "units")
+        return
+
+
 def create_icon_button(master, anchor_widget, icon_name: str, command=None, bg_color="whitesmoke"):
     # small icon button, placed just right of anchor_widget (hidden whenever anchor_widget is hidden)
     icon = convert_name_to_photo_image(icon_name, 24, 24)

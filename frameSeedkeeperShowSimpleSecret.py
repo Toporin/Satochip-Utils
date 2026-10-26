@@ -5,7 +5,7 @@ from constants import TYPE_DIC
 from framePopup import FramePopup
 from frameWidgetHeader import FrameWidgetHeader
 from utils import show_qr_code, create_qr_button, create_copy_button, copy_to_clipboard, \
-    toggle_entry_visibility, toggle_textbox_visibility, update_textbox, update_entry, make_textbox_readonly
+    set_textbox_visibility, update_entry, make_textbox_readonly
 
 logger = logging.getLogger(__name__)
 
@@ -64,9 +64,10 @@ class FrameSeedkeeperShowSecret(customtkinter.CTkFrame):
             )
             self.delete_button.place(relx=0.75, rely=0.95, anchor="e")
             # show
+            self.secret_visible = False  # secrets are hidden by default (#45)
             self.show_button = master.create_button(
-                text="Hide",
-                command= None, # will be updated in update
+                text="Show",
+                command=lambda: self.set_secret_visibility(not self.secret_visible),
                 frame=self
             )
             self.show_button.place(relx=0.95, rely=0.95, anchor="e")
@@ -76,6 +77,12 @@ class FrameSeedkeeperShowSecret(customtkinter.CTkFrame):
 
         except Exception as e:
             logger.error(f"FrameSeedkeeperShowSecret init error: {e}", exc_info=True)
+
+    def set_secret_visibility(self, visible: bool):
+        # show secret in plaintext or masked; the button proposes the opposite action
+        self.secret_visible = visible
+        set_textbox_visibility(self.secret_textbox, self.secret_decoded, visible)
+        self.show_button.configure(text="Hide" if visible else "Show")
 
     def update_frame(self, secret):
         logger.debug(f"update_frame() secret id: {secret.get('id')} type: {secret.get('type')}")
@@ -90,7 +97,7 @@ class FrameSeedkeeperShowSecret(customtkinter.CTkFrame):
         else:
             secret = self.master.controller.decode_secret(secret)
             secret_decoded = secret['secret_decoded']
-        update_textbox(self.secret_textbox, secret_decoded)
+        self.secret_decoded = secret_decoded  # used by set_secret_visibility()
 
         # qr-code & copy to clipboard (use decoded value, as the widget may be masked)
         self.secret_qr_button.configure(
@@ -100,14 +107,8 @@ class FrameSeedkeeperShowSecret(customtkinter.CTkFrame):
             command=lambda data=secret_decoded: copy_to_clipboard(self, data)
         )
 
-        self.show_button.configure(
-            command=lambda txt=secret_decoded: [
-                self.show_button.configure(
-                    text="Show" if self.show_button.cget("text") == "Hide" else "Hide"
-                ),
-                toggle_textbox_visibility(self.secret_textbox, txt),
-            ]
-        )
+        # secret is hidden by default
+        self.set_secret_visibility(False)
 
         # delete button
         self.delete_button.configure(

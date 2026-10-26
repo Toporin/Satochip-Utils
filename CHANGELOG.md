@@ -20,6 +20,7 @@ Fix Seedkeeper password details: the URL field was shown or hidden depending on 
 Fix "copy to clipboard" crashing on Linux when xclip/xsel is not installed: use the Tk clipboard instead of pyperclip (dependency removed).
 Add "copy to clipboard" icon buttons next to every QR code icon (Seedkeeper mnemonic, passphrase, password, login, URL and secret fields; Satodime private key and WIF).
 Clear data copied to the clipboard by the app after 30 seconds, and when the app is closed (only if the clipboard still holds that data).
+Seedkeeper secret details: secrets (mnemonic, passphrase, password, secret data) are now hidden by default; the bottom-right button shows "Show" and switches to "Hide" once the secret is displayed. The hidden state is reset each time a secret is opened (#45).
 Fix authenticity check displaying a stale result when a card was checked after a genuine one.
 Move label editing from the settings menus to the About screen, via a pen icon button next to the card label.
 Add NFC enable/disable screen with radio state selector and blocked-state warning, accessible via a switch icon button next to the NFC status on the About screen.

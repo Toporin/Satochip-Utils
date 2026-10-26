@@ -5,9 +5,9 @@ from constants import TYPE_MASTERSEED, TYPE_DIC
 from framePopup import FramePopup
 from frameWidgetHeader import FrameWidgetHeader
 from utils import (show_qr_code, create_qr_button, create_copy_button, copy_to_clipboard,
-                   toggle_entry_visibility, toggle_textbox_visibility,
+                   set_entry_visibility, set_textbox_visibility,
                    update_textbox, update_entry, make_textbox_readonly,
-                   mnemonic_to_entropy_string, reset_entry_visibility)
+                   mnemonic_to_entropy_string)
 
 logger = logging.getLogger(__name__)
 
@@ -104,9 +104,10 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
             self.seedqr_button.place(relx=0.75, rely=0.95, anchor="e")
 
             # show
+            self.secret_visible = False  # secrets are hidden by default (#45)
             self.show_button = master.create_button(
-                text="Hide",  # secret is shown by default
-                command=None,  # will be updated in update
+                text="Show",
+                command=lambda: self.set_secret_visibility(not self.secret_visible),
                 frame=self
             )
             self.show_button.place(relx=0.95, rely=0.95, anchor="e")
@@ -116,6 +117,13 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
 
         except Exception as e:
             logger.error(f"init error: {e}", exc_info=True)
+
+    def set_secret_visibility(self, visible: bool):
+        # show secret in plaintext or masked; the button proposes the opposite action
+        self.secret_visible = visible
+        set_textbox_visibility(self.mnemonic_textbox, self.mnemonic, visible)
+        set_entry_visibility(self.passphrase_entry, visible)
+        self.show_button.configure(text="Hide" if visible else "Show")
 
     def update_frame(self, secret):
         logger.debug(f"update_frame() start")
@@ -151,12 +159,11 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
             self.passphrase_label.place(relx=0.05, rely=self.passphrase_label_rely, anchor="nw")
             self.passphrase_entry.place(relx=0.05, rely=self.passphrase_entry_rely, anchor="nw")
             update_entry(self.passphrase_entry, passphrase)
-            reset_entry_visibility(self.passphrase_entry) # always show in plaintext to start
         # update master fingerprint (empty if export not allowed)
         update_entry(self.fingerprint_entry, secret.get('master_fingerprint', ""))
         # update mnemonic
         mnemonic = secret.get('mnemonic', "")
-        update_textbox(self.mnemonic_textbox, mnemonic)
+        self.mnemonic = mnemonic  # used by set_secret_visibility()
         # update descriptor
         descriptor = secret.get('descriptor', "")
         if descriptor == "":
@@ -186,16 +193,8 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
             command=lambda data=passphrase: copy_to_clipboard(self, data)
         )
 
-        # show/hide button
-        self.show_button.configure(
-            command=lambda txt=mnemonic: [
-                self.show_button.configure(
-                    text="Show" if self.show_button.cget("text") == "Hide" else "Hide"
-                ),
-                toggle_textbox_visibility(self.mnemonic_textbox, txt),
-                toggle_entry_visibility(self.passphrase_entry)
-            ]
-        )
+        # mnemonic & passphrase are hidden by default
+        self.set_secret_visibility(False)
 
         # delete button
         self.delete_button.configure(

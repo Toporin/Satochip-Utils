@@ -3,7 +3,7 @@ import logging
 
 from framePopup import FramePopup
 from frameWidgetHeader import FrameWidgetHeader
-from utils import (toggle_entry_visibility, show_qr_code, create_qr_button, create_copy_button, copy_to_clipboard,
+from utils import (set_entry_visibility, show_qr_code, create_qr_button, create_copy_button, copy_to_clipboard,
                    update_entry)
 
 logger = logging.getLogger(__name__)
@@ -85,9 +85,10 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
             )
             self.delete_button.place(relx=0.75, rely=0.95, anchor="e")
             # show
+            self.secret_visible = False  # secrets are hidden by default (#45)
             self.show_button = master.create_button(
-                text="Hide",
-                command=None,  # will be updated in update
+                text="Show",
+                command=lambda: self.set_secret_visibility(not self.secret_visible),
                 frame=self
             )
             self.show_button.place(relx=0.95, rely=0.95, anchor="e")
@@ -96,6 +97,12 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
 
         except Exception as e:
             logger.error(f"init error: {e}", exc_info=True)
+
+    def set_secret_visibility(self, visible: bool):
+        # show secret in plaintext or masked; the button proposes the opposite action
+        self.secret_visible = visible
+        set_entry_visibility(self.password_entry, visible)
+        self.show_button.configure(text="Hide" if visible else "Show")
 
     def update_frame(self, secret):
         # Decode secret (if export allowed)
@@ -149,14 +156,8 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
             command=lambda data=password: copy_to_clipboard(self, data)
         )
 
-        self.show_button.configure(
-            command=lambda txt=password: [
-                self.show_button.configure(
-                    text="Show" if self.show_button.cget("text") == "Hide" else "Hide"
-                ),
-                toggle_entry_visibility(self.password_entry),
-            ]
-        )
+        # password is hidden by default
+        self.set_secret_visibility(False)
 
         # delete button
         self.delete_button.configure(

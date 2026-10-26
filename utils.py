@@ -39,37 +39,14 @@ def get_fingerprint_from_authentikey_bytes(authentikey_bytes):
     return fingerprint
 
 
-def toggle_entry_visibility(entry: customtkinter.CTkEntry):
-    try:
-        current_state = entry.cget("show")
-        new_state = "" if current_state == "*" else "*"
-        entry.configure(show=new_state)
-    except Exception as e:
-        logger.error(f"Error toggling passphrase visibility: {e}", exc_info=True)
+def set_entry_visibility(entry: customtkinter.CTkEntry, visible: bool):
+    # mask entry content with '*' when not visible
+    entry.configure(show="" if visible else "*")
 
-def reset_entry_visibility(entry: customtkinter.CTkEntry):
-    try:
-        new_state = ""
-        entry.configure(show=new_state)
-    except Exception as e:
-        logger.error(f"Error toggling passphrase visibility: {e}", exc_info=True)
 
-def toggle_textbox_visibility(textbox: customtkinter.CTkTextbox, original_text):
-    try:
-        textbox.configure(state='normal')
-        # get the current content of the textbox
-        current_text = textbox.get("1.0", "end-1c")
-
-        if current_text == '*' * len(original_text):
-            # Si la textbox contient uniquement des étoiles, afficher le texte original
-            textbox.delete("1.0", "end")
-            textbox.insert("1.0", original_text)
-        else:
-            # Sinon, masquer le texte avec des étoiles
-            textbox.delete("1.0", "end")
-            textbox.insert("1.0", '*' * len(original_text))
-    except Exception as e:
-        logger.error(f"018 Error toggling mnemonic visibility: {e}", exc_info=True)
+def set_textbox_visibility(textbox: customtkinter.CTkTextbox, text: str, visible: bool):
+    # CTkTextbox has no 'show' option: replace content with '*' when not visible
+    update_textbox(textbox, text if visible else '*' * len(text))
 
 
 def update_textbox(textbox: customtkinter.CTkTextbox, new_text):

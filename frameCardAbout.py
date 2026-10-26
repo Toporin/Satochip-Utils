@@ -81,7 +81,7 @@ class FrameCardAbout(customtkinter.CTkFrame):
                 border_spacing=0,
                 image=convert_name_to_photo_image("edit_label_popup.jpg", 28, 28),
                 bg_color="whitesmoke", fg_color="whitesmoke",
-                hover_color="whitesmoke", cursor="hand2",
+                hover_color="whitesmoke",
                 command=lambda: master.show_edit_label_frame(return_callback=master.show_about_frame)
             )
             self.edit_label_button.place(relx=0.05, rely=rely, anchor="nw")
@@ -94,7 +94,7 @@ class FrameCardAbout(customtkinter.CTkFrame):
                 border_spacing=0,
                 image=convert_name_to_photo_image("edit_label_popup.jpg", 28, 28),
                 bg_color="whitesmoke", fg_color="whitesmoke",
-                hover_color="whitesmoke", cursor="hand2",
+                hover_color="whitesmoke",
                 command=lambda: master.show_switch_nfc_frame(return_callback=master.show_about_frame)
             )
             self.switch_nfc_button.place(relx=0.05, rely=rely, anchor="nw")
@@ -107,7 +107,7 @@ class FrameCardAbout(customtkinter.CTkFrame):
                 border_spacing=0,
                 image=convert_name_to_photo_image("edit_label_popup.jpg", 28, 28),
                 bg_color="whitesmoke", fg_color="whitesmoke",
-                hover_color="whitesmoke", cursor="hand2",
+                hover_color="whitesmoke",
                 command=lambda: master.show_configure_ndef_frame(return_callback=master.show_about_frame)
             )
             self.configure_ndef_button.place(relx=0.05, rely=rely, anchor="nw")
@@ -134,7 +134,7 @@ class FrameCardAbout(customtkinter.CTkFrame):
                 border_spacing=0,
                 image=self.seed_button_pen_icon,
                 bg_color="whitesmoke", fg_color="whitesmoke",
-                hover_color="whitesmoke", cursor="hand2",
+                hover_color="whitesmoke",
                 command=lambda: None  # updated in update_frame()
             )
             self.satochip_seeded = master.create_label("Card seeded", frame=self)  # updated later
@@ -189,10 +189,7 @@ class FrameCardAbout(customtkinter.CTkFrame):
 
             # ndef button (depends on card type & version only)
             ndef_supported = self.master.controller.is_ndef_supported(protocol_version)
-            self.configure_ndef_button.configure(
-                state="normal" if ndef_supported else "disabled",
-                cursor="hand2" if ndef_supported else "arrow"
-            )
+            self.configure_ndef_button.configure(state="normal" if ndef_supported else "disabled")
 
             # requires PIN (or satodime)
 

@@ -17,6 +17,7 @@ Satodime: add a refresh button at the end of the "Balance" row (overview and vau
 Satodime: remove the "Buy" button (Paybis) from the sealed vault screen.
 Fix the app hanging for several seconds when closing (e.g. after opening Satodime vault screens): the window is now hidden and the app exits without destroying each widget, and the card is disconnected without updating the closing UI.
 Satodime: when no block explorer link is available for a vault (e.g. explorer request failed), the "open in explorer" button is greyed out and disabled, with an "Explorer link not available" tooltip, instead of trying to open an invalid link.
+Show a hand cursor over every clickable button, checkbox, radio button, tab and dropdown menu on Linux too (as on Windows and macOS), and an arrow cursor over disabled ones.
 Fix Seedkeeper secret details screens: output fields are now read-only (selection and copy to clipboard still work) (#47).
 Fix large QR codes not fitting on screen: Seedkeeper "QR code" and "SeedQR" buttons now open the QR code in a popup, scaled to fit the screen (#48).
 Add QR code buttons next to the Satodime vault "Private key:" and "WIF:" labels, showing the key as a QR code in a popup (#36).

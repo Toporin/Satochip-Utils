@@ -56,7 +56,7 @@ from frameSeedkeeperShowPassword import FrameSeedkeeperShowPasswordSecret
 from frameSeedkeeperShowSimpleSecret import FrameSeedkeeperShowSecret
 from frameStart import FrameStart
 from frameWelcome import FrameWelcome
-from utils import clear_copied_from_clipboard
+from utils import clear_copied_from_clipboard, enable_hand_cursor_on_linux
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +83,8 @@ class View(customtkinter.CTk):
             # the OS appearance and macOS dark mode flips default text colors to near-white,
             # making labels invisible (issue #51).
             customtkinter.set_appearance_mode("light")
+            # hand cursor over clickable widgets on Linux too (must be done before creating widgets)
+            enable_hand_cursor_on_linux()
             super().__init__()
 
             self._resolve_font_family()
@@ -345,7 +347,7 @@ class View(customtkinter.CTk):
             width=120, height=35, corner_radius=100,
             font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=18, weight="normal"),
             bg_color='white', fg_color=MAIN_MENU_COLOR,
-            hover_color=HOVER_COLOR, cursor="hand2",
+            hover_color=HOVER_COLOR,
             command=command)
         return button
 
@@ -376,7 +378,6 @@ class View(customtkinter.CTk):
             fg_color=BG_MAIN_MENU,
             hover_color=BG_MAIN_MENU,
             compound="left",
-            cursor="hand2",
             command=command,
             state=state,
             anchor="w"
@@ -442,6 +443,7 @@ class View(customtkinter.CTk):
             font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=13, weight="normal"),
             dropdown_font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=13, weight="normal"),
             corner_radius=10,  # Même rayon de coin que les entrées
+            cursor="hand2",
         )
         return variable, option_menu
 

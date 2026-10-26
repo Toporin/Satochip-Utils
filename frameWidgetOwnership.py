@@ -53,7 +53,7 @@ class FrameWidgetOwnership(customtkinter.CTkFrame):
             font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=18, weight="normal"),
             border_spacing=0,
             bg_color=bg_color, fg_color=MAIN_MENU_COLOR,
-            hover_color=HOVER_COLOR, cursor="hand2",
+            hover_color=HOVER_COLOR,
             command=lambda: None  # updated later
         )
         self.ownership_button.pack(pady=5, side='left', fill="both")  # pack(side='left', expand=True, fill="both")

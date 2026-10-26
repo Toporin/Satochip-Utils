@@ -68,6 +68,7 @@ class FrameSatodimeSealVault(customtkinter.CTkFrame):
                 dropdown_hover_color=BG_HOVER_BUTTON,  # Couleur au survol des options
                 dropdown_text_color="white",  # Couleur du texte des options
                 text_color="grey",  # Couleur du texte sélectionné
+                cursor="hand2",
                 font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=13, weight="normal"),
                 dropdown_font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=13, weight="normal"),
                 corner_radius=10,  # Même rayon de coin que les entrées

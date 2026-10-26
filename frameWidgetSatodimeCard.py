@@ -152,7 +152,7 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
                 border_spacing=0,
                 image=self.photo_image4,
                 bg_color=bg_color, fg_color=bg_color,
-                hover_color=bg_color, cursor="hand2",
+                hover_color=bg_color,
             )
             self.button_refresh.image = self.photo_image4  # keep a reference of image
 

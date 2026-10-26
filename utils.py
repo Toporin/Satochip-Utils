@@ -189,6 +189,30 @@ def _on_mousewheel(event):
         return
 
 
+def enable_hand_cursor_on_linux():
+    # customtkinter shows a hand cursor over enabled clickable widgets (buttons, checkboxes, radio buttons,
+    # switches) on Windows and macOS only: apply the same rule on Linux.
+    # _set_cursor() is called by customtkinter on init and whenever state or command changes,
+    # so disabled widgets automatically get the arrow cursor.
+    if not sys.platform.startswith("linux"):
+        return
+
+    def _set_cursor(widget):
+        if not widget._cursor_manipulation_enabled:
+            return
+        is_clickable = widget._state == tkinter.NORMAL
+        if isinstance(widget, customtkinter.CTkButton):
+            widget.configure(cursor="hand2" if is_clickable and widget._command is not None else "arrow")
+        else:
+            widget._canvas.configure(cursor="hand2" if is_clickable else "arrow")
+            if widget._text_label is not None:
+                widget._text_label.configure(cursor="hand2" if is_clickable else "arrow")
+
+    for widget_class in (customtkinter.CTkButton, customtkinter.CTkCheckBox,
+                         customtkinter.CTkRadioButton, customtkinter.CTkSwitch):
+        widget_class._set_cursor = _set_cursor
+
+
 def add_tooltip(widget, get_text):
     # Show a small tooltip near the pointer while hovering widget.
     # get_text() is called on each hover and returns the text to show, or None for no tooltip.
@@ -224,7 +248,7 @@ def create_icon_button(master, anchor_widget, icon_name: str, command=None, bg_c
         border_spacing=0,
         image=icon,
         bg_color=bg_color, fg_color=bg_color,
-        hover_color=bg_color, cursor="hand2",
+        hover_color=bg_color,
         command=command
     )
     button.place(in_=anchor_widget, relx=1.0, x=5, rely=0.5, anchor="w")

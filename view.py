@@ -222,14 +222,18 @@ class View(customtkinter.CTk):
             # Do not leave sensitive data copied by the app in the clipboard
             clear_copied_from_clipboard(self)
 
-            # Destruction de la fenêtre principale
-            self.destroy()
-            logger.debug("Main window destroyed")
-
-            # Déconnexion de la carte
+            # Disconnect the card without notifying the view (no UI update needed while closing)
             if self.controller.cc is not None:
+                self.controller.cc.client = None
                 self.controller.cc.card_disconnect()
                 logger.debug("Card disconnected successfully")
+
+            # Hide the window and leave the mainloop, the process then exits.
+            # Widgets are not destroyed one by one: with customtkinter, this takes several seconds
+            # when scrollbars are in hidden tabs (e.g. Satodime vault screens)
+            self.withdraw()
+            self.quit()
+            logger.debug("Main window closed")
         except Exception as e:
             logger.error(f"An unexpected error occurred in on_close: {e}", exc_info=True)
         logger.debug("OUT View.on_close")

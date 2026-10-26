@@ -1536,7 +1536,7 @@ class Controller:
                         # show popup then display vault
                         self.view.show(
                             "SUCCESS",
-                            f"Vault #{vault_nbr} sealed successfully!",
+                            f"Vault #{vault_nbr + 1} sealed successfully!",
                             "Ok",
                             self.view.show_satodime_vault(vault_nbr),
                             "./pictures_db/success_popup_green.png"
@@ -1548,7 +1548,7 @@ class Controller:
                     logger.warning(f"Exception in satodime_unseal_vault: {str(ex)}")
                     self.view.show(
                         "ERROR",
-                        f"Failed to seal vault #{vault_nbr} ({str(ex)})! \nYou may need to be the card owner to perform this operation.",
+                        f"Failed to seal vault #{vault_nbr + 1} ({str(ex)})! \nYou may need to be the card owner to perform this operation.",
                         "Ok",
                         None,
                         "./pictures_db/error_popup_red.png"

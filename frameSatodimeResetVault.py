@@ -102,7 +102,7 @@ class FrameSatodimeResetVault(customtkinter.CTkFrame):
         logger.debug(f"update_frame start vault_nbr: {vault_nbr}")
 
         # update header
-        self.header.button.configure(text=f"Reset vault #{vault_nbr}")
+        self.header.button.configure(text=f"Reset vault #{vault_nbr + 1}")
 
         # reset confirmation checkbox
         self.checkbox_confirmation_value.set(value="off")

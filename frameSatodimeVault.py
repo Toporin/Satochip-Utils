@@ -84,7 +84,7 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
         logger.debug(f"update_frame start satodime_vaults_info.size: {len(self.master.controller.satodime_vaults_info)}")
 
         # update header
-        self.header.button.configure(text=f"Vault #{vault_nbr}")
+        self.header.button.configure(text=f"Vault #{vault_nbr + 1}")
 
         # fetch cached vault info
         status_int = self.master.controller.satodime_vaults_status[vault_nbr]

@@ -125,7 +125,7 @@ class FrameSatodimeSealVault(customtkinter.CTkFrame):
         logger.debug(f"update_frame start vault_nbr: {vault_nbr}")
 
         # update header
-        self.header.button.configure(text=f"Seal vault #{vault_nbr}")
+        self.header.button.configure(text=f"Seal vault #{vault_nbr + 1}")
 
         def seal_vault():
             # update seal action buttons with vault number and expert mode parameters

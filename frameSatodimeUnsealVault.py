@@ -86,7 +86,7 @@ class FrameSatodimeUnsealVault(customtkinter.CTkFrame):
         logger.debug(f"update_frame start vault_nbr: {vault_nbr}")
 
         # update header
-        self.header.button.configure(text=f"Unseal vault #{vault_nbr}")
+        self.header.button.configure(text=f"Unseal vault #{vault_nbr + 1}")
 
         # fetch cached vault info
         status_int = self.master.controller.satodime_vaults_status[vault_nbr]

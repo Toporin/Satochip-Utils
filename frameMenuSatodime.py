@@ -57,7 +57,7 @@ class FrameMenuSatodime(customtkinter.CTkFrame):
             for vault_nbr in range(3): # TODO: currently max 3 vaults supported
                 button_vault = self.master.create_menu_button(
                     self,
-                    f"Vault #{vault_nbr}",
+                    f"Vault #{vault_nbr + 1}",
                     "shield_icon_white.png",
                     rely, 0.05,
                     state="normal",

@@ -189,6 +189,33 @@ def _on_mousewheel(event):
         return
 
 
+def add_tooltip(widget, get_text):
+    # Show a small tooltip near the pointer while hovering widget.
+    # get_text() is called on each hover and returns the text to show, or None for no tooltip.
+    tooltip = {"window": None}
+
+    def show(event):
+        text = get_text()
+        if not text or tooltip["window"] is not None:
+            return
+        window = tkinter.Toplevel(widget)
+        window.wm_overrideredirect(True)
+        window.wm_geometry(f"+{event.x_root + 12}+{event.y_root + 12}")
+        tkinter.Label(
+            window, text=text, bg="lightyellow", fg="black", relief="solid", borderwidth=1, padx=4, pady=2
+        ).pack()
+        tooltip["window"] = window
+
+    def hide(_event=None):
+        if tooltip["window"] is not None:
+            tooltip["window"].destroy()
+            tooltip["window"] = None
+
+    widget.bind("<Enter>", show, add="+")
+    widget.bind("<Leave>", hide, add="+")
+    widget.bind("<Destroy>", hide, add="+")
+
+
 def create_icon_button(master, anchor_widget, icon_name: str, command=None, bg_color="whitesmoke"):
     # small icon button, placed just right of anchor_widget (hidden whenever anchor_widget is hidden)
     icon = convert_name_to_photo_image(icon_name, 24, 24)

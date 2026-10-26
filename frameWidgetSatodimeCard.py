@@ -1,5 +1,6 @@
 import customtkinter
 import logging
+from typing import Optional
 from PIL import Image, ImageTk
 import webbrowser
 
@@ -7,7 +8,7 @@ import constants
 from constants import ICON_PATH, STATUS_DIC, STATUS_COLOR_DIC
 from framePopup import FramePopup
 from frameWidgetLabel import FrameWidgetLabel
-from utils import copy_to_clipboard
+from utils import copy_to_clipboard, add_tooltip
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +91,10 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
             self.image = Image.open(self.icon_path2)
             self.image = self.image.resize((24, 24), Image.LANCZOS)
             self.photo_image2 = ImageTk.PhotoImage(self.image)
+            # faded icon shown when no explorer url is available
+            faded_image = self.image.convert("RGBA")
+            faded_image.putalpha(faded_image.getchannel("A").point(lambda alpha: alpha * 0.3))
+            self.photo_image2_disabled = ImageTk.PhotoImage(faded_image)
             # create button
             self.button_explore = customtkinter.CTkButton(
                 self.address_frame, width=28, height=28, text="",
@@ -99,6 +104,10 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
                 hover_color=bg_color,
             )
             self.button_explore.image = self.photo_image2  # keep a reference of image
+            add_tooltip(
+                self.button_explore,
+                lambda: "Explorer link not available" if self.button_explore.cget("state") == "disabled" else None
+            )
             self.button_explore.grid(row=0, column=3, padx=0, pady=0)
 
             # button for qr code
@@ -156,7 +165,7 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
             blockchain: str,
             symbol: str,
             address: str,
-            url: str,
+            url: Optional[str],
             balance: str,
             balance2: str,
             on_refresh=None
@@ -168,7 +177,13 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
         self.status_value.configure(text=status_str, text_color=status_color)
         self.blockchain_value.configure(text=blockchain)
         self.address_value.configure(text=address, font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=15, weight="normal"))
-        self.button_explore.configure(command=lambda: webbrowser.open(url, new=2))
+        # explorer button is disabled (but kept in place, to keep icons aligned) if no url is available
+        if url:
+            self.button_explore.configure(
+                state="normal", image=self.photo_image2, command=lambda: webbrowser.open(url, new=2)
+            )
+        else:
+            self.button_explore.configure(state="disabled", image=self.photo_image2_disabled, command=None)
         self.button_copy.configure(command=lambda: copy_to_clipboard(self, address))
         self.update_balance(balance, balance2)
         if on_refresh is not None:

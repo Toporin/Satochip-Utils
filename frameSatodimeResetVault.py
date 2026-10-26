@@ -127,7 +127,7 @@ class FrameSatodimeResetVault(customtkinter.CTkFrame):
         # update balance
         coin_info = self.master.controller.satodime_vaults_coin_info[vault_nbr]
         (balance_str, balance2_str) = format_asset_balances(coin_info)
-        url = coin_info.get('address_explorer_url', 'no url available')
+        url = coin_info.get('address_explorer_url')
 
         logger.debug(f"update_frame update vaultcard for vault #{vault_nbr}")
         self.vaultcard.update_frame(

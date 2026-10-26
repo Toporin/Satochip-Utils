@@ -10,6 +10,8 @@ Fix invisible text labels on macOS when system dark mode is enabled by pinning l
 Fix garbled/clipped UI text on Tails OS: substitute an available system font when the "Outfit" font is not installed (#59).
 Show a clear error popup and exit cleanly when the PC/SC service (pcscd) is unavailable (#60).
 Fix Satodime vault reset possible without checking the confirmation checkbox (#40).
+Fix Satodime ownership status not refreshed when another card is inserted: the previous card's ownership (and unlock secret) was kept, so the new card showed "You are the owner" and vault operations failed (#43).
+Fix crash when inserting a Satodime with more vaults than the previously inserted one (vault data was not resized).
 Fix Seedkeeper secret details screens: output fields are now read-only (selection and copy to clipboard still work) (#47).
 Fix large QR codes not fitting on screen: Seedkeeper "QR code" and "SeedQR" buttons now open the QR code in a popup, scaled to fit the screen (#48).
 Add QR code buttons next to the Satodime vault "Private key:" and "WIF:" labels, showing the key as a QR code in a popup (#36).

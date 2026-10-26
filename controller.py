@@ -1301,6 +1301,10 @@ class Controller:
             logger.debug(f'In satodime_on_connect() self.satodime_nb_vaults: {self.satodime_nb_vaults}')
             logger.debug(f'In satodime_on_connect() self.satodime_vaults_status: {self.satodime_vaults_status}')
 
+            # reset ownership data cached in cc, as it may come from a previously inserted card (issue #43)
+            self.cc.satodime_set_unlock_secret([])
+            self.cc.satodime_set_unlock_counter(self.satodime_status['unlock_counter'])
+
             # get authentikey
             try:
                 self.authentikey = self.cc.card_export_authentikey()
@@ -1311,7 +1315,7 @@ class Controller:
                 if path.isfile(config_path):
                     config = ConfigParser()
                     config.read(config_path)
-                    if config.has_section('Satodime'):
+                    if config.has_option('Satodime', authentikey_comp_hex):
                         unlock_secret_hex = config.get('Satodime', authentikey_comp_hex)
                         unlock_secret = list(bytes.fromhex(unlock_secret_hex))
                         unlock_counter = self.satodime_status['unlock_counter']
@@ -1353,10 +1357,11 @@ class Controller:
     def satodime_vaults_get_info(self):
         logger.debug('In satodime_get_vaults_info()')
 
-        if self.satodime_vaults_info == []:
-            self.satodime_vaults_info = self.satodime_nb_vaults * [{}]
-            self.satodime_vaults_coin_info = self.satodime_nb_vaults * [{}]
-            self.satodime_vaults_asset_list = self.satodime_nb_vaults * [[]]
+        # (re)initialize vault data for the current card, as the number of vaults may differ
+        # from a previously inserted card
+        self.satodime_vaults_info = [{} for _ in range(self.satodime_nb_vaults)]
+        self.satodime_vaults_coin_info = [{} for _ in range(self.satodime_nb_vaults)]
+        self.satodime_vaults_asset_list = [[] for _ in range(self.satodime_nb_vaults)]
 
         logger.debug(f'In satodime_get_vaults_info() self.satodime_vaults_info: {self.satodime_vaults_info}')
         logger.debug(f'In satodime_get_vaults_info() self.satodime_nb_vaults: {self.satodime_nb_vaults}')

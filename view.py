@@ -664,7 +664,8 @@ class View(customtkinter.CTk):
                     self.secret_headers = None
                     self.seedkeeper_secret_headers_need_update = True
 
-                    # Satodime: reset vault content
+                    # Satodime: reset ownership data and vault content
+                    self.controller.cc.satodime_set_unlock_secret([])
                     self.satodime_vault_frames = None
                     self.satodime_overview_frame = None
 

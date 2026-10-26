@@ -105,6 +105,7 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
 
             # show
             self.secret_visible = False  # secrets are hidden by default (#45)
+            self.exportable = True  # updated in update_frame()
             self.show_button = master.create_button(
                 text="Show",
                 command=lambda: self.set_secret_visibility(not self.secret_visible),
@@ -120,10 +121,15 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
 
     def set_secret_visibility(self, visible: bool):
         # show secret in plaintext or masked; the button proposes the opposite action
+        # an 'export not allowed' message is not a secret: always shown, with show/hide button disabled
+        visible = visible or not self.exportable
         self.secret_visible = visible
         set_textbox_visibility(self.mnemonic_textbox, self.mnemonic, visible)
         set_entry_visibility(self.passphrase_entry, visible)
-        self.show_button.configure(text="Hide" if visible else "Show")
+        self.show_button.configure(
+            text="Hide" if visible and self.exportable else "Show",
+            state="normal" if self.exportable else "disabled"
+        )
 
     def update_frame(self, secret):
         logger.debug(f"update_frame() start")
@@ -140,6 +146,7 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
             self.header.button.configure(text=f"   {TYPE_DIC.get(secret.get('type'), 'Mnemonic')} details")
 
         # Decode secret to mnemonic (if export allowed)
+        self.exportable = (secret['export_rights'] != 0x02)
         if secret['export_rights'] == 0x02:
             secret['mnemonic'] = 'Export failed: export not allowed by SeedKeeper policy.'
         else:

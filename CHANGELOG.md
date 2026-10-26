@@ -23,6 +23,7 @@ Clear data copied to the clipboard by the app after 30 seconds, and when the app
 Seedkeeper secret details: secrets (mnemonic, passphrase, password, secret data) are now hidden by default; the bottom-right button shows "Show" and switches to "Hide" once the secret is displayed. The hidden state is reset each time a secret is opened (#45).
 Seedkeeper secret details: the "export not allowed" message is always displayed in plaintext, with the Show/Hide button disabled.
 Seedkeeper secret list: add a search field (filter by label) and a secret type filter (All, Mnemonic, Password, Descriptors, Data); the list updates as you type (#31).
+About screen: show the NDEF status (unsupported, disabled, dynamic or the actual NDEF content) and add a button to configure it. The new "Configure NDEF" screen can disable NDEF, set a URL, an Android app (AAR), a predefined choice, a raw hex NDEF or (Satodime only) a dynamic NDEF (#58).
 Seedkeeper secret list: draw the table on a single canvas, so that long lists display and filter instantly (displaying many secrets was very slow and could crash with an X BadAlloc error on Linux).
 Use the same canvas table for all lists (Seedkeeper card logs and backup result, Satocash balances, Satodime tokens/NFTs): long lists now display instantly. Satodime asset tables no longer duplicate their rows on each refresh, and their last rows are no longer cut off.
 Fix mouse wheel scrolling in lists: scrolling now works on Linux, and applies to the list under the pointer (the last created list used to capture all mouse wheel events).

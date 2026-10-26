@@ -11,7 +11,8 @@ from configparser import ConfigParser
 from os import urandom, path, getcwd
 from typing import Dict, Any, Optional
 from mnemonic import Mnemonic
-from pysatochip.CardConnector import (CardConnector, UninitializedSeedError, UnexpectedSW12Error, PinBlockedError)
+from pysatochip.CardConnector import (CardConnector, UninitializedSeedError, UnexpectedSW12Error, PinBlockedError,
+                                      UnsupportedFeatureError)
 from pysatochip.JCconstants import STATE_SEALED, STATE_UNSEALED, STATE_UNINITIALIZED, DIC_CODE_BY_ASSET, SIZE_CONTRACT, \
     SIZE_TOKENID, SIZE_DATA, SIZE_UNLOCK_COUNTER, SIZE_UNLOCK_SECRET
 from pycryptotools.coins import UnsupportedCoin, Bitcoin, BitcoinCash, Litecoin, Ethereum, EthereumClassic, \
@@ -19,8 +20,9 @@ from pycryptotools.coins import UnsupportedCoin, Bitcoin, BitcoinCash, Litecoin,
 
 from constants import INS_DIC, RES_DIC, TYPE_PASSWORD, TYPE_MASTERSEED, TYPE_DATA, TYPE_DESCRIPTOR, TYPE_PUBKEY, \
     TYPE_BIP39_MNEMONIC, TYPE_ELECTRUM_MNEMONIC, TYPE_2FA_SECRET, TYPE_DIC, DEBUG_ADDR, STATUS_DIC, STATUS_COLOR_DIC, \
-    COIN_DICT
-from utils import get_config_path, get_master_fingerprint, bip39_mnemonic_to_seed, electrum_mnemonic_to_seed
+    COIN_DICT, NDEF_MIN_PROTOCOL_VERSION, NDEF_POLICY_DISABLED, NDEF_POLICY_STATIC, NDEF_POLICY_DYNAMIC, NDEF_EMPTY_TAG
+from utils import get_config_path, get_master_fingerprint, bip39_mnemonic_to_seed, electrum_mnemonic_to_seed, \
+    ndef_describe
 
 logger = logging.getLogger(__name__)
 
@@ -237,6 +239,107 @@ class Controller:
         except Exception as e:
             logger.error(f"Failed to set NFC policy: {e}")
             self.view.show("ERROR", f"Failed to set NFC policy: {e}", "Ok", None,
+                           "./pictures_db/error_popup_red.png")
+
+    def is_ndef_supported(self, protocol_version=None):
+        """Check from the card type and version whether the card supports NDEF configuration"""
+        if not self.cc.card_present:
+            return False
+        min_version = NDEF_MIN_PROTOCOL_VERSION.get(self.cc.card_type)
+        if min_version is None:
+            return False
+        if protocol_version is None:
+            response, sw1, sw2, card_status = self.cc.card_get_status()
+            protocol_version = card_status.get('protocol_version', 0)
+        return protocol_version >= min_version
+
+    def get_card_ndef_status(self, protocol_version=None):
+        """
+        Returns (status, description) where status is 'unsupported', 'disabled', 'dynamic', 'enabled' or 'error'.
+        For Satochip, Seedkeeper and Satocash, the PIN must be verified beforehand.
+        """
+        if not self.is_ndef_supported(protocol_version):
+            return "unsupported", None
+        try:
+            if self.cc.card_type == "Satodime":
+                response, sw1, sw2, ndef_policy, ndef_bytes = self.cc.card_get_ndef_v2()
+                if ndef_policy == NDEF_POLICY_DISABLED:
+                    return "disabled", None
+                elif ndef_policy == NDEF_POLICY_DYNAMIC:
+                    return "dynamic", None
+            else:
+                response, sw1, sw2, ndef_bytes = self.cc.card_get_ndef()
+                if sw1 == 0x6D and sw2 == 0x00:
+                    return "unsupported", None
+                elif sw1 != 0x90 or sw2 != 0x00:
+                    return "error", f"code {hex(sw1 * 256 + sw2)}"
+            description = ndef_describe(ndef_bytes)
+            if description is None:
+                return "disabled", None
+            return "enabled", description
+        except UnsupportedFeatureError:
+            return "unsupported", None
+        except Exception as e:
+            logger.error(f"Failed to get NDEF: {e}", exc_info=True)
+            return "error", str(e)
+
+    def set_card_ndef(self, ndef_bytes, ndef_policy=NDEF_POLICY_STATIC, on_success=None):
+        """
+        Set the NDEF data file ([NLEN(2b) | NDEF message]) of the card.
+        ndef_policy is only used for Satodime (other cards are disabled by setting an empty NDEF tag).
+        """
+        try:
+            if not self.is_ndef_supported():
+                raise ValueError(f"NDEF is not supported by this {self.cc.card_type}")
+
+            if self.cc.card_type == "Satodime":
+                # disabled and dynamic policies do not use NDEF data
+                if ndef_policy != NDEF_POLICY_STATIC:
+                    ndef_bytes = b""
+                if len(ndef_bytes) > 255:
+                    raise ValueError(f"NDEF data too long ({len(ndef_bytes)} bytes, max 255 bytes)")
+                logger.debug(f"New NDEF to set: policy {ndef_policy} data {ndef_bytes.hex()}")
+                (response, sw1, sw2) = self.cc.card_set_ndef_v2(ndef_bytes, ndef_policy)
+                if sw1 == 0x90 and sw2 == 0x00:
+                    # the card increments the unlock counter on each NDEF update
+                    self.cc.satodime_increment_unlock_counter()
+            else:
+                if ndef_policy == NDEF_POLICY_DISABLED:
+                    ndef_bytes = NDEF_EMPTY_TAG
+                elif ndef_policy != NDEF_POLICY_STATIC:
+                    raise ValueError(f"Dynamic NDEF is not supported by {self.cc.card_type}")
+                if len(ndef_bytes) > 255:
+                    raise ValueError(f"NDEF data too long ({len(ndef_bytes)} bytes, max 255 bytes)")
+                logger.debug(f"New NDEF to set: {ndef_bytes.hex()}")
+                (response, sw1, sw2) = self.cc.card_set_ndef(ndef_bytes)
+
+            if sw1 == 0x90 and sw2 == 0x00:
+                logger.info("New NDEF set successfully")
+                self.view.show("SUCCESS",
+                               "New NDEF set successfully",
+                               "Ok", on_success if on_success else self.view.show_start_frame,
+                               "./pictures_db/success_popup_green.png")
+            elif sw1 == 0x9C and sw2 in (0x50, 0x51):
+                logger.warning(f"Failed to set NDEF: ownership required (code {hex(sw1 * 256 + sw2)})")
+                self.view.show("ERROR",
+                               f"Failed to set NDEF. Take the card ownership first (code {hex(sw1 * 256 + sw2)})",
+                               "Ok", None, "./pictures_db/error_popup_red.png")
+            elif sw1 == 0x9C and sw2 == 0x06:
+                logger.warning(f"Failed to set NDEF: PIN required (code {hex(sw1 * 256 + sw2)})")
+                self.view.show("ERROR", f"Failed to set NDEF: PIN required (code {hex(sw1 * 256 + sw2)})",
+                               "Ok", None, "./pictures_db/error_popup_red.png")
+            elif sw1 == 0x6D and sw2 == 0x00:
+                logger.warning(f"Failed to set NDEF: operation not supported (code {hex(sw1 * 256 + sw2)})")
+                self.view.show("ERROR", f"Failed to set NDEF: operation not supported (code {hex(sw1 * 256 + sw2)})",
+                               "Ok", None, "./pictures_db/error_popup_red.png")
+            else:
+                logger.warning(f"Failed to set NDEF (code {hex(sw1 * 256 + sw2)})")
+                self.view.show("ERROR", f"Failed to set NDEF (code {hex(sw1 * 256 + sw2)})", "Ok",
+                               None, "./pictures_db/error_popup_red.png")
+
+        except Exception as e:
+            logger.error(f"Failed to set NDEF: {e}")
+            self.view.show("ERROR", f"Failed to set NDEF: {e}", "Ok", None,
                            "./pictures_db/error_popup_red.png")
 
     def reset_seed(self, on_success=None):

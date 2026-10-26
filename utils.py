@@ -9,10 +9,11 @@ import logging
 import hashlib
 import hmac
 import tkinter
+import ndef
 from mnemonic import Mnemonic
 from pycryptotools.main import privtopub, bin_hash160
 
-from constants import COIN_DECIMALS_DICT, ICON_PATH, CLIPBOARD_CLEAR_DELAY
+from constants import COIN_DECIMALS_DICT, ICON_PATH, CLIPBOARD_CLEAR_DELAY, NDEF_EMPTY_TAG
 from framePopup import FramePopup
 
 logger = logging.getLogger(__name__)
@@ -349,3 +350,74 @@ def convert_name_to_photo_image(filename, sizex=25, sizey=25):
     image = image.resize((sizex, sizey), Image.LANCZOS)
     photo_image = customtkinter.CTkImage(image)
     return photo_image
+
+
+#####################
+# NDEF helpers
+
+NDEF_AAR_TYPE = "urn:nfc:ext:android.com:pkg"
+
+
+def ndef_encode_records(records) -> bytes:
+    """Encode NDEF records as an NDEF data file: [NLEN(2b) | NDEF message]"""
+    message = b"".join(ndef.message_encoder(records))
+    return len(message).to_bytes(2, byteorder="big") + message
+
+
+def ndef_encode_url(url: str) -> bytes:
+    url = url.strip()
+    if url == "":
+        raise ValueError("URL is empty")
+    return ndef_encode_records([ndef.UriRecord(url)])
+
+
+def ndef_encode_aar(package_name: str) -> bytes:
+    """Encode an Android Application Record (AAR)"""
+    package_name = package_name.strip()
+    if package_name == "":
+        raise ValueError("Android app name is empty")
+    return ndef_encode_records([ndef.Record(NDEF_AAR_TYPE, "", package_name.encode("utf8"))])
+
+
+def ndef_parse_raw(raw_hex: str) -> bytes:
+    """Parse a raw hex NDEF data file, which must start with the 2-byte NDEF message length"""
+    raw_hex = raw_hex.strip().replace(" ", "")
+    if raw_hex.lower().startswith("0x"):
+        raw_hex = raw_hex[2:]
+    try:
+        ndef_bytes = bytes.fromhex(raw_hex)
+    except ValueError:
+        raise ValueError("Raw NDEF is not a valid hex string")
+    if len(ndef_bytes) < 2 or int.from_bytes(ndef_bytes[0:2], byteorder="big") != len(ndef_bytes) - 2:
+        raise ValueError("Raw NDEF must start with the 2-byte length of the NDEF message")
+    return ndef_bytes
+
+
+def ndef_describe(ndef_bytes: bytes):
+    """Returns a human-readable description of an NDEF data file, or None if the NDEF is empty"""
+    ndef_bytes = bytes(ndef_bytes)
+    if len(ndef_bytes) < 2 or ndef_bytes == NDEF_EMPTY_TAG:
+        return None
+    nlen = int.from_bytes(ndef_bytes[0:2], byteorder="big")
+    message = ndef_bytes[2:2 + nlen]
+    if nlen == 0:
+        return None
+    try:
+        descriptions = []
+        for record in ndef.message_decoder(message):
+            if isinstance(record, ndef.UriRecord):
+                descriptions.append(f"URL: {record.iri}")
+            elif record.type == NDEF_AAR_TYPE:
+                descriptions.append(f"Android app: {bytes(record.data).decode('utf8', errors='replace')}")
+            elif isinstance(record, ndef.TextRecord):
+                descriptions.append(f"Text: {record.text}")
+            elif record.type == "" and len(record.data) == 0:
+                continue  # empty record
+            else:
+                descriptions.append(f"{record.type}: {bytes(record.data).hex()}")
+        if len(descriptions) == 0:
+            return None
+        return ", ".join(descriptions)
+    except Exception as ex:
+        logger.warning(f"Failed to decode NDEF data: {ex}")
+        return f"raw: {ndef_bytes.hex()}"

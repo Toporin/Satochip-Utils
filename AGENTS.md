@@ -19,7 +19,7 @@ License: GPLv3. Current version: `0.4.0-beta` (single source of truth in `versio
 - **Smart card communication**: `pysatochip` 0.18.5 (`CardConnector`, APDUs) on top of `pyscard` (PC/SC).
   Card insertion/removal is detected via pyscard's `CardMonitor`/`CardObserver`.
 - **Blockchains**: `pycryptotools` 0.3.1 (coin/address/explorer logic), `mnemonic` (BIP39).
-- **Misc**: `pyqrcode`, `cbor2` (Cashu token serialization).
+- **Misc**: `pyqrcode`, `cbor2` (Cashu token serialization), `ndeflib` (imported as `ndef`, NDEF record encoding).
 - **Packaging**: PyInstaller (`package/satochip_utils.spec`); pinned PyInstaller 6.7.0 on Linux,
   5.13.2 on Windows/macOS (Windows build recompiles the bootloader from source).
 - There is a local `.venv` (Python 3.12) at the repo root; system package `python3-pyscard`
@@ -48,7 +48,7 @@ Flat layout — all application modules live at the repo root (no Python package
 - `frame*.py` — one module per screen, each defining a `customtkinter.CTkFrame` subclass.
   Naming conventions:
   - `frameCard*` — card settings screens (setup PIN, change PIN, edit label, switch NFC,
-    authenticity, factory reset, about, import seed).
+    configure NDEF, authenticity, factory reset, about, import seed).
   - `frameMenu*` — left-hand navigation menus, one per card type/state (settings, no-card,
     Seedkeeper, Seedkeeper backup, Satodime, Satocash).
   - `frameSeedkeeper*` — secret generate/import/show/list, logs, backup screens.

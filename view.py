@@ -19,6 +19,7 @@ from controller import Controller
 from frameCardAbout import FrameCardAbout
 from frameCardAuthenticity import FrameCardAuthenticity
 from frameCardChangePin import FrameCardChangePin
+from frameCardConfigureNdef import FrameCardConfigureNdef
 from frameCardEditLabel import FrameCardEditLabel
 from frameCardFactoryReset import FrameCardFactoryReset
 from frameCardImportSeed import FrameCardImportSeed
@@ -105,6 +106,8 @@ class View(customtkinter.CTk):
             self.edit_label_return_callback = None
             self.switch_nfc_frame = None
             self.switch_nfc_return_callback = None
+            self.configure_ndef_frame = None
+            self.configure_ndef_return_callback = None
             self.reset_seed_frame = None
             self.reset_seed_return_callback = None
             self.change_pin_frame = None
@@ -803,6 +806,14 @@ class View(customtkinter.CTk):
         else:
             self.switch_nfc_frame.update_frame()
         self.switch_nfc_frame.tkraise()
+
+    def show_configure_ndef_frame(self, return_callback=None):
+        self.configure_ndef_return_callback = return_callback if return_callback else self.show_start_frame
+        if self.configure_ndef_frame is None:
+            self.configure_ndef_frame = FrameCardConfigureNdef(self)
+        else:
+            self.configure_ndef_frame.update_frame()
+        self.configure_ndef_frame.tkraise()
 
     def show_reset_seed_frame(self, return_callback=None):
         self.reset_seed_return_callback = return_callback if return_callback else self.show_start_frame

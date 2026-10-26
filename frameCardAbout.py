@@ -100,6 +100,19 @@ class FrameCardAbout(customtkinter.CTkFrame):
             self.switch_nfc_button.place(relx=0.05, rely=rely, anchor="nw")
             self.nfc = master.create_label(f"NFC status", frame=self)  # updated later
             self.nfc.place(relx=0.10, rely=rely, anchor="nw")
+            rely += 0.05
+            # NDEF (with configure button on the left, disabled if NDEF is not supported)
+            self.configure_ndef_button = customtkinter.CTkButton(
+                self, width=28, height=28, text="",
+                border_spacing=0,
+                image=convert_name_to_photo_image("edit_label_rounded.png", 28, 28),
+                bg_color="whitesmoke", fg_color="whitesmoke",
+                hover_color="whitesmoke", cursor="hand2",
+                command=lambda: master.show_configure_ndef_frame(return_callback=master.show_about_frame)
+            )
+            self.configure_ndef_button.place(relx=0.05, rely=rely, anchor="nw")
+            self.ndef = master.create_label(f"NDEF status", frame=self)  # updated later
+            self.ndef.place(relx=0.10, rely=rely, anchor="nw")
             rely += 0.08
 
             # TODO authentikey?
@@ -174,6 +187,13 @@ class FrameCardAbout(customtkinter.CTkFrame):
             else:
                 self.nfc.configure(text=f"NFC: [blocked]")
 
+            # ndef button (depends on card type & version only)
+            ndef_supported = self.master.controller.is_ndef_supported(protocol_version)
+            self.configure_ndef_button.configure(
+                state="normal" if ndef_supported else "disabled",
+                cursor="hand2" if ndef_supported else "arrow"
+            )
+
             # requires PIN (or satodime)
 
             if self.master.controller.cc.card_type == "Satodime" or self.master.controller.cc.is_pin_set():
@@ -186,10 +206,13 @@ class FrameCardAbout(customtkinter.CTkFrame):
 
                 is_authentic, txt_ca, txt_subca, txt_device, txt_error = self.master.controller.cc.card_verify_authenticity()
                 self.card_genuine.configure(text=f"Genuine: [YES]" if is_authentic else "Genuine: [NO]")
+
+                self.update_ndef_status(protocol_version)
             else:
                 # pin needed from user
                 self.card_label.configure(text=f"Label: [PIN required]")
                 self.card_genuine.configure(text=f"Genuine: [PIN required]")
+                self.ndef.configure(text="NDEF: [PIN required]" if ndef_supported else "NDEF: [unsupported]")
                 self.unlock_button.place(relx=0.65, rely=self.rely_button, anchor="nw")
 
             # card status
@@ -321,6 +344,20 @@ class FrameCardAbout(customtkinter.CTkFrame):
                     rely += 0.05
                 except Exception as ex:
                     logger.error(f"Error in satocash_get_status: {ex}", exc_info=True)
+
+    def update_ndef_status(self, protocol_version):
+        status, description = self.master.controller.get_card_ndef_status(protocol_version)
+        if description is not None and len(description) > 60:
+            description = description[:57] + "..."
+        if status == "enabled":
+            self.ndef.configure(text=f"NDEF: [{description}]")
+        elif status == "dynamic":
+            self.ndef.configure(text="NDEF: [dynamic]")
+        elif status == "error":
+            self.ndef.configure(text=f"NDEF: [error: {description}]")
+        else:
+            # unsupported or disabled
+            self.ndef.configure(text=f"NDEF: [{status}]")
 
     def update_forget_widgets(self):
         # satochip

@@ -18,6 +18,31 @@ ICON_PATH = "./pictures_db/"
 # Delay (in seconds) after which data copied to the clipboard by the app is cleared
 CLIPBOARD_CLEAR_DELAY = 30
 
+# NDEF support: minimum protocol version (major<<8 | minor) per card type
+NDEF_MIN_PROTOCOL_VERSION = {
+    "Satochip": 16,  # v0.16
+    "SeedKeeper": 2,  # v0.2
+    "Satodime": 2,  # v0.2
+    "Satocash": 1,  # v0.1
+}
+# NDEF policies (Satodime v0.2+ only, used with card_set_ndef_v2)
+NDEF_POLICY_DISABLED = 0x00
+NDEF_POLICY_STATIC = 0x01
+NDEF_POLICY_DYNAMIC = 0x02
+# NDEF data file stored in the card: [NLEN(2b) | NDEF message], empty tag disables NDEF
+NDEF_EMPTY_TAG = bytes.fromhex("0003D00000")
+# predefined NDEF choices: (name, type, value) with type "aar" (Android app) or "url"
+NDEF_PREDEFINED_LIST = [
+    ("Seedkeeper app", "aar", "org.satochip.seedkeeper"),
+    ("Satodime app", "aar", "org.satochip.satodimeapp"),
+    ("Satochip-Connect app", "aar", "io.satochip.walletconnect"),
+    ("Bitcoin-Keeper app", "aar", "io.hexawallet.bitcoinkeeper"),
+    ("Seedkeeper.io", "url", "https://seedkeeper.io/ndef"),
+    ("Satochip.io", "url", "https://satochip.io/ndef"),
+    ("Satodime.io", "url", "https://satodime.io/ndef"),
+    ("Satocash.io", "url", "https://satocash.io/ndef"),
+]
+
 # Preferred UI font family. Resolved at startup in View._resolve_font_family() against the
 # fonts available on the system: "Outfit" is kept when installed, otherwise the first available
 # substitute is used (DejaVu Sans ships with Tails/Debian, where Tk's own fallback for missing

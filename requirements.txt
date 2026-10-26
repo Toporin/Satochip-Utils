@@ -6,6 +6,7 @@ pyscard==2.3.1
 mnemonic==0.20
 pyqrcode~=1.2.1
 cbor2 # for cashu
+ndeflib==0.3.3
 #setuptools
 
 # For development: local pysatochip library in editable mode

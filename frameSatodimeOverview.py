@@ -8,7 +8,6 @@ from frameWidgetSatodimeCard import FrameWidgetSatodimeCard
 from utils import format_asset_balances
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameSatodimeOverview(customtkinter.CTkFrame):
@@ -67,6 +66,7 @@ class FrameSatodimeOverview(customtkinter.CTkFrame):
             url = ""
             balance_str = ""
             balance2_str = ""
+            on_refresh = None
         else:
             # update with cached vault info
             vault_info = self.master.controller.satodime_vaults_info[vault_nbr]
@@ -77,7 +77,8 @@ class FrameSatodimeOverview(customtkinter.CTkFrame):
             # update balance with cached coin info
             coin_info = self.master.controller.satodime_vaults_coin_info[vault_nbr]
             (balance_str, balance2_str) = format_asset_balances(coin_info)
-            url = coin_info.get('address_explorer_url', 'no url available')
+            url = coin_info.get('address_explorer_url')
+            on_refresh = lambda: self.master.refresh_satodime_vault_balance(vault_nbr)
 
         # update vault card
         # logger.debug(f"update_frame update vaultcard for vault #{vault_nbr}")
@@ -89,4 +90,5 @@ class FrameSatodimeOverview(customtkinter.CTkFrame):
             url=url,
             balance=balance_str,
             balance2=balance2_str,
+            on_refresh=on_refresh,
         )

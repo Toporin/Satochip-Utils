@@ -8,7 +8,6 @@ from applicationMode import ApplicationMode
 from constants import MAIN_MENU_COLOR, ICON_PATH
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 class FrameMenuSeedkeeperBackup(customtkinter.CTkFrame):
     def __init__(self, master):

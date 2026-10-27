@@ -4,11 +4,12 @@ import logging
 from constants import TYPE_MASTERSEED, TYPE_DIC
 from framePopup import FramePopup
 from frameWidgetHeader import FrameWidgetHeader
-from utils import (show_qr_code, toggle_entry_visibility, toggle_textbox_visibility, reset_qr_code,
-                   update_textbox, mnemonic_to_entropy_string, reset_entry_visibility)
+from utils import (show_qr_code, create_qr_button, create_copy_button, copy_to_clipboard,
+                   set_entry_visibility, set_textbox_visibility,
+                   update_textbox, update_entry, make_textbox_readonly,
+                   mnemonic_to_entropy_string)
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
@@ -38,15 +39,22 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
             # Create field for label
             self.label_label = master.create_label("Label:", frame=self)
             self.label_label.place(relx=0.05, rely=rely, anchor="nw")
+            # Create field for master fingerprint, on the same row as label (right-aligned with other fields)
+            self.fingerprint_label = master.create_label("Fingerprint:", frame=self)
+            self.fingerprint_label.place(relx=0.59, rely=rely, anchor="nw")
             rely += 0.05
-            self.label_entry = master.create_entry(frame=self)
+            self.label_entry = master.create_entry(width=385, frame=self)
             self.label_entry.place(relx=0.05, rely=rely, anchor="nw")
+            self.fingerprint_entry = master.create_entry(width=150, frame=self)
+            self.fingerprint_entry.place(relx=0.59, rely=rely, anchor="nw")
             rely += 0.08
 
             # Create passphrase field
             self.passphrase_label_rely = rely
             self.passphrase_label = master.create_label("Passphrase:", frame=self)
             self.passphrase_label.place(relx=0.05, rely=rely, anchor="nw")
+            self.passphrase_qr_button = create_qr_button(self, self.passphrase_label)  # command set in update_frame()
+            self.passphrase_copy_button = create_copy_button(self, self.passphrase_qr_button)  # command set in update_frame()
             rely += 0.05
             self.passphrase_entry_rely = rely
             self.passphrase_entry = master.create_entry(frame=self)
@@ -56,13 +64,13 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
             # Create mnemonic field
             self.mnemonic_label = master.create_label("Mnemonic:", frame=self)
             self.mnemonic_label.place(relx=0.05, rely=rely, anchor="nw")
+            self.mnemonic_qr_button = create_qr_button(self, self.mnemonic_label)  # command set in update_frame()
+            self.mnemonic_copy_button = create_copy_button(self, self.mnemonic_qr_button)  # command set in update_frame()
             rely += 0.05
             self.mnemonic_textbox = master.create_textbox(frame=self)
             self.mnemonic_textbox.place(relx=0.05, rely=rely, relheight=0.15, anchor="nw")
+            make_textbox_readonly(self.mnemonic_textbox)  # display-only, selection/copy kept
 
-            # qr label
-            self.qr_label = master.create_label("", frame=self)
-            self.qr_label.place(relx=0.8, rely=rely)
             rely += 0.16
 
             # Create descriptor field
@@ -73,6 +81,7 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
             self.descriptor_textbox_rely = rely
             self.descriptor_textbox = master.create_textbox(frame=self)
             self.descriptor_textbox.place(relx=0.05, rely=rely, relheight=0.20, anchor="nw")
+            make_textbox_readonly(self.descriptor_textbox)  # display-only, selection/copy kept
             # self.descriptor_box = FrameWidgetCustomTextbox(self, label="Secret:", content="MyContent", height=120)
             # self.descriptor_box.place(relx=0.0, rely=rely, anchor="nw")
 
@@ -84,7 +93,7 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
                 command=lambda: None,  # will be updated in update
                 frame=self
             )
-            self.delete_button.place(relx=0.35, rely=0.95, anchor="e")
+            self.delete_button.place(relx=0.55, rely=0.95, anchor="e")
 
             # seed_qr button #todo use icons on the side?
             self.seedqr_button = master.create_button(
@@ -92,20 +101,14 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
                 command=lambda: None,  # will be updated in update_frame()
                 frame=self
             )
-            self.seedqr_button.place(relx=0.55, rely=0.95, anchor="e")
-
-            # qr button #todo use icons on the side?
-            self.qr_button = master.create_button(
-                text="QR code",
-                command=lambda: None,  # will be updated in update_frame()
-                frame=self
-            )
-            self.qr_button.place(relx=0.75, rely=0.95, anchor="e")
+            self.seedqr_button.place(relx=0.75, rely=0.95, anchor="e")
 
             # show
+            self.secret_visible = False  # secrets are hidden by default (#45)
+            self.exportable = True  # updated in update_frame()
             self.show_button = master.create_button(
-                text="Hide",  # secret is shown by default
-                command=None,  # will be updated in update
+                text="Show",
+                command=lambda: self.set_secret_visibility(not self.secret_visible),
                 frame=self
             )
             self.show_button.place(relx=0.95, rely=0.95, anchor="e")
@@ -116,11 +119,22 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
         except Exception as e:
             logger.error(f"init error: {e}", exc_info=True)
 
+    def set_secret_visibility(self, visible: bool):
+        # show secret in plaintext or masked; the button proposes the opposite action
+        # an 'export not allowed' message is not a secret: always shown, with show/hide button disabled
+        visible = visible or not self.exportable
+        self.secret_visible = visible
+        set_textbox_visibility(self.mnemonic_textbox, self.mnemonic, visible)
+        set_entry_visibility(self.passphrase_entry, visible)
+        self.show_button.configure(
+            text="Hide" if visible and self.exportable else "Show",
+            state="normal" if self.exportable else "disabled"
+        )
+
     def update_frame(self, secret):
         logger.debug(f"update_frame() start")
         # update label
-        self.label_entry.delete(0, "end")
-        self.label_entry.insert(0, secret['label'])
+        update_entry(self.label_entry, secret['label'])
 
         # update header
         if secret.get('type') == TYPE_MASTERSEED:
@@ -132,6 +146,7 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
             self.header.button.configure(text=f"   {TYPE_DIC.get(secret.get('type'), 'Mnemonic')} details")
 
         # Decode secret to mnemonic (if export allowed)
+        self.exportable = (secret['export_rights'] != 0x02)
         if secret['export_rights'] == 0x02:
             secret['mnemonic'] = 'Export failed: export not allowed by SeedKeeper policy.'
         else:
@@ -150,12 +165,12 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
         else:
             self.passphrase_label.place(relx=0.05, rely=self.passphrase_label_rely, anchor="nw")
             self.passphrase_entry.place(relx=0.05, rely=self.passphrase_entry_rely, anchor="nw")
-            self.passphrase_entry.delete(0, "end")
-            self.passphrase_entry.insert(0, passphrase)
-            reset_entry_visibility(self.passphrase_entry) # always show in plaintext to start
+            update_entry(self.passphrase_entry, passphrase)
+        # update master fingerprint (empty if export not allowed)
+        update_entry(self.fingerprint_entry, secret.get('master_fingerprint', ""))
         # update mnemonic
         mnemonic = secret.get('mnemonic', "")
-        update_textbox(self.mnemonic_textbox, mnemonic)
+        self.mnemonic = mnemonic  # used by set_secret_visibility()
         # update descriptor
         descriptor = secret.get('descriptor', "")
         if descriptor == "":
@@ -167,26 +182,26 @@ class FrameSeedkeeperShowMnemonic(customtkinter.CTkFrame):
             update_textbox(self.descriptor_textbox, descriptor)
 
         # seedqr-code
-        reset_qr_code(self.qr_label)
         self.seedqr_button.configure(
-            command=lambda params=(mnemonic, self.qr_label): show_qr_code(mnemonic_to_entropy_string(params[0]), params[1])
+            command=lambda data=mnemonic: show_qr_code(mnemonic_to_entropy_string(data), self.master, "SeedQR")
         )
 
-        # qr-code
-        self.qr_button.configure(
-            command=lambda params=(mnemonic, self.qr_label): show_qr_code(params[0], params[1])
+        # qr-codes & copy to clipboard (use decoded values, as the widgets may be masked)
+        self.mnemonic_qr_button.configure(
+            command=lambda data=mnemonic: show_qr_code(data, self.master, "Mnemonic")
+        )
+        self.mnemonic_copy_button.configure(
+            command=lambda data=mnemonic: copy_to_clipboard(self, data)
+        )
+        self.passphrase_qr_button.configure(
+            command=lambda data=passphrase: show_qr_code(data, self.master, "Passphrase")
+        )
+        self.passphrase_copy_button.configure(
+            command=lambda data=passphrase: copy_to_clipboard(self, data)
         )
 
-        # show/hide button
-        self.show_button.configure(
-            command=lambda txt=mnemonic: [
-                self.show_button.configure(
-                    text="Show" if self.show_button.cget("text") == "Hide" else "Hide"
-                ),
-                toggle_textbox_visibility(self.mnemonic_textbox, txt),
-                toggle_entry_visibility(self.passphrase_entry)
-            ]
-        )
+        # mnemonic & passphrase are hidden by default
+        self.set_secret_visibility(False)
 
         # delete button
         self.delete_button.configure(

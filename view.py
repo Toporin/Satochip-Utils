@@ -2,6 +2,7 @@ import logging
 import sys
 import os
 import tkinter
+import tkinter.font
 from typing import Optional, Dict, Callable, Any, Tuple, SupportsIndex
 
 import customtkinter
@@ -11,16 +12,19 @@ from pysatochip.JCconstants import STATE_UNINITIALIZED
 
 from FrameSeedkeeperGenerateSecretSelectType import FrameSeedkeeperGenerateSecretSelectType
 from applicationMode import ApplicationMode
+import constants
 from constants import TYPE_PUBKEY, TYPE_DATA, TYPE_DESCRIPTOR, TYPE_2FA_SECRET, TYPE_ELECTRUM_MNEMONIC, \
     TYPE_BIP39_MNEMONIC, TYPE_MASTERSEED, TYPE_PASSWORD
 from controller import Controller
 from frameCardAbout import FrameCardAbout
 from frameCardAuthenticity import FrameCardAuthenticity
 from frameCardChangePin import FrameCardChangePin
+from frameCardConfigureNdef import FrameCardConfigureNdef
 from frameCardEditLabel import FrameCardEditLabel
 from frameCardFactoryReset import FrameCardFactoryReset
 from frameCardImportSeed import FrameCardImportSeed
 from frameCardSetupPin import FrameCardSetupPin
+from frameCardSwitchNfc import FrameCardSwitchNfc
 from frameMenuNoCard import FrameMenuNoCard
 from frameMenuSatocash import FrameMenuSatocash
 from frameMenuSatodime import FrameMenuSatodime
@@ -28,6 +32,7 @@ from frameMenuSeedkeeper import FrameMenuSeedkeeper
 from frameMenuSeedkeeperBackup import FrameMenuSeedkeeperBackup
 from frameMenuSettings import FrameMenuSettings
 from frameMenuSettingsSatodime import FrameMenuSettingsSatodime
+from frameSatochipResetSeed import FrameSatochipResetSeed
 from frameSatocashBalances import FrameSatocashBalances
 from frameSatocashExportTokenv4 import FrameSatocashExportTokenv4
 from frameSatocashImportTokenv4 import FrameSatocashImportTokenv4
@@ -51,18 +56,9 @@ from frameSeedkeeperShowPassword import FrameSeedkeeperShowPasswordSecret
 from frameSeedkeeperShowSimpleSecret import FrameSeedkeeperShowSecret
 from frameStart import FrameStart
 from frameWelcome import FrameWelcome
-
-if (len(sys.argv) >= 2) and (sys.argv[1] in ['-v', '--verbose']):
-    logging.basicConfig(level=logging.DEBUG,
-                        format='%(asctime)s - [%(filename)s:%(lineno)d] - %(levelname)s - %(name)s - %(funcName)s() - %(message)s',
-                        datefmt='%Y-%m-%d %H:%M:%S')
-else:
-    logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s - [%(filename)s:%(lineno)d] - %(levelname)s - %(name)s - %(funcName)s() - %(message)s',
-                        datefmt='%Y-%m-%d %H:%M:%S')
+from utils import clear_copied_from_clipboard, enable_hand_cursor_on_linux
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 # Constants
 BG_MAIN_MENU = "#21283b"
@@ -80,15 +76,18 @@ ICON_PATH = "./pictures_db/"
 
 
 class View(customtkinter.CTk):
-    def __init__(self, loop, loglevel=logging.INFO):
+    def __init__(self):
         try:
-            # logger.setLevel(loglevel)
-            logger.setLevel(logging.DEBUG)
-            logger.debug("Log level set to INFO")
             logger.info("Starting View.__init__()")
+            # The UI hardcodes light backgrounds everywhere; without this, customtkinter follows
+            # the OS appearance and macOS dark mode flips default text colors to near-white,
+            # making labels invisible (issue #51).
+            customtkinter.set_appearance_mode("light")
+            # hand cursor over clickable widgets on Linux too (must be done before creating widgets)
+            enable_hand_cursor_on_linux()
             super().__init__()
 
-            self.loop = loop
+            self._resolve_font_family()
 
             # frame declaration
             # these frames will be created when needed using show_* methods
@@ -106,6 +105,13 @@ class View(customtkinter.CTk):
             self.about_frame = None
             self.authenticity_frame = None
             self.edit_label_frame = None
+            self.edit_label_return_callback = None
+            self.switch_nfc_frame = None
+            self.switch_nfc_return_callback = None
+            self.configure_ndef_frame = None
+            self.configure_ndef_return_callback = None
+            self.reset_seed_frame = None
+            self.reset_seed_return_callback = None
             self.change_pin_frame = None
             self.seed_import_frame = None
             self.factory_reset_frame = None
@@ -153,19 +159,29 @@ class View(customtkinter.CTk):
             self.appMode = ApplicationMode.Normal
 
             # Initializing controller
-            self.controller = Controller(self, loglevel=loglevel)
+            self.controller = Controller(self)
 
             # Initializing main window
             self.main_window()
+
+            # widgets
+            self.icon_label = None  # popup icon+label called in different contexts todo: refactor
+            self.show_button = None  # popup button called in different contexts todo: refactor
+
+            if self.controller.cc is None:
+                # PC/SC smartcard service unavailable (e.g. pcscd not running): inform and exit
+                msg = ("Cannot connect to the smartcard service (PC/SC).\n\n"
+                       "On Linux, install and start it with:\n"
+                       "sudo apt install pcscd && sudo systemctl start pcscd\n\n"
+                       "Then restart Satochip-Utils.")
+                self.protocol("WM_DELETE_WINDOW", lambda: [self.destroy()])
+                self.show("Smartcard service unavailable", msg, button_txt="Exit", cmd=self.destroy)
+                return
 
             # Creating main frame
             self.main_frame = customtkinter.CTkFrame(self, width=1000, height=600, bg_color="white",
                                                      fg_color="white")
             self.main_frame.place(relx=0.5, rely=0.5, anchor="center")
-
-            # widgets
-            self.icon_label = None  # popup icon+label called in different contexts todo: refactor
-            self.show_button = None  # popup button called in different contexts todo: refactor
 
             # Launching initialization starting with welcome view
             self.nocard_menu_frame = FrameMenuNoCard(self)
@@ -205,13 +221,21 @@ class View(customtkinter.CTk):
     def on_close(self):
         logger.info("IN View.on_close : Closing App")
         try:
-            # Destruction de la fenêtre principale
-            self.destroy()
-            logger.debug("Main window destroyed")
+            # Do not leave sensitive data copied by the app in the clipboard
+            clear_copied_from_clipboard(self)
 
-            # Déconnexion de la carte
-            self.controller.cc.card_disconnect()
-            logger.debug("Card disconnected successfully")
+            # Disconnect the card without notifying the view (no UI update needed while closing)
+            if self.controller.cc is not None:
+                self.controller.cc.client = None
+                self.controller.cc.card_disconnect()
+                logger.debug("Card disconnected successfully")
+
+            # Hide the window and leave the mainloop, the process then exits.
+            # Widgets are not destroyed one by one: with customtkinter, this takes several seconds
+            # when scrollbars are in hidden tabs (e.g. Satodime vault screens)
+            self.withdraw()
+            self.quit()
+            logger.debug("Main window closed")
         except Exception as e:
             logger.error(f"An unexpected error occurred in on_close: {e}", exc_info=True)
         logger.debug("OUT View.on_close")
@@ -229,6 +253,22 @@ class View(customtkinter.CTk):
     #     image = image.resize((25, 25), Image.LANCZOS)
     #     photo_image = customtkinter.CTkImage(image)
     #     return photo_image
+
+    def _resolve_font_family(self):
+        """Pick a font family available on the system (fixes garbled text on Tails, issue #59)."""
+        try:
+            available = set(tkinter.font.families())
+            for family in [constants.FONT_FAMILY] + constants.FONT_FAMILY_SUBSTITUTES:
+                if family in available:
+                    constants.FONT_FAMILY = family
+                    break
+            else:
+                constants.FONT_FAMILY = "TkDefaultFont"
+            # customtkinter's theme default ("Roboto" on Linux) is missing on minimal systems too
+            customtkinter.ThemeManager.theme["CTkFont"]["family"] = constants.FONT_FAMILY
+            logger.info(f"UI font family set to '{constants.FONT_FAMILY}'")
+        except Exception as e:
+            logger.warning(f"Could not resolve system fonts, keeping '{constants.FONT_FAMILY}': {e}")
 
     @staticmethod
     def make_text_bold(size=18):
@@ -281,75 +321,6 @@ class View(customtkinter.CTk):
             fg_color=bg_fg_color)
         return new_frame
 
-    def _create_scrollable_frame(
-            self,
-            parent_frame,
-            width,
-            height,
-            x,
-            y
-    ) -> customtkinter.CTkFrame:
-        logger.info("_create_scrollable_frame start")
-
-        # Create a frame to hold the canvas and scrollbar
-        container = customtkinter.CTkFrame(parent_frame, width=width, height=height, fg_color=DEFAULT_BG_COLOR)
-        container.place(x=x, y=y)
-        container.pack_propagate(False)  # Prevent the frame from shrinking to fit its contents
-
-        # Create a canvas with specific dimensions
-        canvas = customtkinter.CTkCanvas(container, bg=DEFAULT_BG_COLOR, highlightthickness=0)
-        canvas.pack(side="left", fill="both", expand=True)
-
-        # Add a scrollbar to the canvas
-        scrollbar = customtkinter.CTkScrollbar(container, orientation="vertical", command=canvas.yview)
-        scrollbar.pack(side="right", fill="y")
-
-        # Configure scrollbar colors
-        # scrollbar.configure(fg_color=DEFAULT_BG_COLOR, button_color=DEFAULT_BG_COLOR,
-        #                    button_hover_color=BG_HOVER_BUTTON)
-        scrollbar.configure(fg_color=DEFAULT_BG_COLOR, button_color=BG_HOVER_BUTTON,
-                            button_hover_color=BG_HOVER_BUTTON)
-
-        # Configure the canvas
-        canvas.configure(yscrollcommand=scrollbar.set)
-
-        # Create a frame inside the canvas
-        inner_frame = customtkinter.CTkFrame(canvas, fg_color=DEFAULT_BG_COLOR)
-
-        # Add that frame to a window in the canvas
-        canvas_window = canvas.create_window((0, 0), window=inner_frame, anchor="nw")
-
-        def _configure_inner_frame(event):
-            # Update the scrollregion to encompass the inner frame
-            canvas.configure(scrollregion=canvas.bbox("all"))
-
-            # Resize the inner frame to fit the canvas width
-            canvas.itemconfig(canvas_window, width=canvas.winfo_width())
-
-        inner_frame.bind("<Configure>", _configure_inner_frame)
-
-        def _configure_canvas(event):
-            # Resize the inner frame to fit the canvas width
-            canvas.itemconfig(canvas_window, width=event.width)
-
-        canvas.bind("<Configure>", _configure_canvas)
-
-        def _on_mousewheel(event):
-            # Check if there's actually something to scroll
-            if canvas.bbox("all")[3] <= canvas.winfo_height():
-                return  # No scrolling needed, so do nothing
-
-            if event.delta > 0:
-                canvas.yview_scroll(-1, "units")
-            elif event.delta < 0:
-                canvas.yview_scroll(1, "units")
-
-        # Bind mouse wheel to the canvas
-        canvas.bind_all("<MouseWheel>", _on_mousewheel)
-
-        return inner_frame
-
-
     def create_label(self, text, bg_fg_color: str = "whitesmoke", frame=None) -> customtkinter.CTkLabel:
         # logger.debug("view.create_label start")
         label = customtkinter.CTkLabel(
@@ -358,7 +329,7 @@ class View(customtkinter.CTk):
             text_color="black",
             bg_color=bg_fg_color,
             fg_color=bg_fg_color,
-            font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal")
+            font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=18, weight="normal")
         )
         return label
 
@@ -374,9 +345,9 @@ class View(customtkinter.CTk):
             frame,
             text=text,
             width=120, height=35, corner_radius=100,
-            font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal"),
+            font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=18, weight="normal"),
             bg_color='white', fg_color=MAIN_MENU_COLOR,
-            hover_color=HOVER_COLOR, cursor="hand2",
+            hover_color=HOVER_COLOR,
             command=command)
         return button
 
@@ -391,7 +362,6 @@ class View(customtkinter.CTk):
             command: Optional[Callable] = None,
             text_color: str = 'white',
     ) -> Optional[customtkinter.CTkButton]:
-        # logger.info(f"001 Starting main menu button creation for '{button_label}'")
 
         icon_path = f"{ICON_PATH}{icon_name}"
         image = Image.open(icon_path)
@@ -402,13 +372,12 @@ class View(customtkinter.CTk):
             frame,
             text=button_label,
             text_color=text_color,
-            font=customtkinter.CTkFont(family="Outfit", weight="normal", size=18),
+            font=customtkinter.CTkFont(family=constants.FONT_FAMILY, weight="normal", size=18),
             image=photo_image,
             bg_color=BG_MAIN_MENU,
             fg_color=BG_MAIN_MENU,
             hover_color=BG_MAIN_MENU,
             compound="left",
-            cursor="hand2",
             command=command,
             state=state,
             anchor="w"
@@ -457,7 +426,7 @@ class View(customtkinter.CTk):
             width: int = 300,
 
     ) -> Tuple[tkinter.StringVar, CTkOptionMenu]:
-        logger.info(f"Creating option list with options: {options}")
+        logger.debug(f"Creating option list with options: {options}")
         variable = customtkinter.StringVar(value=default_value if default_value else options[0])
         option_menu = customtkinter.CTkOptionMenu(
             master=frame,
@@ -471,16 +440,17 @@ class View(customtkinter.CTk):
             dropdown_hover_color=BG_HOVER_BUTTON,  # Couleur au survol des options
             dropdown_text_color="white",  # Couleur du texte des options
             text_color="grey",  # Couleur du texte sélectionné
-            font=customtkinter.CTkFont(family="Outfit", size=13, weight="normal"),
-            dropdown_font=customtkinter.CTkFont(family="Outfit", size=13, weight="normal"),
+            font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=13, weight="normal"),
+            dropdown_font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=13, weight="normal"),
             corner_radius=10,  # Même rayon de coin que les entrées
+            cursor="hand2",
         )
         return variable, option_menu
 
     @staticmethod
     def create_background_photo(picture_path):
         try:
-            logger.info(f"create_background_photo method with path: {picture_path}")
+            logger.debug(f"create_background_photo method with path: {picture_path}")
             if getattr(sys, 'frozen', False):
                 application_path = sys._MEIPASS
                 logger.info(f"Running in a bundled application, application path: {application_path}")
@@ -512,7 +482,7 @@ class View(customtkinter.CTk):
 
     def show(self, title, msg: str, button_txt="Ok", cmd=None, icon_path=None):
         try:
-            logger.info(f"Show Popup  {title} {msg}")
+            logger.debug(f"Show Popup  {title} {msg}")
 
             # Création de la fenêtre popup
             popup = customtkinter.CTkToplevel(self)
@@ -548,14 +518,14 @@ class View(customtkinter.CTk):
                     image=icon,
                     text=f"\n{msg}",
                     compound='top',
-                    font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal")
+                    font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=18, weight="normal")
                 )
                 self.icon_label.pack(pady=(20, 10))  # Ajout d'un padding différent pour l'icône
                 logger.debug("Icon added to popup")
             else:
                 # Ajout d'un label dans le popup
                 label = customtkinter.CTkLabel(popup, text=msg,
-                                               font=customtkinter.CTkFont(family="Outfit", size=14, weight="bold"))
+                                               font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=14, weight="bold"))
                 label.pack(pady=20)
                 logger.debug("Label added to popup")
 
@@ -574,7 +544,7 @@ class View(customtkinter.CTk):
                 popup, text=button_txt, fg_color=MAIN_MENU_COLOR,
                 hover_color=HOVER_COLOR, bg_color='whitesmoke',
                 width=120, height=35, corner_radius=34,
-                font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal"),
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=18, weight="normal"),
                 command=lambda: close_and_execute()
             )
             self.show_button.pack(pady=20)
@@ -587,7 +557,7 @@ class View(customtkinter.CTk):
     """ MAIN MENU """
 
     def show_menu_frame(self):
-        logger.info("IN View.show_menu_frame start")
+        logger.debug("IN View.show_menu_frame start")
         if self.controller.cc.card_present:
             if self.controller.cc.card_type == "SeedKeeper" and self.controller.cc.setup_done:
                 self.show_seedkeeper_menu()
@@ -601,48 +571,46 @@ class View(customtkinter.CTk):
             self.show_nocard_menu()
 
     def show_settings_menu(self):
-        logger.info("In show_settings_menu start")
+        logger.debug("In show_settings_menu start")
         if self.settings_menu_frame is None:
             self.settings_menu_frame = FrameMenuSettings(self)
         self.settings_menu_frame.update_frame()
         self.settings_menu_frame.tkraise()
 
     def show_settings_satodime_menu(self):
-        logger.info("In show_settings_satodime_menu start")
+        logger.debug("In show_settings_satodime_menu start")
         if self.settings_satodime_menu_frame is None:
             self.settings_satodime_menu_frame = FrameMenuSettingsSatodime(self)
         #self.settings_satodime_menu_frame.update_frame()
         self.settings_satodime_menu_frame.tkraise()
 
     def show_nocard_menu(self):
-        logger.info("IN View.show_settings_menu start")
+        logger.debug("IN View.show_settings_menu start")
         self.nocard_menu_frame.tkraise()
 
     def show_seedkeeper_menu(self):
-        logger.info("show_seedkeeper_menu start")
+        logger.debug("show_seedkeeper_menu start")
         if self.seedkeeper_menu_frame is None:
             self.seedkeeper_menu_frame = FrameMenuSeedkeeper(self)
         else:
-            logger.info("show_seedkeeper_menu seedkeeper_menu_frame is not None, show it")
             self.seedkeeper_menu_frame.tkraise()
 
     def show_satocash_menu(self):
-        logger.info("show_satocash_menu start")
+        logger.debug("show_satocash_menu start")
         if self.satocash_menu_frame is None:
             self.satocash_menu_frame = FrameMenuSatocash(self)
         else:
-            logger.info("show_satocash_menu satocash_menu_frame is not None, show it")
             self.satocash_menu_frame.tkraise()
 
     def show_satodime_menu(self):
-        logger.info("show_satodime_menu start")
+        logger.debug("show_satodime_menu start")
         if self.satodime_menu_frame is None:
             self.satodime_menu_frame = FrameMenuSatodime(self)
         self.satodime_menu_frame.update_frame()
         self.satodime_menu_frame.tkraise()
 
     def show_seedkeeper_backup_menu(self):
-        logger.info("show_seedkeeper_backup_menu start")
+        logger.debug("show_seedkeeper_backup_menu start")
         if self.seedkeeper_backup_menu_frame is None:
             self.seedkeeper_backup_menu_frame = FrameMenuSeedkeeperBackup(self)
         self.seedkeeper_backup_menu_frame.tkraise()
@@ -653,7 +621,8 @@ class View(customtkinter.CTk):
     def update_status(self, isConnected=None):
         try:
             if (self.appMode == ApplicationMode.FactoryResetV1 or
-                    self.appMode == ApplicationMode.FactoryResetV2):
+                    self.appMode == ApplicationMode.FactoryResetV2 or
+                        self.appMode == ApplicationMode.FactoryResetV3):
                 # we are in factory reset mode
                 if isConnected is True:
                     logger.info(f"Card inserted for Reset Factory!")
@@ -677,18 +646,18 @@ class View(customtkinter.CTk):
 
             else:
                 # normal mode
-                logger.info("View.update_status start (normal mode)")
+                logger.debug("View.update_status start (normal mode)")
                 if isConnected is True:
                     # get card status (also cached in controller)
                     card_status = self.controller.get_card_status()
 
-                    logger.info(f"View.update_status card_type: {self.controller.cc.card_type}")
+                    logger.debug(f"View.update_status card_type: {self.controller.cc.card_type}")
 
                     # do some actions according to card type
                     if self.controller.cc.card_type == "Satodime":
-                        logger.info("View.update_status satodime card inserted (normal mode)")
+                        logger.debug("View.update_status satodime card inserted (normal mode)")
                         self.controller.satodime_on_connect()
-                        logger.info("View.update_status satodime satodime_get_vaults_info...")
+                        logger.debug("View.update_status satodime satodime_get_vaults_info...")
                         self.controller.satodime_vaults_get_info()
 
                     # show start screen
@@ -701,7 +670,8 @@ class View(customtkinter.CTk):
                     self.secret_headers = None
                     self.seedkeeper_secret_headers_need_update = True
 
-                    # Satodime: reset vault content
+                    # Satodime: reset ownership data and vault content
+                    self.controller.cc.satodime_set_unlock_secret([])
                     self.satodime_vault_frames = None
                     self.satodime_overview_frame = None
 
@@ -724,7 +694,7 @@ class View(customtkinter.CTk):
 
     def get_pin(self, msg):
         try:
-            logger.info("View.get_pin start")
+            logger.debug("View.get_pin start")
 
             # Création d'une nouvelle fenêtre pour le popup
             popup = customtkinter.CTkToplevel(self)
@@ -749,7 +719,7 @@ class View(customtkinter.CTk):
             icon_label = customtkinter.CTkLabel(
                 popup, image=icon, text=msg,  # f"\nEnter the PIN code of your card.",
                 compound='top',
-                font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal")
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=18, weight="normal")
             )
             icon_label.pack(pady=(0, 10))  # Ajout d'un padding différent pour l'icône
             logger.debug("Label added to popup")
@@ -778,7 +748,7 @@ class View(customtkinter.CTk):
                 width=120, height=35, corner_radius=34,
                 hover_color=HOVER_COLOR, text="Submit",
                 command=submit_passphrase,
-                font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal")
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=18, weight="normal")
             )
             submit_button.pack(pady=10)
             logger.debug("Submit button added to popup")
@@ -803,7 +773,7 @@ class View(customtkinter.CTk):
     """ VIEWS """
 
     def show_start_frame(self):
-        logger.info("IN View.show_start_frame() start")
+        logger.debug("IN View.show_start_frame() start")
         if self.start_frame is None:
             self.start_frame = FrameStart(self)
         else:
@@ -828,10 +798,37 @@ class View(customtkinter.CTk):
             self.change_pin_frame = FrameCardChangePin(self)
         self.change_pin_frame.tkraise()
 
-    def show_edit_label_frame(self):
+    def show_edit_label_frame(self, return_callback=None):
+        self.edit_label_return_callback = return_callback if return_callback else self.show_start_frame
         if self.edit_label_frame is None:
             self.edit_label_frame = FrameCardEditLabel(self)
+        else:
+            self.edit_label_frame.update_frame()
         self.edit_label_frame.tkraise()
+
+    def show_switch_nfc_frame(self, return_callback=None):
+        self.switch_nfc_return_callback = return_callback if return_callback else self.show_start_frame
+        if self.switch_nfc_frame is None:
+            self.switch_nfc_frame = FrameCardSwitchNfc(self)
+        else:
+            self.switch_nfc_frame.update_frame()
+        self.switch_nfc_frame.tkraise()
+
+    def show_configure_ndef_frame(self, return_callback=None):
+        self.configure_ndef_return_callback = return_callback if return_callback else self.show_start_frame
+        if self.configure_ndef_frame is None:
+            self.configure_ndef_frame = FrameCardConfigureNdef(self)
+        else:
+            self.configure_ndef_frame.update_frame()
+        self.configure_ndef_frame.tkraise()
+
+    def show_reset_seed_frame(self, return_callback=None):
+        self.reset_seed_return_callback = return_callback if return_callback else self.show_start_frame
+        if self.reset_seed_frame is None:
+            self.reset_seed_frame = FrameSatochipResetSeed(self)
+        else:
+            self.reset_seed_frame.update_frame()
+        self.reset_seed_frame.tkraise()
 
     def show_check_authenticity_frame(self):
         # verify PIN
@@ -839,6 +836,8 @@ class View(customtkinter.CTk):
 
         if self.authenticity_frame is None:
             self.authenticity_frame = FrameCardAuthenticity(self)
+        else:
+            self.authenticity_frame.update_frame()
         self.authenticity_frame.place()
         self.authenticity_frame.tkraise()
 
@@ -854,7 +853,7 @@ class View(customtkinter.CTk):
         self.show_seedkeeper_backup_menu()
 
     def show_about_frame(self):
-        logger.info("show_about_frame start")
+        logger.debug("show_about_frame start")
         if self.about_frame is None:
             self.about_frame = FrameCardAbout(self)
         self.about_frame.update_frame()
@@ -1052,6 +1051,30 @@ class View(customtkinter.CTk):
             self.show(
                 "ERROR",
                 f"Failed to list vaults!\n{ex}",
+                "Ok",
+                None,
+                "./pictures_db/error_popup_red.png"
+            )
+
+    def refresh_satodime_vault_balance(self, vault_nbr: SupportsIndex):
+        """Fetch up-to-date balances of a vault, then refresh every frame displaying them"""
+        logger.debug(f"refresh_satodime_vault_balance start vault: {vault_nbr}")
+        self.configure(cursor="watch")
+        self.update_idletasks()
+        try:
+            is_ok = self.controller.satodime_vault_refresh_balance(vault_nbr)
+        finally:
+            self.configure(cursor="")
+
+        if self.satodime_overview_frame is not None:
+            self.satodime_overview_frame.update_frame_vault(vault_nbr)
+        if self.satodime_vault_frames is not None and isinstance(self.satodime_vault_frames[vault_nbr], FrameSatodimeVault):
+            self.satodime_vault_frames[vault_nbr].update_balance(vault_nbr)
+
+        if not is_ok:
+            self.show(
+                "ERROR",
+                "Failed to refresh balance!\nPlease check your internet connection and try again.",
                 "Ok",
                 None,
                 "./pictures_db/error_popup_red.png"

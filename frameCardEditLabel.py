@@ -4,7 +4,6 @@ import logging
 from frameWidgetHeader import FrameWidgetHeader
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameCardEditLabel(customtkinter.CTkFrame):
@@ -57,7 +56,7 @@ class FrameCardEditLabel(customtkinter.CTkFrame):
             # Creating cancel and finish buttons
             self.cancel_button = master.create_button(
                 "Cancel",
-                lambda: master.show_start_frame(),
+                lambda: master.edit_label_return_callback(),
                 frame=self
             )
             self.cancel_button.place(relx=0.6, rely=0.9, anchor="w")
@@ -78,6 +77,15 @@ class FrameCardEditLabel(customtkinter.CTkFrame):
         except Exception as e:
             logger.error(f"An unexpected error occurred in FrameCardEditLabel init: {e}", exc_info=True)
 
+    def update_frame(self):
+        # refresh card-specific text and clear any previous input
+        self.text1.configure(text=f"Edit the label of your {self.master.controller.cc.card_type}.")
+        self.edit_card_entry.delete(0, "end")
+        self.after(100, self.edit_card_entry.focus_force)
+
     def change_label(self, new_label):
         self.master.update_verify_pin()
-        self.master.controller.edit_label(new_label)
+        self.master.controller.edit_label(
+            new_label,
+            on_success=self.master.edit_label_return_callback
+        )

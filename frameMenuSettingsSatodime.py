@@ -8,7 +8,6 @@ from constants import MAIN_MENU_COLOR, ICON_PATH
 from utils import convert_name_to_photo_image
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameMenuSettingsSatodime(customtkinter.CTkFrame):
@@ -41,17 +40,6 @@ class FrameMenuSettingsSatodime(customtkinter.CTkFrame):
 
             # create default widgets, use update method to update state
             self.rely = 0.26
-
-            # edit label
-            self.button_edit_label = master.create_menu_button(
-                self,
-                "Edit Label",
-                "edit_label.png",
-                self.rely, 0.05,
-                command=lambda: master.show_edit_label_frame(),
-                state='normal'
-            )
-            self.rely += 0.07
 
             # check authenticity
             self.button_check_auth = master.create_menu_button(

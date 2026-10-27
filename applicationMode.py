@@ -6,3 +6,4 @@ class ApplicationMode(Enum):
     FactoryResetV1 = 1
     FactoryResetV2 = 2
     SeedkeeperBackup = 3
+    FactoryResetV3 = 4

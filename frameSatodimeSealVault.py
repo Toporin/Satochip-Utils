@@ -3,13 +3,13 @@ from os import urandom
 import customtkinter
 import logging
 
+import constants
 from constants import (BG_BUTTON, BG_HOVER_BUTTON, BG_MAIN_MENU, COIN_DICT)
 from frameWidgetExpertMode import FrameWidgetExpertMode
 from frameWidgetHeader import FrameWidgetHeader
 from frameWidgetLabel import FrameWidgetLabel
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameSatodimeSealVault(customtkinter.CTkFrame):
@@ -68,8 +68,9 @@ class FrameSatodimeSealVault(customtkinter.CTkFrame):
                 dropdown_hover_color=BG_HOVER_BUTTON,  # Couleur au survol des options
                 dropdown_text_color="white",  # Couleur du texte des options
                 text_color="grey",  # Couleur du texte sélectionné
-                font=customtkinter.CTkFont(family="Outfit", size=13, weight="normal"),
-                dropdown_font=customtkinter.CTkFont(family="Outfit", size=13, weight="normal"),
+                cursor="hand2",
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=13, weight="normal"),
+                dropdown_font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=13, weight="normal"),
                 corner_radius=10,  # Même rayon de coin que les entrées
             )
             self.blockchain_option_menu.place(relx=0.05, rely=self.rely, anchor="nw")
@@ -125,7 +126,7 @@ class FrameSatodimeSealVault(customtkinter.CTkFrame):
         logger.debug(f"update_frame start vault_nbr: {vault_nbr}")
 
         # update header
-        self.header.button.configure(text=f"Seal vault #{vault_nbr}")
+        self.header.button.configure(text=f"Seal vault #{vault_nbr + 1}")
 
         def seal_vault():
             # update seal action buttons with vault number and expert mode parameters

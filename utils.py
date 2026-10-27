@@ -1,6 +1,5 @@
 import os
 import sys
-import tkinter
 import unicodedata
 from decimal import Decimal
 from typing import Dict, Any
@@ -8,13 +7,16 @@ from PIL import Image, ImageTk
 import customtkinter
 import logging
 import hashlib
-import pyqrcode
+import hmac
+import tkinter
+import ndef
 from mnemonic import Mnemonic
+from pycryptotools.main import privtopub, bin_hash160
 
-from constants import COIN_DECIMALS_DICT, ICON_PATH
+from constants import COIN_DECIMALS_DICT, ICON_PATH, CLIPBOARD_CLEAR_DELAY, NDEF_EMPTY_TAG
+from framePopup import FramePopup
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 def get_config_path():
@@ -38,39 +40,14 @@ def get_fingerprint_from_authentikey_bytes(authentikey_bytes):
     return fingerprint
 
 
-def toggle_entry_visibility(entry: customtkinter.CTkEntry):
-    try:
-        current_state = entry.cget("show")
-        new_state = "" if current_state == "*" else "*"
-        entry.configure(show=new_state)
-    except Exception as e:
-        logger.error(f"018 Error toggling passphrase visibility: {e}", exc_info=True)
+def set_entry_visibility(entry: customtkinter.CTkEntry, visible: bool):
+    # mask entry content with '*' when not visible
+    entry.configure(show="" if visible else "*")
 
-def reset_entry_visibility(entry: customtkinter.CTkEntry):
-    try:
-        new_state = ""
-        entry.configure(show=new_state)
-    except Exception as e:
-        logger.error(f"018 Error toggling passphrase visibility: {e}", exc_info=True)
 
-def toggle_textbox_visibility(textbox: customtkinter.CTkTextbox, original_text):
-    try:
-        textbox.configure(state='normal')
-        # get the current content of the textbox
-        current_text = textbox.get("1.0", "end-1c")
-
-        if current_text == '*' * len(original_text):
-            # Si la textbox contient uniquement des étoiles, afficher le texte original
-            textbox.delete("1.0", "end")
-            textbox.insert("1.0", original_text)
-            #textbox.configure(state='disabled')
-        else:
-            # Sinon, masquer le texte avec des étoiles
-            textbox.delete("1.0", "end")
-            textbox.insert("1.0", '*' * len(original_text))
-            #textbox.configure(state='disabled')
-    except Exception as e:
-        logger.error(f"018 Error toggling mnemonic visibility: {e}", exc_info=True)
+def set_textbox_visibility(textbox: customtkinter.CTkTextbox, text: str, visible: bool):
+    # CTkTextbox has no 'show' option: replace content with '*' when not visible
+    update_textbox(textbox, text if visible else '*' * len(text))
 
 
 def update_textbox(textbox: customtkinter.CTkTextbox, new_text):
@@ -80,31 +57,212 @@ def update_textbox(textbox: customtkinter.CTkTextbox, new_text):
     #textbox.configure(state='disabled')
 
 
-def show_qr_code(qr_data: str, label: customtkinter.CTkLabel): #todo implement seedqr!!
-    # Fonction pour générer et afficher le QR code
-    qr = pyqrcode.create(qr_data, error='L')
-    qr_xbm = qr.xbm(scale=3) #if len(mnemonic.split()) <= 12 else qr.xbm(scale=2) # todo: tune scale
-    # Convert XBM code to Tkinter image
-    qr_bmp = tkinter.BitmapImage(data=qr_xbm)
-    label.configure(image=qr_bmp)
-    label.image = qr_bmp  # prevent garbage collection
-    label.place()
+def update_entry(entry: customtkinter.CTkEntry, new_text, make_readonly=True):
+    entry.configure(state='normal')  # allows to modify content
+    entry.delete(0, "end")
+    entry.insert(0, new_text)
+    if make_readonly:
+        entry.configure(state='readonly')  # display-only, but selection/copy still possible
 
 
-def reset_qr_code(label: customtkinter.CTkLabel):
-    # define a small blank image to replace existing qr code
-    qr_xbm = """
-#define im_width 8
-#define im_height 1
-static char im_bits[] = {
-0x00
-};
-"""
-    # Convert XBM code to Tkinter image
-    qr_bmp = tkinter.BitmapImage(data=qr_xbm)
-    label.configure(image=qr_bmp)
-    label.image = qr_bmp  # prevent garbage collection
-    label.place()
+def make_textbox_readonly(textbox: customtkinter.CTkTextbox):
+    """Make a textbox non-editable while keeping text selection and copy to clipboard.
+
+    Blocks keyboard/mouse events that would modify the content; navigation,
+    selection and copy shortcuts still work. Programmatic updates
+    (delete/insert, e.g. via update_textbox) are not affected.
+    """
+    allowed_keysyms = {
+        # navigation & selection
+        "Left", "Right", "Up", "Down", "Home", "End", "Prior", "Next", "Insert",
+        # modifiers (pressed alone, e.g. as part of a combo)
+        "Shift_L", "Shift_R", "Control_L", "Control_R",
+        "Alt_L", "Alt_R", "Meta_L", "Meta_R", "Super_L", "Super_R",
+        "Caps_Lock", "Num_Lock", "Scroll_Lock",
+        # misc non-editing keys
+        "Escape",
+    }
+    copy_select_keysyms = {"c", "C", "a", "A"}
+
+    def block_edit_events(event):
+        keysym = event.keysym
+        if keysym in allowed_keysyms:
+            return  # navigation/selection keys & bare modifiers
+        if keysym in copy_select_keysyms:
+            if event.state & 0x4:  # Ctrl+C / Ctrl+A (Linux, Windows)
+                return
+            if sys.platform == "darwin" and event.state & 0x78:  # Cmd+C / Cmd+A (macOS)
+                return
+        # block any other key (printable chars, Delete, BackSpace, Tab...)
+        # note: do NOT whitelist modifier bits here (e.g. 0x10): on X11, Num Lock
+        # maps to Mod2 (0x10), which would let every keypress through
+        return "break"
+
+    # CTkTextbox does not proxy bind() to its internal tkinter.Text
+    inner_textbox = getattr(textbox, "_textbox", textbox)
+    inner_textbox.bind("<Key>", block_edit_events)
+    inner_textbox.bind("<<Cut>>", lambda event: "break")
+    inner_textbox.bind("<<Paste>>", lambda event: "break")
+    # block middle-click paste (X11 PRIMARY selection)
+    inner_textbox.bind("<ButtonRelease-2>", lambda event: "break")
+
+
+def show_qr_code(qr_data: str, parent, title: str = "QR code"):
+    # Display the QR code in a popup window, sized to fit the screen (see issue #48)
+    FramePopup(parent, title, "Scan this QR code", button_txt="Close", qr_msg=qr_data)
+
+
+# last text copied by the app, and pending clipboard clear timer (only one at a time)
+_clipboard_state = {"text": None, "after_id": None}
+
+
+def copy_to_clipboard(widget, text: str):
+    # use Tk clipboard: works on all OS without external tools (unlike pyperclip, which needs xclip/xsel on Linux)
+    root = widget.winfo_toplevel()  # main window, outlives the frames that schedule the clear timer
+    root.clipboard_clear()
+    root.clipboard_append(text)
+    root.update()  # keep clipboard content available after the call returns (needed on some X11 setups)
+
+    # clear clipboard after a delay, as copied data may be sensitive (restart timer on each copy)
+    if _clipboard_state["after_id"] is not None:
+        root.after_cancel(_clipboard_state["after_id"])
+    _clipboard_state["text"] = text
+    _clipboard_state["after_id"] = root.after(
+        CLIPBOARD_CLEAR_DELAY * 1000, lambda: clear_copied_from_clipboard(root)
+    )
+
+
+def clear_copied_from_clipboard(root):
+    # clear clipboard only if it still contains the text copied by the app (keep data copied from elsewhere)
+    if _clipboard_state["after_id"] is not None:
+        root.after_cancel(_clipboard_state["after_id"])
+        _clipboard_state["after_id"] = None
+    if _clipboard_state["text"] is None:
+        return
+    try:
+        current_text = root.clipboard_get()
+    except tkinter.TclError:  # clipboard empty or not text
+        current_text = None
+    if current_text == _clipboard_state["text"]:
+        root.clipboard_clear()
+        root.update()
+        logger.debug("Clipboard cleared")
+    _clipboard_state["text"] = None
+
+
+# scrollable areas (container, canvas) handled by the mouse wheel dispatcher below
+_mousewheel_scroll_areas = []
+
+
+def bind_mousewheel_scrolling(container, canvas):
+    # Scroll canvas with the mouse wheel while the pointer is over container.
+    # A single application-wide handler dispatches events to the area under the pointer, since
+    # bind_all() is global: binding it per area would make the last created area grab all events.
+    # Linux (X11, Tk 8.6) sends <Button-4>/<Button-5> instead of <MouseWheel>.
+    _mousewheel_scroll_areas.append((container, canvas))
+    canvas.bind_all("<MouseWheel>", _on_mousewheel)  # bind_all is not allowed on customtkinter widgets
+    canvas.bind_all("<Button-4>", _on_mousewheel)  # bind_all is not allowed on customtkinter widgets
+    canvas.bind_all("<Button-5>", _on_mousewheel)  # bind_all is not allowed on customtkinter widgets
+
+
+def _on_mousewheel(event):
+    # forget destroyed areas
+    _mousewheel_scroll_areas[:] = [area for area in _mousewheel_scroll_areas if area[0].winfo_exists()]
+    for container, canvas in _mousewheel_scroll_areas:
+        if not container.winfo_ismapped():
+            continue
+        try:
+            widget_under_pointer = container.winfo_containing(event.x_root, event.y_root)
+        except KeyError:  # pointer over a widget unknown to tkinter (e.g. Tk internal)
+            continue
+        path = str(widget_under_pointer) if widget_under_pointer is not None else ""
+        if path != str(container) and not path.startswith(str(container) + "."):
+            continue
+        # check if there's actually something to scroll
+        bbox = canvas.bbox("all")
+        if bbox is None or bbox[3] <= canvas.winfo_height():
+            return
+        if event.num == 4 or event.delta > 0:
+            canvas.yview_scroll(-1, "units")
+        elif event.num == 5 or event.delta < 0:
+            canvas.yview_scroll(1, "units")
+        return
+
+
+def enable_hand_cursor_on_linux():
+    # customtkinter shows a hand cursor over enabled clickable widgets (buttons, checkboxes, radio buttons,
+    # switches) on Windows and macOS only: apply the same rule on Linux.
+    # _set_cursor() is called by customtkinter on init and whenever state or command changes,
+    # so disabled widgets automatically get the arrow cursor.
+    if not sys.platform.startswith("linux"):
+        return
+
+    def _set_cursor(widget):
+        if not widget._cursor_manipulation_enabled:
+            return
+        is_clickable = widget._state == tkinter.NORMAL
+        if isinstance(widget, customtkinter.CTkButton):
+            widget.configure(cursor="hand2" if is_clickable and widget._command is not None else "arrow")
+        else:
+            widget._canvas.configure(cursor="hand2" if is_clickable else "arrow")
+            if widget._text_label is not None:
+                widget._text_label.configure(cursor="hand2" if is_clickable else "arrow")
+
+    for widget_class in (customtkinter.CTkButton, customtkinter.CTkCheckBox,
+                         customtkinter.CTkRadioButton, customtkinter.CTkSwitch):
+        widget_class._set_cursor = _set_cursor
+
+
+def add_tooltip(widget, get_text):
+    # Show a small tooltip near the pointer while hovering widget.
+    # get_text() is called on each hover and returns the text to show, or None for no tooltip.
+    tooltip = {"window": None}
+
+    def show(event):
+        text = get_text()
+        if not text or tooltip["window"] is not None:
+            return
+        window = tkinter.Toplevel(widget)
+        window.wm_overrideredirect(True)
+        window.wm_geometry(f"+{event.x_root + 12}+{event.y_root + 12}")
+        tkinter.Label(
+            window, text=text, bg="lightyellow", fg="black", relief="solid", borderwidth=1, padx=4, pady=2
+        ).pack()
+        tooltip["window"] = window
+
+    def hide(_event=None):
+        if tooltip["window"] is not None:
+            tooltip["window"].destroy()
+            tooltip["window"] = None
+
+    widget.bind("<Enter>", show, add="+")
+    widget.bind("<Leave>", hide, add="+")
+    widget.bind("<Destroy>", hide, add="+")
+
+
+def create_icon_button(master, anchor_widget, icon_name: str, command=None, bg_color="whitesmoke"):
+    # small icon button, placed just right of anchor_widget (hidden whenever anchor_widget is hidden)
+    icon = convert_name_to_photo_image(icon_name, 24, 24)
+    button = customtkinter.CTkButton(
+        master, width=24, height=24, text="",
+        border_spacing=0,
+        image=icon,
+        bg_color=bg_color, fg_color=bg_color,
+        hover_color=bg_color,
+        command=command
+    )
+    button.place(in_=anchor_widget, relx=1.0, x=5, rely=0.5, anchor="w")
+    return button
+
+
+def create_qr_button(master, label: customtkinter.CTkLabel, command=None, bg_color="whitesmoke"):
+    # QR code icon button, placed just right of the given label
+    return create_icon_button(master, label, "qr_code_icon.png", command, bg_color)
+
+
+def create_copy_button(master, qr_button: customtkinter.CTkButton, command=None, bg_color="whitesmoke"):
+    # copy to clipboard icon button, placed just right of the given QR code button
+    return create_icon_button(master, qr_button, "copy_icon.png", command, bg_color)
 
 
 def mnemonic_to_entropy_bytes(mnemonic) -> bytearray:
@@ -119,26 +277,8 @@ def mnemonic_to_entropy_bytes(mnemonic) -> bytearray:
 
 def mnemonic_to_entropy_string(mnemonic) -> str:
     try:
-        # get the english wordlist
-        if getattr(sys, 'frozen', False):
-            application_path = sys._MEIPASS
-        else:
-            application_path = os.path.dirname(os.path.abspath(__file__))
-        logging.debug(f"Application path: {application_path}")
-
-        # Construct the path to the wordlist directory
-        wordlist_dir = os.path.join(application_path, 'wordlist')
-        logger.info(f"wordlist directory: {wordlist_dir}")
-
-        # Check if the directory exists
-        wordlist_path = os.path.join(wordlist_dir, "english.txt")
-        logger.info(f"wordlist path: {wordlist_path}")
-
-        # load list from file
-        wordlist = None
-        if os.path.exists(wordlist_path) and os.path.isfile(wordlist_path):
-            with open(wordlist_path, "r", encoding="utf-8") as f:
-                wordlist = [w.strip() for w in f.readlines()]
+        # BIP39 english wordlist shipped with the mnemonic library
+        wordlist = Mnemonic("english").wordlist
 
         # compute standard SeedQR data
         if isinstance(mnemonic, str):
@@ -158,8 +298,9 @@ def mnemonic_to_entropy_string(mnemonic) -> str:
         entropy_int_string = ""
         for word in words:
             # Find the words index in the wordlist
-            ndx = wordlist.index(normalize_string(word))
-            if ndx < 0:
+            try:
+                ndx = wordlist.index(normalize_string(word))
+            except ValueError:
                 raise LookupError('Unable to find "%s" in word list.' % word)
             entropy_int_string += str(ndx).zfill(4)
 
@@ -178,6 +319,31 @@ def normalize_string(txt) -> str:
         raise TypeError("String value expected")
 
     return unicodedata.normalize("NFKD", utxt)
+
+
+def get_master_fingerprint(seed: bytes) -> str:
+    # BIP32 master key fingerprint: first 4 bytes of hash160(compressed master pubkey)
+    master_privkey = hmac.new(b"Bitcoin seed", seed, hashlib.sha512).digest()[:32]
+    master_pubkey = privtopub(master_privkey + b"\x01")  # '01' suffix for compressed pubkey
+    return bin_hash160(master_pubkey)[:4].hex()
+
+
+def bip39_mnemonic_to_seed(mnemonic: str, passphrase: str = "") -> bytes:
+    return Mnemonic.to_seed(mnemonic, passphrase)
+
+
+def electrum_mnemonic_to_seed(mnemonic: str, passphrase: str = "") -> bytes:
+    # Electrum normalization: NFKD, lowercase, no accents, single spaces (CJK specifics not handled)
+    def normalize_electrum(txt):
+        txt = unicodedata.normalize("NFKD", txt).lower()
+        txt = "".join(c for c in txt if not unicodedata.combining(c))
+        return " ".join(txt.split())
+    return hashlib.pbkdf2_hmac(
+        "sha512",
+        normalize_electrum(mnemonic).encode("utf-8"),
+        b"electrum" + normalize_electrum(passphrase).encode("utf-8"),
+        2048
+    )
 
 
 def format_asset_balances(asset: Dict[str, Any]) -> (str, str):
@@ -218,3 +384,74 @@ def convert_name_to_photo_image(filename, sizex=25, sizey=25):
     image = image.resize((sizex, sizey), Image.LANCZOS)
     photo_image = customtkinter.CTkImage(image)
     return photo_image
+
+
+#####################
+# NDEF helpers
+
+NDEF_AAR_TYPE = "urn:nfc:ext:android.com:pkg"
+
+
+def ndef_encode_records(records) -> bytes:
+    """Encode NDEF records as an NDEF data file: [NLEN(2b) | NDEF message]"""
+    message = b"".join(ndef.message_encoder(records))
+    return len(message).to_bytes(2, byteorder="big") + message
+
+
+def ndef_encode_url(url: str) -> bytes:
+    url = url.strip()
+    if url == "":
+        raise ValueError("URL is empty")
+    return ndef_encode_records([ndef.UriRecord(url)])
+
+
+def ndef_encode_aar(package_name: str) -> bytes:
+    """Encode an Android Application Record (AAR)"""
+    package_name = package_name.strip()
+    if package_name == "":
+        raise ValueError("Android app name is empty")
+    return ndef_encode_records([ndef.Record(NDEF_AAR_TYPE, "", package_name.encode("utf8"))])
+
+
+def ndef_parse_raw(raw_hex: str) -> bytes:
+    """Parse a raw hex NDEF data file, which must start with the 2-byte NDEF message length"""
+    raw_hex = raw_hex.strip().replace(" ", "")
+    if raw_hex.lower().startswith("0x"):
+        raw_hex = raw_hex[2:]
+    try:
+        ndef_bytes = bytes.fromhex(raw_hex)
+    except ValueError:
+        raise ValueError("Raw NDEF is not a valid hex string")
+    if len(ndef_bytes) < 2 or int.from_bytes(ndef_bytes[0:2], byteorder="big") != len(ndef_bytes) - 2:
+        raise ValueError("Raw NDEF must start with the 2-byte length of the NDEF message")
+    return ndef_bytes
+
+
+def ndef_describe(ndef_bytes: bytes):
+    """Returns a human-readable description of an NDEF data file, or None if the NDEF is empty"""
+    ndef_bytes = bytes(ndef_bytes)
+    if len(ndef_bytes) < 2 or ndef_bytes == NDEF_EMPTY_TAG:
+        return None
+    nlen = int.from_bytes(ndef_bytes[0:2], byteorder="big")
+    message = ndef_bytes[2:2 + nlen]
+    if nlen == 0:
+        return None
+    try:
+        descriptions = []
+        for record in ndef.message_decoder(message):
+            if isinstance(record, ndef.UriRecord):
+                descriptions.append(f"URL: {record.iri}")
+            elif record.type == NDEF_AAR_TYPE:
+                descriptions.append(f"Android app: {bytes(record.data).decode('utf8', errors='replace')}")
+            elif isinstance(record, ndef.TextRecord):
+                descriptions.append(f"Text: {record.text}")
+            elif record.type == "" and len(record.data) == 0:
+                continue  # empty record
+            else:
+                descriptions.append(f"{record.type}: {bytes(record.data).hex()}")
+        if len(descriptions) == 0:
+            return None
+        return ", ".join(descriptions)
+    except Exception as ex:
+        logger.warning(f"Failed to decode NDEF data: {ex}")
+        return f"raw: {ndef_bytes.hex()}"

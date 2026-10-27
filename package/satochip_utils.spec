@@ -4,6 +4,7 @@ import os
 import sys
 import platform
 from package.build_win_verinfo import fill_version_info
+from PyInstaller.utils.hooks import collect_data_files
 
 from version import VERSION
 
@@ -39,13 +40,12 @@ pkgs_remove = [
 
 datai = [
     (ICON, "gui/"),
-    ("../pysatochip/cert/*", "pysatochip/cert/"),
-    ("../wordlist/*", "wordlist/"),
-    ("../wordlist/*", "pycryptotools/"),  # hack: english.txt needed there for pycryptotools import
     ("../pictures_db/*", "pictures_db/"),
     ("../*.png", "."),
     ("../*.ini", "."),  # config files
 ]
+datai += collect_data_files("mnemonic")  # BIP39 wordlists (mnemonic/wordlist/*.txt)
+datai += collect_data_files("pysatochip", includes=["cert/*"])  # CA certificates for card authenticity checks
 
 hiddeni = []
 if os_platform == "linux":

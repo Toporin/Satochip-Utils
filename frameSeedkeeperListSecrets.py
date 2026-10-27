@@ -1,21 +1,56 @@
 import customtkinter
 import logging
 
-from constants import (DEFAULT_BG_COLOR, BG_MAIN_MENU, BG_HOVER_BUTTON,
-                       TEXT_COLOR, BUTTON_TEXT_COLOR, HIGHLIGHT_COLOR, TYPE_MASTERSEED, TYPE_DIC)
+import constants
+from constants import (DEFAULT_BG_COLOR, TYPE_MASTERSEED, TYPE_DIC,
+                       TYPE_BIP39_MNEMONIC, TYPE_ELECTRUM_MNEMONIC, TYPE_PASSWORD, TYPE_DESCRIPTOR, TYPE_DATA)
+from frameWidgetCanvasTable import FrameWidgetCanvasTable
 from frameWidgetHeader import FrameWidgetHeader
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+
+# Filter options of the type dropdown, and the secret types they match ('All' matches every type)
+FILTER_ALL = "All"
+FILTER_TYPES = {
+    "Mnemonic": {TYPE_BIP39_MNEMONIC, TYPE_ELECTRUM_MNEMONIC},  # + masterseed with mnemonic subtype
+    "Password": {TYPE_PASSWORD, 0x91},  # password & master password
+    "Descriptors": {TYPE_DESCRIPTOR},
+    "Data": {TYPE_DATA},
+}
+# delay before filtering after a keystroke in the search field, to coalesce fast typing
+SEARCH_DEBOUNCE_MS = 150
+
+TABLE_X = 33.5
+TABLE_COLUMNS = [
+    {'title': "Id", 'width': 50},
+    {'title': "Type of secret", 'width': 200},
+    {'title': "Label", 'width': 350},
+]
+TABLE_WIDTH = sum(column['width'] for column in TABLE_COLUMNS) + 2 * (len(TABLE_COLUMNS) - 1)
+
+
+def get_secret_category(secret) -> str:
+    # return the filter option matching the secret type (None if only matched by 'All')
+    if secret['type'] == TYPE_MASTERSEED and secret.get('subtype') == 0x01:
+        return "Mnemonic"
+    for category, types in FILTER_TYPES.items():
+        if secret['type'] in types:
+            return category
+    return None
+
+
+def get_secret_type_name(secret) -> str:
+    if secret['type'] == TYPE_MASTERSEED and secret.get('subtype') == 0x01:
+        return "Mnemonic"
+    return TYPE_DIC.get(secret['type'], "Unknown type")
 
 
 class FrameSeedkeeperListSecrets(customtkinter.CTkFrame):
     """
          This class manages to:
              - Show a list of all secrets stored on the card.
+             - Filter the list by secret type and label (search field).
              - Select and display details about each secret from the list.
-             - Include specific widgets and buttons according to the secret type/subtype.
-             - This method is built using a structural encapsulation approach, meaning that each function within it contains everything necessary for its operation, ensuring modularity and self-sufficiency.
     """
     def __init__(self, master):
         super().__init__(master)
@@ -37,41 +72,41 @@ class FrameSeedkeeperListSecrets(customtkinter.CTkFrame):
             )
             self.header.place(relx=0.05, rely=0.05, anchor="nw")
 
-            # Creating secrets table
-
             # Introduce table
             self.label_text = master.create_label(text="Click on a secret to manage it:", frame=self)
             self.label_text.place(relx=0.05, rely=0.15, anchor="nw")
 
-            # Define headers
-            self.headers = ["Id", "Type of secret", "Label"]
-            rely = 0.3
-            absx = 33.5
-
-            # Create header labels
-            # self.header_frame = customtkinter.CTkFrame(
-            #     self, width=600, bg_color=DEFAULT_BG_COLOR,
-            #     corner_radius=0, fg_color=DEFAULT_BG_COLOR)
-            # self.header_frame.place(relx=0.05, rely=rely, relwidth=0.9, anchor="w")
-
-            self.header_widths = [50, 200, 350]  # Define specific widths for each header
-            for col, width in zip(self.headers, self.header_widths):
-                self.header_button = customtkinter.CTkButton(
-                    self, text=col,
-                    font=customtkinter.CTkFont(size=14, family='Outfit', weight="bold"),
-                    corner_radius=0, state='disabled', text_color='white',
-                    fg_color=BG_MAIN_MENU, width=width
-                )
-                #self.header_button.pack(side="left", expand=True, fill="both")
-                #self.header_button.place(relx=0.05, rely=rely, anchor="w")
-                self.header_button.place(x=absx, rely=0.23, anchor="nw")
-                absx=absx+width+2
-
-            self.table_frame = master._create_scrollable_frame(
-                self, width=600, height=400, x=33.5, y=175
+            # Search & filter row, centered above the table
+            self.search_frame = customtkinter.CTkFrame(self, fg_color=DEFAULT_BG_COLOR, bg_color=DEFAULT_BG_COLOR)
+            self.search_frame.place(x=TABLE_X + TABLE_WIDTH / 2, y=126, anchor="n")
+            self.search_label = master.create_label("Search:", frame=self.search_frame)
+            self.search_label.pack(side="left", padx=(0, 10))
+            self.search_var = customtkinter.StringVar(value="")
+            self.search_entry = customtkinter.CTkEntry(
+                self.search_frame, width=280, height=32, corner_radius=10,
+                fg_color=constants.BUTTON_COLOR, border_color=constants.BUTTON_COLOR, text_color='grey',
+                textvariable=self.search_var
             )
+            self.search_entry.pack(side="left", padx=(0, 10))
+            self.type_var, self.type_menu = master.create_option_list(
+                self.search_frame, [FILTER_ALL] + list(FILTER_TYPES), width=150
+            )
+            self.type_menu.configure(command=lambda _: self.apply_filter())
+            self.type_menu.pack(side="left")
+            self._search_after_id = None
+            self.search_var.trace_add("write", lambda *_: self._schedule_filter())
 
+            # Secrets table
+            self.table = FrameWidgetCanvasTable(
+                self, TABLE_COLUMNS, height=375,
+                on_row_click=lambda secret: self.master.show_seedkeeper_secret(secret)
+            )
+            self.table.place(x=TABLE_X, y=172)
+
+            # all rows: dicts with 'data' (secret header), 'values' (cells), 'category' & 'label' (for filtering)
             self.secret_rows = []
+            # rows currently displayed (filtered), in display order
+            self.visible_rows = []
 
             self.place(relx=1.0, rely=0.5, anchor="e")
 
@@ -80,64 +115,42 @@ class FrameSeedkeeperListSecrets(customtkinter.CTkFrame):
             logger.error(error_msg, exc_info=True)
 
     def update_frame(self, secret_headers):
+        self.secret_rows = []
+        for secret in secret_headers:
+            label = str(secret.get('label', ""))
+            self.secret_rows.append({
+                'data': secret,
+                'values': [str(secret['id']), get_secret_type_name(secret), label],
+                'category': get_secret_category(secret),
+                'label': label.lower(),
+            })
+        logger.debug(f"Rows created for {len(self.secret_rows)} secrets")
 
-        # def _on_mouse_on_secret(event, buttons):
-        #     for button in buttons:
-        #         button.configure(fg_color=HIGHLIGHT_COLOR, cursor="hand2")
-        #
-        # def _on_mouse_out_secret(event, buttons):
-        #     for button in buttons:
-        #         button.configure(fg_color=button.default_color)
-
-        # clear rows
-        if len(self.secret_rows)>0:
-            for i, row in enumerate(self.secret_rows):
-                self.secret_rows[i].destroy()
-            self.secret_rows=[]
-
-        # Create rows of labels with alternating colors
-        #rely = 0.3
-        for i, secret in enumerate(secret_headers):
-            try:
-                #rely += 0.06
-                row_frame = customtkinter.CTkFrame(
-                    self.table_frame, width=750,
-                    bg_color=DEFAULT_BG_COLOR,
-                    fg_color=DEFAULT_BG_COLOR
-                )
-                row_frame.pack(pady=2, fill="x")
-
-                fg_color = DEFAULT_BG_COLOR if i % 2 == 0 else BG_HOVER_BUTTON
-                text_color = TEXT_COLOR if i % 2 == 0 else BUTTON_TEXT_COLOR
-
-                #buttons = []
-                secret_type = None
-                if secret['type'] == TYPE_MASTERSEED and secret['subtype'] == 0x01:
-                    secret_type = "Mnemonic"
-                else:
-                    secret_type = TYPE_DIC.get(secret['type'], "Unknown type")
-                values = [secret['id'], secret_type, secret['label']]
-                for value, width in zip(values, self.header_widths):
-                    cell_button = customtkinter.CTkButton(
-                        row_frame, text=value,
-                        text_color=text_color, fg_color=fg_color,
-                        font=customtkinter.CTkFont(size=14, family='Outfit'),
-                        hover_color=HIGHLIGHT_COLOR, corner_radius=0, width=width
-                    )
-                    cell_button.default_color = fg_color  # Store the default color
-                    cell_button.pack(side='left', expand=True, fill="both")
-                    #cell_button.bind("<Enter>", lambda event, btns=buttons: _on_mouse_on_secret(event, btns))
-                    #cell_button.bind("<Leave>", lambda event, btns=buttons: _on_mouse_out_secret(event, btns))
-                    cell_button.configure(command=lambda s=secret: self.master.show_seedkeeper_secret(s))
-                    #buttons.append(cell_button)
-
-                # add row to list (keep ref to destroy them on card removal)
-                self.secret_rows += [row_frame]
-
-                logger.debug(f"016 Row created for secret ID: {secret['id']}")
-            except Exception as e:
-                logger.error(f"017 Error creating row for secret {secret['id']}: {str(e)}")
+        self.apply_filter(force=True)
 
         # update status flag
         # todo detect changes in secret_headers to update list when needed
         self.master.seedkeeper_secret_headers_need_update = False
+
+    def _schedule_filter(self):
+        # debounce: filter once the user pauses typing
+        if self._search_after_id is not None:
+            self.after_cancel(self._search_after_id)
+        self._search_after_id = self.after(SEARCH_DEBOUNCE_MS, self.apply_filter)
+
+    def apply_filter(self, force=False):
+        # show only rows matching the selected type and containing the search text in their label
+        self._search_after_id = None
+        search_text = self.search_var.get().strip().lower()
+        category = self.type_var.get()
+        visible_rows = [
+            row for row in self.secret_rows
+            if (category == FILTER_ALL or row['category'] == category) and search_text in row['label']
+        ]
+        if not force and visible_rows == self.visible_rows:
+            return  # nothing changed, avoid useless redraw
+        self.visible_rows = visible_rows
+        self.table.empty_message = (
+            "No secret matches the search." if self.secret_rows else "No secret stored on the card."
+        )
+        self.table.set_rows(visible_rows)

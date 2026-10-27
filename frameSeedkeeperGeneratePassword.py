@@ -3,10 +3,10 @@ import logging
 import secrets
 
 from frameWidgetHeader import FrameWidgetHeader
+import constants
 from constants import BG_MAIN_MENU, BG_HOVER_BUTTON, BG_BUTTON
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameSeedkeeperGeneratePassword(customtkinter.CTkFrame):
@@ -71,7 +71,7 @@ class FrameSeedkeeperGeneratePassword(customtkinter.CTkFrame):
                     elif int_value >= 10:
                         self.length_slider.configure(button_color="green", progress_color="green")
                 except Exception as e:
-                    logger.error(f"077 Error updating slider value: {e}", exc_info=True)
+                    logger.error(f"Error updating slider value: {e}", exc_info=True)
 
             self.length_slider = customtkinter.CTkSlider(
                 self,
@@ -157,7 +157,7 @@ class FrameSeedkeeperGeneratePassword(customtkinter.CTkFrame):
                 self, corner_radius=20, bg_color="whitesmoke", fg_color=BG_BUTTON,
                 border_color=BG_BUTTON, border_width=1, width=500, height=83,
                 text_color="grey",
-                font=customtkinter.CTkFont(family="Outfit", size=13, weight="normal")
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=13, weight="normal")
             )
             # self.password_textbox.configure(state='disabled') # does not allow copy-paste on some linux distro
             self.password_textbox.tag_config("tag_centered", justify="center")  # for text justification
@@ -212,7 +212,7 @@ class FrameSeedkeeperGeneratePassword(customtkinter.CTkFrame):
             # password import to card
             def _save_password_to_card():
                 try:
-                    logger.info("Saving login/password to card")
+                    logger.debug("Saving login/password to card")
                     label = self.label_entry.get()
                     login = self.login_entry.get()
                     url = self.url_entry.get()

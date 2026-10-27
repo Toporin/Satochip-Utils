@@ -5,7 +5,6 @@ from constants import MAIN_MENU_COLOR
 from frameWidgetHeader import FrameWidgetHeader
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameStart(customtkinter.CTkFrame):
@@ -56,7 +55,7 @@ class FrameStart(customtkinter.CTkFrame):
     def update_frame(self):
         logger.debug("FrameStart update_frame() start")
         if self.master.controller.cc.card_present:
-            logger.info(f"card type: {self.master.controller.cc.card_type}")
+            logger.debug(f"card type: {self.master.controller.cc.card_type}")
             self.label1.configure(text=f"Your {self.master.controller.cc.card_type} is connected.")
             self.label2.configure(text="Select on the menu the action you wish to perform.")
             if self.master.controller.cc.card_type == "Satochip":

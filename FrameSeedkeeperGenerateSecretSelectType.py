@@ -4,7 +4,6 @@ import logging
 from frameWidgetHeader import FrameWidgetHeader
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameSeedkeeperGenerateSecretSelectType(customtkinter.CTkFrame):
@@ -61,4 +60,4 @@ class FrameSeedkeeperGenerateSecretSelectType(customtkinter.CTkFrame):
             self.place(relx=1.0, rely=0.5, anchor="e")
 
         except Exception as e:
-            logger.error(f"018 Error creating initial selection frame: {e}", exc_info=True)
+            logger.error(f"Error creating initial selection frame: {e}", exc_info=True)

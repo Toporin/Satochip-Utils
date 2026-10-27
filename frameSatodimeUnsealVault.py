@@ -9,7 +9,6 @@ from frameWidgetSatodimeCard import FrameWidgetSatodimeCard
 from utils import format_asset_balances
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameSatodimeUnsealVault(customtkinter.CTkFrame):
@@ -87,7 +86,7 @@ class FrameSatodimeUnsealVault(customtkinter.CTkFrame):
         logger.debug(f"update_frame start vault_nbr: {vault_nbr}")
 
         # update header
-        self.header.button.configure(text=f"Unseal vault #{vault_nbr}")
+        self.header.button.configure(text=f"Unseal vault #{vault_nbr + 1}")
 
         # fetch cached vault info
         status_int = self.master.controller.satodime_vaults_status[vault_nbr]
@@ -106,7 +105,7 @@ class FrameSatodimeUnsealVault(customtkinter.CTkFrame):
         # update balance
         coin_info = self.master.controller.satodime_vaults_coin_info[vault_nbr]
         (balance_str, balance2_str) = format_asset_balances(coin_info)
-        url = coin_info.get('address_explorer_url', 'no url available')
+        url = coin_info.get('address_explorer_url')
 
         logger.debug(f"update_frame update vaultcard for vault #{vault_nbr}")
         self.vaultcard.update_frame(

@@ -11,7 +11,6 @@ from version import VERSION
 from constants import ICON_PATH
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameCardAbout(customtkinter.CTkFrame):
@@ -68,21 +67,52 @@ class FrameCardAbout(customtkinter.CTkFrame):
             self.applet_version = master.create_label(f"Applet version",  frame=self)
             self.applet_version.place(relx=0.05, rely=rely, anchor="nw")
             rely += 0.05
-            # label
-            self.card_label = master.create_label(f"Label: [PIN required]", frame=self)
-            self.card_label.place(relx=0.05, rely=rely, anchor="nw")
+            # status
+            self.card_status = master.create_label("card status", frame=self)  # updated later
+            self.card_status.place(relx=0.05, rely=rely, anchor="nw")
             rely += 0.05
             # authenticity
             self.card_genuine = master.create_label(f"Genuine: [PIN required]", frame=self)
             self.card_genuine.place(relx=0.05, rely=rely, anchor="nw")
             rely += 0.05
-            # status
-            self.card_status = master.create_label("card status", frame=self)  # updated later
-            self.card_status.place(relx=0.05, rely=rely, anchor="nw")
+            # label (with edit button on the left, as label length varies)
+            self.edit_label_button = customtkinter.CTkButton(
+                self, width=28, height=28, text="",
+                border_spacing=0,
+                image=convert_name_to_photo_image("edit_label_popup.jpg", 28, 28),
+                bg_color="whitesmoke", fg_color="whitesmoke",
+                hover_color="whitesmoke",
+                command=lambda: master.show_edit_label_frame(return_callback=master.show_about_frame)
+            )
+            self.edit_label_button.place(relx=0.05, rely=rely, anchor="nw")
+            self.card_label = master.create_label(f"Label: [PIN required]", frame=self)
+            self.card_label.place(relx=0.10, rely=rely, anchor="nw")
             rely += 0.05
-            # NFC
+            # NFC (with switch button on the left)
+            self.switch_nfc_button = customtkinter.CTkButton(
+                self, width=28, height=28, text="",
+                border_spacing=0,
+                image=convert_name_to_photo_image("edit_label_popup.jpg", 28, 28),
+                bg_color="whitesmoke", fg_color="whitesmoke",
+                hover_color="whitesmoke",
+                command=lambda: master.show_switch_nfc_frame(return_callback=master.show_about_frame)
+            )
+            self.switch_nfc_button.place(relx=0.05, rely=rely, anchor="nw")
             self.nfc = master.create_label(f"NFC status", frame=self)  # updated later
-            self.nfc.place(relx=0.05, rely=rely, anchor="nw")
+            self.nfc.place(relx=0.10, rely=rely, anchor="nw")
+            rely += 0.05
+            # NDEF (with configure button on the left, disabled if NDEF is not supported)
+            self.configure_ndef_button = customtkinter.CTkButton(
+                self, width=28, height=28, text="",
+                border_spacing=0,
+                image=convert_name_to_photo_image("edit_label_popup.jpg", 28, 28),
+                bg_color="whitesmoke", fg_color="whitesmoke",
+                hover_color="whitesmoke",
+                command=lambda: master.show_configure_ndef_frame(return_callback=master.show_about_frame)
+            )
+            self.configure_ndef_button.place(relx=0.05, rely=rely, anchor="nw")
+            self.ndef = master.create_label(f"NDEF status", frame=self)  # updated later
+            self.ndef.place(relx=0.10, rely=rely, anchor="nw")
             rely += 0.08
 
             # TODO authentikey?
@@ -96,7 +126,17 @@ class FrameCardAbout(customtkinter.CTkFrame):
             self.rely = rely
 
             # SATOCHIP specific
-            # card seeded
+            # card seeded (with import/reset seed button on the left, updated later)
+            self.seed_button_pen_icon = convert_name_to_photo_image("edit_label_popup.jpg", 28, 28)
+            self.seed_button_trash_icon = convert_name_to_photo_image("icon_trash.jpeg", 28, 28)
+            self.seed_button = customtkinter.CTkButton(
+                self, width=28, height=28, text="",
+                border_spacing=0,
+                image=self.seed_button_pen_icon,
+                bg_color="whitesmoke", fg_color="whitesmoke",
+                hover_color="whitesmoke",
+                command=lambda: None  # updated in update_frame()
+            )
             self.satochip_seeded = master.create_label("Card seeded", frame=self)  # updated later
             # 2FA
             self.satochip_2FA = master.create_label("2FA status", frame=self)  # updated later
@@ -147,6 +187,10 @@ class FrameCardAbout(customtkinter.CTkFrame):
             else:
                 self.nfc.configure(text=f"NFC: [blocked]")
 
+            # ndef button (depends on card type & version only)
+            ndef_supported = self.master.controller.is_ndef_supported(protocol_version)
+            self.configure_ndef_button.configure(state="normal" if ndef_supported else "disabled")
+
             # requires PIN (or satodime)
 
             if self.master.controller.cc.card_type == "Satodime" or self.master.controller.cc.is_pin_set():
@@ -157,12 +201,15 @@ class FrameCardAbout(customtkinter.CTkFrame):
 
                 self.card_label.configure(text=f"Label: [{self.master.controller.get_card_label_infos()}]")
 
-                is_authentic, txt_ca, txt_subca, txt_device, txt_error = self.master.controller.cc.card_verify_authenticity()
+                is_authentic, txt_ca, txt_subca, txt_device, txt_error = self.master.controller.verify_card_authenticity()
                 self.card_genuine.configure(text=f"Genuine: [YES]" if is_authentic else "Genuine: [NO]")
+
+                self.update_ndef_status(protocol_version)
             else:
                 # pin needed from user
                 self.card_label.configure(text=f"Label: [PIN required]")
                 self.card_genuine.configure(text=f"Genuine: [PIN required]")
+                self.ndef.configure(text="NDEF: [PIN required]" if ndef_supported else "NDEF: [unsupported]")
                 self.unlock_button.place(relx=0.65, rely=self.rely_button, anchor="nw")
 
             # card status
@@ -185,11 +232,23 @@ class FrameCardAbout(customtkinter.CTkFrame):
             if self.master.controller.cc.card_type == "Satochip":
                 rely = self.rely
                 self.card_configuration.configure(text="Satochip configuration")
-                # seeded
-                self.satochip_seeded.configure(
-                    text=f"Card seeded" if self.master.controller.cc.is_seeded else f"Card not seeded"
-                )
-                self.satochip_seeded.place(relx=0.05, rely=rely, anchor="nw")
+                # seeded (button icon/action depends on seeded state)
+                if self.master.controller.cc.is_seeded:
+                    self.satochip_seeded.configure(text="Card seeded")
+                    self.seed_button.configure(
+                        image=self.seed_button_trash_icon,
+                        command=lambda: self.master.show_reset_seed_frame(
+                            return_callback=self.master.show_about_frame
+                        )
+                    )
+                else:
+                    self.satochip_seeded.configure(text="Card not seeded")
+                    self.seed_button.configure(
+                        image=self.seed_button_pen_icon,
+                        command=lambda: self.master.show_seed_import_frame()
+                    )
+                self.seed_button.place(relx=0.05, rely=rely, anchor="nw")
+                self.satochip_seeded.place(relx=0.10, rely=rely, anchor="nw")
                 rely += 0.05
                 # 2FA
                 self.satochip_2FA.configure(
@@ -259,7 +318,7 @@ class FrameCardAbout(customtkinter.CTkFrame):
                 # get status
                 try:
                     response, sw1, sw2, satocash_status = self.master.controller.cc.satocash_get_status()
-                    logger.info(f"satocash_status: {satocash_status}", exc_info=True)
+                    logger.debug(f"satocash_status: {satocash_status}", exc_info=True)
                     # mints
                     self.satocash_nb_mints.configure(
                         text=f"Mints used:  {satocash_status.get('nb_mints')}/{satocash_status.get('max_nb_mints')}"
@@ -283,8 +342,23 @@ class FrameCardAbout(customtkinter.CTkFrame):
                 except Exception as ex:
                     logger.error(f"Error in satocash_get_status: {ex}", exc_info=True)
 
+    def update_ndef_status(self, protocol_version):
+        status, description = self.master.controller.get_card_ndef_status(protocol_version)
+        if description is not None and len(description) > 60:
+            description = description[:57] + "..."
+        if status == "enabled":
+            self.ndef.configure(text=f"NDEF: [{description}]")
+        elif status == "dynamic":
+            self.ndef.configure(text="NDEF: [dynamic]")
+        elif status == "error":
+            self.ndef.configure(text=f"NDEF: [error: {description}]")
+        else:
+            # unsupported or disabled
+            self.ndef.configure(text=f"NDEF: [{status}]")
+
     def update_forget_widgets(self):
         # satochip
+        self.seed_button.place_forget()
         self.satochip_seeded.place_forget()
         self.satochip_2FA.place_forget()
 

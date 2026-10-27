@@ -2,11 +2,11 @@ import customtkinter
 import logging
 
 from frameWidgetHeader import FrameWidgetHeader
+import constants
 from constants import BG_BUTTON
 from utils import update_textbox
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameSatocashExportTokenv4(customtkinter.CTkFrame):
@@ -57,7 +57,7 @@ class FrameSatocashExportTokenv4(customtkinter.CTkFrame):
                 self, corner_radius=20, bg_color="whitesmoke", fg_color=BG_BUTTON,
                 border_color=BG_BUTTON, border_width=1, width=500, height=300,
                 text_color="grey",
-                font=customtkinter.CTkFont(family="Outfit", size=13, weight="normal")
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=13, weight="normal")
             )
             #self.token_textbox.place(relx=0.15, rely=0.36, anchor="nw")
 
@@ -65,7 +65,7 @@ class FrameSatocashExportTokenv4(customtkinter.CTkFrame):
             # token import to card
             def _export_token_from_card():
                 try:
-                    logger.info(f"Exporting tokenv4 from card")
+                    logger.debug(f"Exporting tokenv4 from card")
 
                     amount = int(self.amount_entry.get())
                     unit_str = self.unit_value.get()

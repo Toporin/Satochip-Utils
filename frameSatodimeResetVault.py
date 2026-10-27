@@ -2,6 +2,7 @@ from PIL import Image, ImageTk
 import customtkinter
 import logging
 
+import constants
 from constants import ICON_PATH
 from frameWidgetHeader import FrameWidgetHeader
 from frameWidgetLabel import FrameWidgetLabel
@@ -9,7 +10,6 @@ from frameWidgetSatodimeCard import FrameWidgetSatodimeCard
 from utils import format_asset_balances
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameSatodimeResetVault(customtkinter.CTkFrame):
@@ -68,7 +68,7 @@ class FrameSatodimeResetVault(customtkinter.CTkFrame):
                 self,
                 text=" I confirm that I have made a backup of the corresponding private key.",
                 text_color="red",
-                font=customtkinter.CTkFont(family="Outfit", size=16, weight="bold"),
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=16, weight="bold"),
                 command=update_checkbox_confirmation,
                 variable=self.checkbox_confirmation_value,
                 onvalue="on",
@@ -88,6 +88,7 @@ class FrameSatodimeResetVault(customtkinter.CTkFrame):
                 command=None,  # will be updated in update
                 frame=self
             )
+            self.right_button.configure(state="disabled")  # enabled by confirmation checkbox
             self.right_button.place(relx=0.95, rely=0.95, anchor="e")
 
             # place frame
@@ -101,10 +102,11 @@ class FrameSatodimeResetVault(customtkinter.CTkFrame):
         logger.debug(f"update_frame start vault_nbr: {vault_nbr}")
 
         # update header
-        self.header.button.configure(text=f"Reset vault #{vault_nbr}")
+        self.header.button.configure(text=f"Reset vault #{vault_nbr + 1}")
 
         # reset confirmation checkbox
         self.checkbox_confirmation_value.set(value="off")
+        self.right_button.configure(state="disabled")
 
         # fetch cached vault info
         status_int = self.master.controller.satodime_vaults_status[vault_nbr]
@@ -125,7 +127,7 @@ class FrameSatodimeResetVault(customtkinter.CTkFrame):
         # update balance
         coin_info = self.master.controller.satodime_vaults_coin_info[vault_nbr]
         (balance_str, balance2_str) = format_asset_balances(coin_info)
-        url = coin_info.get('address_explorer_url', 'no url available')
+        url = coin_info.get('address_explorer_url')
 
         logger.debug(f"update_frame update vaultcard for vault #{vault_nbr}")
         self.vaultcard.update_frame(

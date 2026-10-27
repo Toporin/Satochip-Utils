@@ -6,10 +6,10 @@ import logging
 import pyqrcode
 from PIL import Image, ImageTk
 
+import constants
 from constants import MAIN_MENU_COLOR, HOVER_COLOR
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FramePopup(customtkinter.CTkToplevel):
@@ -33,9 +33,17 @@ class FramePopup(customtkinter.CTkToplevel):
         # closing the popup through the upper right 'x' does not execute command
         self.protocol("WM_DELETE_WINDOW", lambda: close_no_execute())
 
+        # For QR code, pick the largest scale that keeps the popup within the screen
+        if qr_msg:
+            qr = pyqrcode.create(qr_msg, error='L')
+            qr_modules = qr.get_png_size(1)  # size in modules, including quiet zone
+            qr_max_px = min(parent.winfo_screenwidth() - 100, parent.winfo_screenheight() - 300)
+            qr_scale = max(1, min(6, qr_max_px // qr_modules))
+            qr_px = qr_modules * qr_scale
+
         # Calcul pour centrer le popup par rapport à la fenêtre principale
-        popup_width = 600
-        popup_height = 200 if not qr_msg else 400
+        popup_width = 600 if not qr_msg else max(600, qr_px + 60)
+        popup_height = 200 if not qr_msg else qr_px + 220
         position_right = int(parent.winfo_screenwidth() / 2 - popup_width / 2)
         position_down = int(parent.winfo_screenheight() / 2 - popup_height / 2)
         self.geometry(f"{popup_width}x{popup_height}+{position_right}+{position_down}")
@@ -53,7 +61,7 @@ class FramePopup(customtkinter.CTkToplevel):
                 image=icon,
                 text=f"\n{msg}",
                 compound='top',
-                font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal")
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=18, weight="normal")
             )
             icon_label.grid(row=0, column=0, padx=20, pady=20, sticky="ew", columnspan=2)
         else:
@@ -61,15 +69,14 @@ class FramePopup(customtkinter.CTkToplevel):
             label = customtkinter.CTkLabel(
                 self,
                 text=msg,
-                font=customtkinter.CTkFont(family="Outfit", size=14, weight="bold")
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=14, weight="bold")
             )
             label.grid(row=0, column=0, padx=20, pady=20, sticky="ew", columnspan=2)
         logger.debug("Label added to popup")
 
         # For QR code qr code
         if qr_msg:
-            qr = pyqrcode.create(qr_msg, error='L')
-            qr_xbm = qr.xbm(scale=3)  # if len(mnemonic.split()) <= 12 else qr.xbm(scale=2) # todo: tune scale
+            qr_xbm = qr.xbm(scale=qr_scale)
             # Convert XBM code to Tkinter image
             qr_bmp = tkinter.BitmapImage(data=qr_xbm)
             self.qr_label = customtkinter.CTkLabel(
@@ -105,10 +112,10 @@ class FramePopup(customtkinter.CTkToplevel):
                 hover_color=HOVER_COLOR,
                 bg_color='whitesmoke',
                 width=120, height=35, corner_radius=34,
-                font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal"),
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=18, weight="normal"),
                 command=lambda: close_and_execute()
             )
-            self.show_button.grid(row=1, column=0, padx=20, pady=20, sticky="ew")
+            self.show_button.grid(row=2 if qr_msg else 1, column=0, padx=20, pady=20, sticky="ew")
 
             self.show_button2 = customtkinter.CTkButton(
                 self,
@@ -117,7 +124,7 @@ class FramePopup(customtkinter.CTkToplevel):
                 hover_color=HOVER_COLOR,
                 bg_color='whitesmoke',
                 width=120, height=35, corner_radius=34,
-                font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal"),
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=18, weight="normal"),
                 command=lambda: close_and_execute2()
             )
             self.show_button2.grid(row=2 if qr_msg else 1 , column=1, padx=20, pady=20, sticky="ew")
@@ -130,7 +137,7 @@ class FramePopup(customtkinter.CTkToplevel):
                 hover_color=HOVER_COLOR,
                 bg_color='whitesmoke',
                 width=120, height=35, corner_radius=34,
-                font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal"),
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=18, weight="normal"),
                 command=lambda: close_and_execute()
             )
             self.show_button.grid(row=2 if qr_msg else 1, column=0, padx=20, pady=20, columnspan=2)

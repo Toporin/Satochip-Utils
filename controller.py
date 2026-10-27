@@ -5,14 +5,14 @@ import json
 import logging
 import math
 import sys
-import traceback
 
 import cbor2 # for cashu
 from configparser import ConfigParser
 from os import urandom, path, getcwd
 from typing import Dict, Any, Optional
 from mnemonic import Mnemonic
-from pysatochip.CardConnector import (CardConnector, UninitializedSeedError, UnexpectedSW12Error, PinBlockedError)
+from pysatochip.CardConnector import (CardConnector, UninitializedSeedError, UnexpectedSW12Error, PinBlockedError,
+                                      UnsupportedFeatureError)
 from pysatochip.JCconstants import STATE_SEALED, STATE_UNSEALED, STATE_UNINITIALIZED, DIC_CODE_BY_ASSET, SIZE_CONTRACT, \
     SIZE_TOKENID, SIZE_DATA, SIZE_UNLOCK_COUNTER, SIZE_UNLOCK_SECRET
 from pycryptotools.coins import UnsupportedCoin, Bitcoin, BitcoinCash, Litecoin, Ethereum, EthereumClassic, \
@@ -20,27 +20,27 @@ from pycryptotools.coins import UnsupportedCoin, Bitcoin, BitcoinCash, Litecoin,
 
 from constants import INS_DIC, RES_DIC, TYPE_PASSWORD, TYPE_MASTERSEED, TYPE_DATA, TYPE_DESCRIPTOR, TYPE_PUBKEY, \
     TYPE_BIP39_MNEMONIC, TYPE_ELECTRUM_MNEMONIC, TYPE_2FA_SECRET, TYPE_DIC, DEBUG_ADDR, STATUS_DIC, STATUS_COLOR_DIC, \
-    COIN_DICT
-from utils import get_config_path
+    COIN_DICT, NDEF_MIN_PROTOCOL_VERSION, NDEF_POLICY_DISABLED, NDEF_POLICY_STATIC, NDEF_POLICY_DYNAMIC, NDEF_EMPTY_TAG
+from utils import get_config_path, get_master_fingerprint, bip39_mnemonic_to_seed, electrum_mnemonic_to_seed, \
+    ndef_describe
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 DEBUG_EXPLORER = False
 
 class Controller:
 
-    def __init__(self, view, loglevel=logging.DEBUG):
-        logger.setLevel(loglevel)
+    def __init__(self, view):
         self.view = view
         self.view.controller = self
 
         try:
-            self.cc = CardConnector(self, loglevel=loglevel)
+            self.cc = CardConnector(self)
             logger.info("CardConnector initialized successfully.")
         except Exception as ex:
+            self.cc = None
+            self.cardconnector_error = ex
             logger.error(f"Failed to initialize CardConnector {ex}", exc_info=True)
-            raise
 
         # get apikeys from file
         self.apikeys = {}
@@ -76,7 +76,7 @@ class Controller:
 
     def get_card_status(self):
         if self.cc.card_present:
-            logger.info("In get_card_status")
+            logger.debug("In get_card_status")
             try:
                 response, sw1, sw2, self.card_status = self.cc.card_get_status()
                 logger.debug(f"Card satus: {self.card_status}")
@@ -88,7 +88,7 @@ class Controller:
         return self.card_status
 
     def request(self, request_type, *args):
-        logger.info(str(request_type))
+        logger.debug(str(request_type))
 
         method_to_call = getattr(self.view, request_type)
         reply = method_to_call(*args)
@@ -98,7 +98,6 @@ class Controller:
         if pin:
             if 4 <= len(pin) <= 16:
                 if pin == pin_confirm:
-                    logger.info("Setup my card PIN: PINs match and are valid.")
                     self.card_setup_native_pin(pin)
                 else:
                     logger.warning("Setup my card PIN: PINs do not match.")
@@ -181,9 +180,9 @@ class Controller:
             self.view.show("ERROR", "Failed to import seed.", "Ok", None,
                            "./pictures_db/error_popup_red.png")
 
-    def edit_label(self, label):
+    def edit_label(self, label, on_success=None):
         try:
-            logger.info(f"New label to set: {label}")
+            logger.debug(f"New label to set: {label}")
 
             if len(label.encode('utf8')) > 64:
                 raise ValueError("Label should be max 64 bytes")
@@ -193,11 +192,19 @@ class Controller:
                 logger.info(f"New label set successfully: {label}")
                 self.view.show("SUCCESS",
                                f"New label set successfully",
-                               "Ok", self.view.show_start_frame(),
+                               "Ok", on_success if on_success else self.view.show_start_frame,
                                "./pictures_db/success_popup_green.png")
+            elif sw1 == 0x9c and sw2 == 0x04:
+                logger.warning(f"Failed to set label (code {hex(sw1*256+sw2)})")
+                if self.cc.card_type == "Satodime":
+                    self.view.show("ERROR", f"Failed to set label. Take the card ownership first (code {hex(sw1 * 256 + sw2)})",
+                                   "Ok", None, "./pictures_db/error_popup_red.png")
+                else:
+                    self.view.show("ERROR", f"Failed to set label. The card is not setup (code {hex(sw1 * 256 + sw2)})",
+                                   "Ok", None, "./pictures_db/error_popup_red.png")
             else:
-                logger.warning("Failed to set new label.")
-                self.view.show("ERROR", f"Failed to set label (code {hex(sw1*256+sw2)})", "oK",
+                logger.warning(f"Failed to set label (code {hex(sw1*256+sw2)})")
+                self.view.show("ERROR", f"Failed to set label (code {hex(sw1*256+sw2)})", "Ok",
                                None, "./pictures_db/error_popup_red.png")
 
         except Exception as e:
@@ -205,26 +212,191 @@ class Controller:
             self.view.show("ERROR", f"Failed to edit label: {e}", "Ok", None,
                            "./pictures_db/error_popup_red.png")
 
+    def set_nfc_policy(self, policy, on_success=None):
+        try:
+            logger.debug(f"New NFC policy to set: {policy}")
+
+            if policy not in (0, 1, 2):  # 0:NFC_ENABLED, 1:NFC_DISABLED, 2:NFC_BLOCKED
+                raise ValueError("NFC policy should be 0 (enabled), 1 (disabled) or 2 (blocked)")
+
+            (response, sw1, sw2) = self.cc.card_set_nfc_policy(policy)
+            if sw1 == 0x90 and sw2 == 0x00:
+                logger.info(f"New NFC policy set successfully: {policy}")
+                self.cc.nfc_policy = policy
+                self.view.show("SUCCESS",
+                               f"New NFC policy set successfully",
+                               "Ok", on_success if on_success else self.view.show_start_frame,
+                               "./pictures_db/success_popup_green.png")
+            elif sw1 == 0x6D and sw2 == 0x00:
+                logger.warning(f"Failed to set NFC policy: operation not supported on this card (code {hex(sw1 * 256 + sw2)})")
+                self.view.show("ERROR", f"Failed to set NFC policy: operation not supported (code {hex(sw1 * 256 + sw2)})", "Ok",
+                               None, "./pictures_db/error_popup_red.png")
+            else:
+                logger.warning(f"Failed to set new NFC policy (code {hex(sw1*256+sw2)})")
+                self.view.show("ERROR", f"Failed to set NFC policy (code {hex(sw1*256+sw2)})", "Ok",
+                               None, "./pictures_db/error_popup_red.png")
+
+        except Exception as e:
+            logger.error(f"Failed to set NFC policy: {e}")
+            self.view.show("ERROR", f"Failed to set NFC policy: {e}", "Ok", None,
+                           "./pictures_db/error_popup_red.png")
+
+    def is_ndef_supported(self, protocol_version=None):
+        """Check from the card type and version whether the card supports NDEF configuration"""
+        if not self.cc.card_present:
+            return False
+        min_version = NDEF_MIN_PROTOCOL_VERSION.get(self.cc.card_type)
+        if min_version is None:
+            return False
+        if protocol_version is None:
+            response, sw1, sw2, card_status = self.cc.card_get_status()
+            protocol_version = card_status.get('protocol_version', 0)
+        return protocol_version >= min_version
+
+    def get_card_ndef_status(self, protocol_version=None):
+        """
+        Returns (status, description) where status is 'unsupported', 'disabled', 'dynamic', 'enabled' or 'error'.
+        For Satochip, Seedkeeper and Satocash, the PIN must be verified beforehand.
+        """
+        if not self.is_ndef_supported(protocol_version):
+            return "unsupported", None
+        try:
+            if self.cc.card_type == "Satodime":
+                response, sw1, sw2, ndef_policy, ndef_bytes = self.cc.card_get_ndef_v2()
+                if ndef_policy == NDEF_POLICY_DISABLED:
+                    return "disabled", None
+                elif ndef_policy == NDEF_POLICY_DYNAMIC:
+                    return "dynamic", None
+            else:
+                response, sw1, sw2, ndef_bytes = self.cc.card_get_ndef()
+                if sw1 == 0x6D and sw2 == 0x00:
+                    return "unsupported", None
+                elif sw1 != 0x90 or sw2 != 0x00:
+                    return "error", f"code {hex(sw1 * 256 + sw2)}"
+            description = ndef_describe(ndef_bytes)
+            if description is None:
+                return "disabled", None
+            return "enabled", description
+        except UnsupportedFeatureError:
+            return "unsupported", None
+        except Exception as e:
+            logger.error(f"Failed to get NDEF: {e}", exc_info=True)
+            return "error", str(e)
+
+    def set_card_ndef(self, ndef_bytes, ndef_policy=NDEF_POLICY_STATIC, on_success=None):
+        """
+        Set the NDEF data file ([NLEN(2b) | NDEF message]) of the card.
+        ndef_policy is only used for Satodime (other cards are disabled by setting an empty NDEF tag).
+        """
+        try:
+            if not self.is_ndef_supported():
+                raise ValueError(f"NDEF is not supported by this {self.cc.card_type}")
+
+            if self.cc.card_type == "Satodime":
+                # disabled and dynamic policies do not use NDEF data
+                if ndef_policy != NDEF_POLICY_STATIC:
+                    ndef_bytes = b""
+                if len(ndef_bytes) > 255:
+                    raise ValueError(f"NDEF data too long ({len(ndef_bytes)} bytes, max 255 bytes)")
+                logger.debug(f"New NDEF to set: policy {ndef_policy} data {ndef_bytes.hex()}")
+                (response, sw1, sw2) = self.cc.card_set_ndef_v2(ndef_bytes, ndef_policy)
+                if sw1 == 0x90 and sw2 == 0x00:
+                    # the card increments the unlock counter on each NDEF update
+                    self.cc.satodime_increment_unlock_counter()
+            else:
+                if ndef_policy == NDEF_POLICY_DISABLED:
+                    ndef_bytes = NDEF_EMPTY_TAG
+                elif ndef_policy != NDEF_POLICY_STATIC:
+                    raise ValueError(f"Dynamic NDEF is not supported by {self.cc.card_type}")
+                if len(ndef_bytes) > 255:
+                    raise ValueError(f"NDEF data too long ({len(ndef_bytes)} bytes, max 255 bytes)")
+                logger.debug(f"New NDEF to set: {ndef_bytes.hex()}")
+                (response, sw1, sw2) = self.cc.card_set_ndef(ndef_bytes)
+
+            if sw1 == 0x90 and sw2 == 0x00:
+                logger.info("New NDEF set successfully")
+                self.view.show("SUCCESS",
+                               "New NDEF set successfully",
+                               "Ok", on_success if on_success else self.view.show_start_frame,
+                               "./pictures_db/success_popup_green.png")
+            elif sw1 == 0x9C and sw2 in (0x50, 0x51):
+                logger.warning(f"Failed to set NDEF: ownership required (code {hex(sw1 * 256 + sw2)})")
+                self.view.show("ERROR",
+                               f"Failed to set NDEF. Take the card ownership first (code {hex(sw1 * 256 + sw2)})",
+                               "Ok", None, "./pictures_db/error_popup_red.png")
+            elif sw1 == 0x9C and sw2 == 0x06:
+                logger.warning(f"Failed to set NDEF: PIN required (code {hex(sw1 * 256 + sw2)})")
+                self.view.show("ERROR", f"Failed to set NDEF: PIN required (code {hex(sw1 * 256 + sw2)})",
+                               "Ok", None, "./pictures_db/error_popup_red.png")
+            elif sw1 == 0x6D and sw2 == 0x00:
+                logger.warning(f"Failed to set NDEF: operation not supported (code {hex(sw1 * 256 + sw2)})")
+                self.view.show("ERROR", f"Failed to set NDEF: operation not supported (code {hex(sw1 * 256 + sw2)})",
+                               "Ok", None, "./pictures_db/error_popup_red.png")
+            else:
+                logger.warning(f"Failed to set NDEF (code {hex(sw1 * 256 + sw2)})")
+                self.view.show("ERROR", f"Failed to set NDEF (code {hex(sw1 * 256 + sw2)})", "Ok",
+                               None, "./pictures_db/error_popup_red.png")
+
+        except Exception as e:
+            logger.error(f"Failed to set NDEF: {e}")
+            self.view.show("ERROR", f"Failed to set NDEF: {e}", "Ok", None,
+                           "./pictures_db/error_popup_red.png")
+
+    def reset_seed(self, on_success=None):
+        try:
+            logger.info("Resetting card seed")
+
+            if self.cc.pin is None:
+                raise ValueError("PIN required to reset the seed")
+
+            (response, sw1, sw2) = self.cc.card_reset_seed(self.cc.pin)
+            if sw1 == 0x90 and sw2 == 0x00:
+                logger.info("Seed reset successfully")
+                self.view.show("SUCCESS",
+                               f"Seed reset successfully",
+                               "Ok", on_success if on_success else self.view.show_start_frame,
+                               "./pictures_db/success_popup_green.png")
+            else:
+                logger.warning(f"Failed to reset seed (code {hex(sw1*256+sw2)})")
+                self.view.show("ERROR", f"Failed to reset seed (code {hex(sw1*256+sw2)})", "Ok",
+                               None, "./pictures_db/error_popup_red.png")
+
+        except Exception as e:
+            logger.error(f"Failed to reset seed: {e}")
+            self.view.show("ERROR", f"Failed to reset seed: {e}", "Ok", None,
+                           "./pictures_db/error_popup_red.png")
+
+    def verify_card_authenticity(self):
+        """Check the card certificate chain; any unexpected error is reported as not authentic.
+
+        Returns (is_authentic, txt_ca, txt_subca, txt_device, txt_error), as card_verify_authenticity().
+        """
+        try:
+            return self.cc.card_verify_authenticity()
+        except Exception as ex:
+            logger.error(f"Error while checking card authenticity: {ex}", exc_info=True)
+            return False, "(empty)", "(empty)", "(empty)", f"Error while checking card authenticity: {ex}"
+
     def get_card_label_infos(self):
         """Get label info"""
         if self.cc.card_present:
             response, sw1, sw2, label = self.cc.card_get_label()
             if label is None:
-                logger.info("Label is None")
+                logger.debug("Label is None")
                 return None
             if label == "":
-                logger.info("Label is Blank")
+                logger.debug("Label is Blank")
                 return ""
             else:
-                logger.info(f"Label found: {label}")
+                logger.debug(f"Label found: {label}")
                 return label
         else:
-            logger.info("In get_card_label_infos: No card present")
+            logger.debug("In get_card_label_infos: No card present")
             return None
 
     # for PIN
     def PIN_dialog(self, msg):
-        logger.info("Entering PIN_dialog method")
+        logger.debug("Entering PIN_dialog method")
 
         def back_to_start_frame():
             self.view.show_start_frame()
@@ -269,7 +441,7 @@ class Controller:
                 return
 
             except Exception as e:
-                logger.info(f"Exception from PIN dialog: {e}")
+                logger.error(f"Exception from PIN dialog: {e}")
                 self.view.show(
                     'ERROR', str(e), 'Ok',
                     lambda: None,
@@ -279,7 +451,7 @@ class Controller:
     # only for satochip and seedkeeper
     def card_setup_native_pin(self, pin):
         try:
-            logger.info("In card_setup_native_pin")
+            logger.debug("In card_setup_native_pin")
             logger.info("Setting up card pin and applet references")
 
             pin_0 = list(pin.encode('utf8'))
@@ -301,7 +473,6 @@ class Controller:
                                                       pin_tries_1, ublk_tries_1, pin_1, ublk_1,
                                                       secmemsize, memsize,
                                                       create_object_ACL, create_key_ACL, create_pin_ACL)
-            logger.info(f"Response from card: {response}, sw1: {hex(sw1)}, sw2: {hex(sw2)}")
 
             if sw1 != 0x90 or sw2 != 0x00:
                 logger.warning(f"Unable to set up applet! sw12={hex(sw1)} {hex(sw2)}")
@@ -472,7 +643,7 @@ class Controller:
             return self.decode_default(secret)
 
     def decode_password(self, secret_dict: Dict[str, Any]) -> Dict[str, Any]:
-        logger.info("Decoding password secret")
+        logger.debug("Decoding password secret")
         result = secret_dict
         try:
             # Initialiser les champs
@@ -525,7 +696,7 @@ class Controller:
             return result
 
     def decode_mnemonic(self, secret_dict: Dict[str, Any]) -> Dict[str, Any]:
-        logger.info("Decoding mnemonic secret")
+        logger.debug("Decoding mnemonic secret")
         result = secret_dict
         try:
             # Initialiser les champs
@@ -544,6 +715,13 @@ class Controller:
             else:
                 result['passphrase'] = ""
 
+            # master fingerprint
+            if secret_dict.get('type') == TYPE_ELECTRUM_MNEMONIC:
+                seed = electrum_mnemonic_to_seed(result['mnemonic'], result['passphrase'])
+            else:
+                seed = bip39_mnemonic_to_seed(result['mnemonic'], result['passphrase'])
+            result['master_fingerprint'] = get_master_fingerprint(seed)
+
             return result
         except Exception as e:
             error_msg = f"Error decoding password secret: {str(e)}"
@@ -551,7 +729,7 @@ class Controller:
             return result
 
     def decode_masterseed_mnemonic(self, secret_dict: Dict[str, Any]) -> Dict[str, Any]:
-        logger.info("Decoding masterseed mnemonic secret")
+        logger.debug("Decoding masterseed mnemonic secret")
         result = secret_dict
         try:
             # Initialiser les champs
@@ -562,6 +740,7 @@ class Controller:
             masterseed_bytes = secret_bytes[offset:offset + masterseed_size]
             result['masterseed_bytes'] = masterseed_bytes
             result['masterseed'] = result['secret_decoded'] = masterseed_bytes.hex()
+            result['master_fingerprint'] = get_master_fingerprint(masterseed_bytes)
             offset += masterseed_size
 
             # wordlist selector
@@ -643,7 +822,7 @@ class Controller:
 
     "Decoding simple secrets with 1bytes size, like Pubkey, Masterseed & 2FA"
     def decode_1byte_secret(self, secret_dict: Dict[str, Any]) -> Dict[str, Any]:
-        logger.info("decode_1byte_secret")
+        logger.debug("decode_1byte_secret")
         result = secret_dict
         try:
             # Initialiser les champs
@@ -664,7 +843,7 @@ class Controller:
 
     "Decoding secrets with 2bytes size, like Data & Descriptor"
     def decode_2bytes_secret(self, secret_dict: Dict[str, Any]) -> Dict[str, Any]:
-        logger.info("decode_2bytes_secret start")
+        logger.debug("decode_2bytes_secret start")
         result = secret_dict
         try:
             # Initialiser les champs
@@ -695,7 +874,7 @@ class Controller:
 
     "Decoding default for unsupported secret format"
     def decode_default(self, secret_dict: Dict[str, Any]) -> Dict[str, Any]:
-        logger.info("decode_default")
+        logger.debug("decode_default")
         result = secret_dict
         try:
             # Initialiser les champs
@@ -714,13 +893,13 @@ class Controller:
     ##########################
 
     def generate_random_seed(self, mnemonic_length):
-        logger.info(f"generate_random_seed length {mnemonic_length}")
+        logger.debug(f"generate_random_seed length {mnemonic_length}")
         strength = 128 if mnemonic_length == 12 else 256
         mnemonic = Mnemonic("english").generate(strength=strength)
         return mnemonic
 
     def import_password(self, label: str, password: str, login: str, url: str = None):
-        logger.info("import_password start")
+        logger.debug("import_password start")
 
         # perform some checks
         # exceptions should be managed in the calling method
@@ -795,7 +974,7 @@ class Controller:
         return sid, fingerprint
 
     def import_masterseed_mnemonic(self, label: str, mnemonic: str, passphrase: Optional[str] = None, descriptor: Optional[str] = None):
-        logger.info("001 Starting masterseed import process")
+        logger.debug("Starting masterseed import process")
 
         # perform some checks
         # exceptions should be managed in the calling method
@@ -893,11 +1072,11 @@ class Controller:
             self.view.secret_headers = [secret_header] + self.view.secret_headers  # prepend
             self.view.seedkeeper_secret_headers_need_update = True
 
-        logger.info(f"Masterseed imported successfully with id: {sid} and fingerprint: {fingerprint}")
+        logger.debug(f"Masterseed imported successfully with id: {sid} and fingerprint: {fingerprint}")
         return sid, fingerprint
 
     def import_data(self, label: str, data: str):
-        logger.info("import_data start")
+        logger.debug("import_data start")
 
         # Validate input
         if not label:
@@ -949,11 +1128,11 @@ class Controller:
             self.view.secret_headers = [secret_header] + self.view.secret_headers  # prepend
             self.view.seedkeeper_secret_headers_need_update = True
 
-        logger.info(f"Data imported successfully with id: {sid} and fingerprint: {fingerprint}")
+        logger.debug(f"Data imported successfully with id: {sid} and fingerprint: {fingerprint}")
         return sid, fingerprint
 
     def import_wallet_descriptor(self, label: str, wallet_descriptor: str):
-        logger.info("Starting import of wallet descriptor")
+        logger.debug("Starting import of wallet descriptor")
 
         # Validate input
         if not label:
@@ -1008,11 +1187,11 @@ class Controller:
             self.view.secret_headers = [secret_header] + self.view.secret_headers  # prepend
             self.view.seedkeeper_secret_headers_need_update = True
 
-        logger.info(f"Wallet descriptor imported successfully with id: {sid} and fingerprint: {fingerprint}")
+        logger.debug(f"Wallet descriptor imported successfully with id: {sid} and fingerprint: {fingerprint}")
         return id, fingerprint
 
     def import_pubkey(self, label: str, pubkey_bytes: bytes):
-        logger.info("import_pubkey start")
+        logger.debug("import_pubkey start")
 
         # Validate input
         if label:
@@ -1065,7 +1244,7 @@ class Controller:
             self.view.secret_headers = [secret_header] + self.view.secret_headers  # prepend
             self.view.seedkeeper_secret_headers_need_update = True
 
-        logger.info(f"Pubkey imported successfully with id: {sid} and fingerprint: {fingerprint}")
+        logger.debug(f"Pubkey imported successfully with id: {sid} and fingerprint: {fingerprint}")
         return sid, fingerprint
 
     ##########################
@@ -1110,7 +1289,7 @@ class Controller:
         return coin
 
     def satodime_on_connect(self):
-        logger.info('In satodime_on_connect()')
+        logger.debug('In satodime_on_connect()')
 
         # check setup
         card_info = {}
@@ -1130,8 +1309,12 @@ class Controller:
 
             self.satodime_nb_vaults = self.satodime_status['max_num_keys']
             self.satodime_vaults_status = self.satodime_status['satodime_keys_status']
-            logger.info(f'In satodime_on_connect() self.satodime_nb_vaults: {self.satodime_nb_vaults}')
-            logger.info(f'In satodime_on_connect() self.satodime_vaults_status: {self.satodime_vaults_status}')
+            logger.debug(f'In satodime_on_connect() self.satodime_nb_vaults: {self.satodime_nb_vaults}')
+            logger.debug(f'In satodime_on_connect() self.satodime_vaults_status: {self.satodime_vaults_status}')
+
+            # reset ownership data cached in cc, as it may come from a previously inserted card (issue #43)
+            self.cc.satodime_set_unlock_secret([])
+            self.cc.satodime_set_unlock_counter(self.satodime_status['unlock_counter'])
 
             # get authentikey
             try:
@@ -1143,7 +1326,7 @@ class Controller:
                 if path.isfile(config_path):
                     config = ConfigParser()
                     config.read(config_path)
-                    if config.has_section('Satodime'):
+                    if config.has_option('Satodime', authentikey_comp_hex):
                         unlock_secret_hex = config.get('Satodime', authentikey_comp_hex)
                         unlock_secret = list(bytes.fromhex(unlock_secret_hex))
                         unlock_counter = self.satodime_status['unlock_counter']
@@ -1183,15 +1366,16 @@ class Controller:
             return card_info
 
     def satodime_vaults_get_info(self):
-        logger.info('In satodime_get_vaults_info()')
+        logger.debug('In satodime_get_vaults_info()')
 
-        if self.satodime_vaults_info == []:
-            self.satodime_vaults_info = self.satodime_nb_vaults * [{}]
-            self.satodime_vaults_coin_info = self.satodime_nb_vaults * [{}]
-            self.satodime_vaults_asset_list = self.satodime_nb_vaults * [[]]
+        # (re)initialize vault data for the current card, as the number of vaults may differ
+        # from a previously inserted card
+        self.satodime_vaults_info = [{} for _ in range(self.satodime_nb_vaults)]
+        self.satodime_vaults_coin_info = [{} for _ in range(self.satodime_nb_vaults)]
+        self.satodime_vaults_asset_list = [[] for _ in range(self.satodime_nb_vaults)]
 
-        logger.info(f'In satodime_get_vaults_info() self.satodime_vaults_info: {self.satodime_vaults_info}')
-        logger.info(f'In satodime_get_vaults_info() self.satodime_nb_vaults: {self.satodime_nb_vaults}')
+        logger.debug(f'In satodime_get_vaults_info() self.satodime_vaults_info: {self.satodime_vaults_info}')
+        logger.debug(f'In satodime_get_vaults_info() self.satodime_nb_vaults: {self.satodime_nb_vaults}')
 
         # get basic info for each vault from smartcard
         for vault_nbr in range(self.satodime_nb_vaults):  # range(self.satodime_nb_vaults):
@@ -1206,7 +1390,7 @@ class Controller:
             self.satodime_vault_get_asset_list(vault_nbr)
 
     def satodime_vault_get_basic_info(self, vault_nbr):
-        logger.info(f'In satodime_vault_get_basic_info vault: {vault_nbr}')
+        logger.debug(f'In satodime_vault_get_basic_info vault: {vault_nbr}')
 
         if (self.cc.card_present):
 
@@ -1224,11 +1408,11 @@ class Controller:
                         vault_nbr)
                     pubkey_hex = bytes(pubkey_list).hex()
                     vault_info['pubkey_hex'] = pubkey_hex
-                    logger.info('PUBKEY:' + pubkey_hex)
+                    logger.debug('PUBKEY:' + pubkey_hex)
 
                     # recover address from pubkey
                     key_slip44_hex = vault_info['key_slip44_hex']
-                    logger.info('key_slip44_hex:' + key_slip44_hex)
+                    logger.debug('key_slip44_hex:' + key_slip44_hex)
                     try:
                         coin = self.get_coin(key_slip44_hex, self.apikeys)
                         vault_info['coin'] = coin
@@ -1240,7 +1424,7 @@ class Controller:
                             addr = DEBUG_ADDR.get(coin.coin_symbol, coin.pubtoaddr(bytes(pubkey_list)))
                         else:
                             addr = coin.pubtoaddr(bytes(pubkey_list))
-                        logger.info('address: ' + addr)
+                        logger.debug('address: ' + addr)
                         vault_info['address'] = addr
 
                     except Exception as ex:
@@ -1267,7 +1451,7 @@ class Controller:
         self.satodime_vaults_event = []  # all slots are up-to-date
 
     def satodime_vault_get_coin_info(self, vault_nbr):
-        logger.info(f'In satodime_vault_get_coin_info vault: {vault_nbr}')
+        logger.debug(f'In satodime_vault_get_coin_info vault: {vault_nbr}')
 
         if self.cc.card_present:
             if self.satodime_vaults_status[vault_nbr] in [STATE_SEALED, STATE_UNSEALED]:
@@ -1279,13 +1463,15 @@ class Controller:
                     # get coin_info for address
                     coin_info = coin.get_coin_info(addr)
                     self.satodime_vaults_coin_info[vault_nbr] = coin_info
-                    print(f"VAULT #{vault_nbr} coin_info: {coin_info}")
+                    logger.debug(f"VAULT #{vault_nbr} coin_info: {coin_info}")
+                    return True
                 except Exception as ex:
                     logger.warning(f"Exception in satodime_vault_get_coin_info: {str(ex)}")
-                    logger.warning(f"Exception in satodime_vault_get_coin_info: coin: {vault_info['coin']} addr: {vault_info['address']}")
+                    logger.warning(f"Exception in satodime_vault_get_coin_info: coin: {vault_info.get('coin')} addr: {vault_info.get('address')}")
+        return False
 
     def satodime_vault_get_asset_list(self, vault_nbr):
-        logger.info(f'In satodime_vault_get_asset_info vault: {vault_nbr}')
+        logger.debug(f'In satodime_vault_get_asset_info vault: {vault_nbr}')
 
         if self.cc.card_present:
             if self.satodime_vaults_status[vault_nbr] in [STATE_SEALED, STATE_UNSEALED]:
@@ -1297,17 +1483,26 @@ class Controller:
                     # get coin_info for address
                     asset_list = coin.get_asset_list(addr)
                     self.satodime_vaults_asset_list[vault_nbr] = asset_list
-                    print(f"VAULT #{vault_nbr} asset_list: {asset_list}")
+                    logger.debug(f"VAULT #{vault_nbr} asset_list: {asset_list}")
+                    return True
                 except Exception as ex:
                     logger.warning(f"Exception in satodime_vault_get_asset_list: {str(ex)}")
-                    logger.warning(f"Exception in satodime_vault_get_asset_list: coin: {vault_info['coin']} addr: {vault_info['address']}")
+                    logger.warning(f"Exception in satodime_vault_get_asset_list: coin: {vault_info.get('coin')} addr: {vault_info.get('address')}")
+        return False
+
+    def satodime_vault_refresh_balance(self, vault_nbr):
+        """Fetch up-to-date balance and asset list of a vault from blockchain explorers"""
+        logger.debug(f'In satodime_vault_refresh_balance vault: {vault_nbr}')
+        is_coin_info_ok = self.satodime_vault_get_coin_info(vault_nbr)
+        is_asset_list_ok = self.satodime_vault_get_asset_list(vault_nbr)
+        return is_coin_info_ok and is_asset_list_ok
 
     def satodime_seal_vault(self, vault_nbr, blockchain, is_testnet, entropy_bytes):
-        logger.info(f'In satodime_seal_vault vault: {vault_nbr} blockchain:{blockchain} is_testnet:{is_testnet}')
+        logger.debug(f'In satodime_seal_vault vault: {vault_nbr} blockchain:{blockchain} is_testnet:{is_testnet}')
         if self.cc.card_present:
             if self.satodime_vaults_status[vault_nbr] == STATE_UNINITIALIZED:
                 try:
-                    logger.info(f'In satodime_seal_vault vault: seal vault!')
+                    logger.debug(f'In satodime_seal_vault vault: seal vault!')
                     if len(entropy_bytes) > 32:
                         entropy_bytes = hashlib.sha256(entropy_bytes).digest()
                     else:
@@ -1315,7 +1510,7 @@ class Controller:
                     (response, sw1, sw2, pubkey_list, pubkey_comp_list) = self.cc.satodime_seal_key(vault_nbr, entropy_bytes)
                     # update vault state & frame
                     if sw1 == 0x90 and sw2 == 0x00:
-                        logger.info(f'In satodime_seal_vault vault sealed successfully!')
+                        logger.debug(f'In satodime_seal_vault vault sealed successfully!')
                         # import blockchain meta data
                         # metadata part0
                         RFU1 = 0x00
@@ -1363,7 +1558,7 @@ class Controller:
                         # show popup then display vault
                         self.view.show(
                             "SUCCESS",
-                            f"Vault #{vault_nbr} sealed successfully!",
+                            f"Vault #{vault_nbr + 1} sealed successfully!",
                             "Ok",
                             self.view.show_satodime_vault(vault_nbr),
                             "./pictures_db/success_popup_green.png"
@@ -1375,19 +1570,19 @@ class Controller:
                     logger.warning(f"Exception in satodime_unseal_vault: {str(ex)}")
                     self.view.show(
                         "ERROR",
-                        f"Failed to seal vault #{vault_nbr} ({str(ex)})! \nYou may need to be the card owner to perform this operation.",
+                        f"Failed to seal vault #{vault_nbr + 1} ({str(ex)})! \nYou may need to be the card owner to perform this operation.",
                         "Ok",
                         None,
                         "./pictures_db/error_popup_red.png"
                     )
 
     def satodime_unseal_vault(self, vault_nbr):
-        logger.info(f'In satodime_unseal_vault vault: {vault_nbr}')
+        logger.debug(f'In satodime_unseal_vault vault: {vault_nbr}')
 
         if self.cc.card_present:
             if self.satodime_vaults_status[vault_nbr] == STATE_SEALED:
                 try:
-                    logger.info(f'In satodime_unseal_vault vault: unseal vault!')
+                    logger.debug(f'In satodime_unseal_vault vault: unseal vault!')
                     (response, sw1, sw2, entropy_list, privkey_list) = self.cc.satodime_unseal_key(vault_nbr)
                     # update vault state & frame
                     if sw1 == 0x90 and sw2 == 0x00:
@@ -1429,12 +1624,12 @@ class Controller:
                     )
 
     def satodime_reset_vault(self, vault_nbr):
-        logger.info(f'In satodime_reset_vault vault: {vault_nbr}')
+        logger.debug(f'In satodime_reset_vault vault: {vault_nbr}')
 
         if self.cc.card_present:
             if self.satodime_vaults_status[vault_nbr] == STATE_UNSEALED:
                 try:
-                    logger.info(f'In satodime_reset_vault vault: resetting vault!')
+                    logger.debug(f'In satodime_reset_vault vault: resetting vault!')
                     (response, sw1, sw2) = self.cc.satodime_reset_key(vault_nbr)
                     # update vault state & frame
                     if sw1 == 0x90 and sw2 == 0x00:
@@ -1473,7 +1668,7 @@ class Controller:
                     )
 
     def satodime_export_privkey(self, vault_nbr) -> (bytes, bytes):
-        logger.info(f'In satodime_export_privkey vault: {vault_nbr}')
+        logger.debug(f'In satodime_export_privkey vault: {vault_nbr}')
         if self.cc.card_present:
             if self.satodime_vaults_status[vault_nbr] == STATE_UNSEALED:
                 try:
@@ -1483,8 +1678,6 @@ class Controller:
                         self.satodime_vaults_info[vault_nbr]['entropy_bytes'] = bytes(entropy_list)
                         # privkey_bytes is the sha256(entropy_bytes)
                         # entropy_bytes_hash = hashlib.sha256(bytes(entropy_list)).digest()
-                        # logger.warning(f"DEBUG: privkey_hex   {bytes(privkey_list).hex()}")
-                        # logger.warning(f"DEBUG: hash(entropy) {entropy_bytes_hash.hex()}")
 
                         coin = self.satodime_vaults_info[vault_nbr]['coin']
                         wif = coin.encode_privkey(privkey_list)
@@ -1517,7 +1710,7 @@ class Controller:
                     return None, None, None
 
     def satodime_transfer_card(self):
-        logger.info(f'In satodime_transfer_card')
+        logger.debug(f'In satodime_transfer_card')
         try:
             (response, sw1, sw2) = self.cc.satodime_initiate_ownership_transfer()
             if (sw1 == 0x90) and (sw2 == 0x00):
@@ -1557,7 +1750,7 @@ class Controller:
             return False
 
     def satodime_take_card_ownership(self):
-        logger.info(f'In satodime_take_card_ownership')
+        logger.debug(f'In satodime_take_card_ownership')
         # these values are not used, just provided for compatibility with Satochip & SeedKeeper
         pin_0 = list(urandom(4))  # RFU #list(values['pin'].encode('utf8'))
         pin_tries_0 = 0x05
@@ -1636,7 +1829,7 @@ class Controller:
         """Get balances for tokens stored in the card for a given currency unit, sorted by mints
             based on pysatochip CLI
         """
-        logger.info(f'In satocash_get_balances')
+        logger.debug(f'In satocash_get_balances')
         try:
             dic_info = {"STATE": 0, "KEYSET_INDEX": 1, "AMOUNT": 2, "MINT_INDEX": 3, "UNIT": 4}
             dic_unit = {"sat": 1, "msat": 2, "USD": 3, "EUR": 4}
@@ -1649,7 +1842,7 @@ class Controller:
             max_nb_proofs = status_dic.get('max_nb_proofs', 0)
             nb_proofs = status_dic.get('nb_proofs', 0)
             nb_unspent_proofs = status_dic.get('nb_unspent_proofs', 0)
-            logger.info(f"status_dic: {status_dic}")
+            logger.debug(f"status_dic: {status_dic}")
 
             # get proof info in raw format
             index_size=128
@@ -1662,8 +1855,8 @@ class Controller:
                 amount_exponents += response
                 response, sw1, sw2 = self.cc.satocash_get_proof_info(unit, info_type_mint, index_start, index_size)
                 mint_indexes += response
-            logger.info(f"amount_exponents: {amount_exponents}")
-            logger.info(f"mint_indexes: {mint_indexes}")
+            logger.debug(f"amount_exponents: {amount_exponents}")
+            logger.debug(f"mint_indexes: {mint_indexes}")
 
             # compute balance for each mint
             amount_unspent_by_mints = max_nb_mints * [0]
@@ -1684,21 +1877,21 @@ class Controller:
                         amount = 2 ** amount_exponent
                         amount_unspent_by_mints[mint_index] += amount
 
-            logger.info(f"UNSPENT AMOUNTS:")
+            logger.debug(f"UNSPENT AMOUNTS:")
             for index in range(max_nb_mints):
                 if amount_unspent_by_mints[index]!=0:
                     # get mint info
                     response, sw1, sw2, url = self.cc.satocash_export_mint(index)
                     mint_urls[index] = url
-                    logger.info(f"balance: {amount_unspent_by_mints[index]} - mint: {url} - index: {index}")
+                    logger.debug(f"balance: {amount_unspent_by_mints[index]} - mint: {url} - index: {index}")
 
-            logger.info(f"SPENT AMOUNTS:")
+            logger.debug(f"SPENT AMOUNTS:")
             for index in range(max_nb_mints):
                 if amount_spent_by_mints[index] != 0:
                     # get mint info
                     response, sw1, sw2, url = self.cc.satocash_export_mint(index)
                     mint_urls[index] = url
-                    logger.info(f"balance: {amount_spent_by_mints[index]} - mint: {url} - index: {index}")
+                    logger.debug(f"balance: {amount_spent_by_mints[index]} - mint: {url} - index: {index}")
 
             return status_dic, mint_urls, amount_unspent_by_mints, amount_spent_by_mints
 
@@ -1713,7 +1906,9 @@ class Controller:
         """
 
         json = self.satocash_deserialize_tokenv4(tokenv4)
-        logger.info(f"token_json: {json}")
+        # do not log the token content: proofs are bearer secrets
+        logger.debug(f"Importing token: mint: {json.get('m')} unit: {json.get('u')} "
+                    f"nb_proofs: {sum(len(token_dic['p']) for token_dic in json['t'])}")
         amount_total = 0
 
         unit_str = json['u']
@@ -1731,12 +1926,12 @@ class Controller:
             # import keyset_id
             dic_unit = {"sat": 1, "msat": 2, "USD": 3, "EUR": 4}
             unit = dic_unit[unit_str]
-            logger.info(f"unit: {unit}")
-            logger.info(f"keyset_id_bytes: {keyset_id_bytes}")
-            logger.info(f"mint_index: {mint_index}")
+            logger.debug(f"unit: {unit}")
+            logger.debug(f"keyset_id_bytes: {keyset_id_bytes}")
+            logger.debug(f"mint_index: {mint_index}")
 
             response, sw1, sw2, keyset_index = self.cc.satocash_import_keyset(keyset_id_bytes, mint_index, unit)
-            logger.info(f"Keyset {keyset_id_bytes.hex()} imported into card at index {keyset_index}")
+            logger.debug(f"Keyset {keyset_id_bytes.hex()} imported into card at index {keyset_index}")
 
 
             proofs = token_dic['p']
@@ -1752,7 +1947,7 @@ class Controller:
                 # import proof
                 # parse data from string
                 amount_exponent = int( math.log(int(amount), 2))  # the amount is actually stored as the power 2 exponent in [0...63]
-                logger.info(f"amount_exponent: {amount_exponent}")
+                logger.debug(f"amount_exponent: {amount_exponent}")
                 secret_bytes = bytes.fromhex(secret_hex)
                 response, sw1, sw2, proof_index = self.cc.satocash_import_proof(keyset_index, amount_exponent,
                                                                            secret_bytes, unblinded_key_bytes)
@@ -1777,11 +1972,11 @@ class Controller:
             max_nb_proofs = status_dic.get('max_nb_proofs', 0)
             nb_proofs = status_dic.get('nb_proofs', 0)
             nb_unspent_proofs = status_dic.get('nb_unspent_proofs', 0)
-            logger.info(f"max_nb_mints: {max_nb_mints}")
-            logger.info(f"max_nb_keysets: {max_nb_keysets}")
-            logger.info(f"max_nb_proofs: {max_nb_proofs}")
-            logger.info(f"nb_proofs: {nb_proofs}")
-            logger.info(f"nb_unspent_proofs: {nb_unspent_proofs}")
+            logger.debug(f"max_nb_mints: {max_nb_mints}")
+            logger.debug(f"max_nb_keysets: {max_nb_keysets}")
+            logger.debug(f"max_nb_proofs: {max_nb_proofs}")
+            logger.debug(f"nb_proofs: {nb_proofs}")
+            logger.debug(f"nb_unspent_proofs: {nb_unspent_proofs}")
 
             # get proof info in raw format
             dic_info = {"STATE": 0, "KEYSET_INDEX": 1, "AMOUNT_EXPONENT": 2, "MINT_INDEX": 3, "UNIT": 4}
@@ -1803,9 +1998,9 @@ class Controller:
                 response, sw1, sw2 = self.cc.satocash_get_proof_info(unit_byte, info_type_keyset_index, index_start,
                                                                 index_size)
                 keyset_indexes += response
-            logger.info(f"amount_exponents: {amount_exponents}")
-            logger.info(f"mint_indexes: {mint_indexes}")
-            logger.info(f"keyset_indexes: {keyset_indexes}")
+            logger.debug(f"amount_exponents: {amount_exponents}")
+            logger.debug(f"mint_indexes: {mint_indexes}")
+            logger.debug(f"keyset_indexes: {keyset_indexes}")
 
             # compute balance for each mint
             # also list keysets by mint and proofs by keyset
@@ -1842,13 +2037,13 @@ class Controller:
 
             # at this point, we have enough funds in the mint at mint_index
             response, sw1, sw2, mint_url = self.cc.satocash_export_mint(mint_index)
-            logger.info(f"mint_index: {mint_index}")
-            logger.info(f"mint_url: {mint_url}")
-            logger.info(f"amount_available: {amount_available}")
+            logger.debug(f"mint_index: {mint_index}")
+            logger.debug(f"mint_url: {mint_url}")
+            logger.debug(f"amount_available: {amount_available}")
 
             # select proofs by keysets and get ids from card
             keyset_indexes_subset = keyset_indexes_by_mint[mint_index]
-            logger.info(f"keyset_indexes_subset: {keyset_indexes_subset}")
+            logger.debug(f"keyset_indexes_subset: {keyset_indexes_subset}")
             response, sw1, sw2, keysets, keysets_dic = self.cc.satocash_export_keysets(list(keyset_indexes_subset))
 
             # generate tokenv4 dict
@@ -1865,7 +2060,7 @@ class Controller:
                 # get proofs by keyset_index
                 token_dic['p'] = []
                 proof_indexes_subset = proof_indexes_by_keyset[keyset_index]
-                logger.info(f"proof_indexes_subset: {proof_indexes_subset}")
+                logger.debug(f"proof_indexes_subset: {proof_indexes_subset}")
                 # export proofs
                 proof_list = self.cc.satocash_export_proofs(list(proof_indexes_subset))
                 for proof in proof_list:
@@ -1875,22 +2070,17 @@ class Controller:
                         'c': bytes.fromhex(proof['unblinded_key_hex'])
                     }
                     token_dic['p'] += [proof_dic]
-                    logger.info(f"proof_dic: {proof_dic}")
-
-                logger.info(f"token_dic: {token_dic}")
                 tokenv4_dic['t'] += [token_dic]
 
-            logger.info(f"tokenv4_dic: {tokenv4_dic}")
-
-            # serialize token dic to string
+            # serialize token dic to string (do not log the token content: proofs are bearer secrets)
             tokenv4_str = self.satocash_serialize_tokenv4(tokenv4_dic)
-            logger.info(f"tokenv4_str: {tokenv4_str}")
+            logger.info(f"Exported token: mint: {mint_url} unit: {unit} amount: {amount_available} "
+                        f"nb_proofs: {sum(len(token_dic['p']) for token_dic in tokenv4_dic['t'])}")
 
             return tokenv4_str, mint_url, unit, amount_available, error_msg
 
         except Exception as ex:
-            logger.error(f"Error while exporting tokens: {ex}")
-            logger.error(traceback.format_exc())
+            logger.error(f"Error while exporting tokens: {ex}", exc_info=True)
             raise ex
 
     def satocash_deserialize_tokenv4(self, tokenv4_serialized: str):

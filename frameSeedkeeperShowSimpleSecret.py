@@ -4,10 +4,10 @@ import logging
 from constants import TYPE_DIC
 from framePopup import FramePopup
 from frameWidgetHeader import FrameWidgetHeader
-from utils import show_qr_code, toggle_entry_visibility, toggle_textbox_visibility, reset_qr_code, update_textbox
+from utils import show_qr_code, create_qr_button, create_copy_button, copy_to_clipboard, \
+    set_textbox_visibility, update_entry, make_textbox_readonly
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameSeedkeeperShowSecret(customtkinter.CTkFrame):
@@ -45,13 +45,13 @@ class FrameSeedkeeperShowSecret(customtkinter.CTkFrame):
             # Create secret field
             self.secret_label = master.create_label("Secret:", frame=self)
             self.secret_label.place(relx=0.05, rely=rely, anchor="nw")
+            self.secret_qr_button = create_qr_button(self, self.secret_label)  # command set in update_frame()
+            self.secret_copy_button = create_copy_button(self, self.secret_qr_button)  # command set in update_frame()
             rely += 0.05
             self.secret_textbox = master.create_textbox(frame=self)
             self.secret_textbox.place(relx=0.05, rely=rely, relheight=0.23, anchor="nw")
+            make_textbox_readonly(self.secret_textbox)  # display-only, selection/copy kept
 
-            # seed_qr label
-            self.qr_label = master.create_label("", frame=self)
-            self.qr_label.place(relx=0.8, rely=rely)
             rely+=0.1
 
             # Create action buttons
@@ -62,18 +62,13 @@ class FrameSeedkeeperShowSecret(customtkinter.CTkFrame):
                 command=lambda: None, # will be updated in update
                 frame=self
             )
-            self.delete_button.place(relx=0.55, rely=0.95, anchor="e")
-            # seed_qr button #todo use icons on the side?
-            self.qr_button = master.create_button(
-                text="QR code",
-                command=lambda: None,  # will be updated in update_frame()
-                frame=self
-            )
-            self.qr_button.place(relx=0.75, rely=0.95, anchor="e")
+            self.delete_button.place(relx=0.75, rely=0.95, anchor="e")
             # show
+            self.secret_visible = False  # secrets are hidden by default (#45)
+            self.exportable = True  # updated in update_frame()
             self.show_button = master.create_button(
-                text="Hide",
-                command= None, # will be updated in update
+                text="Show",
+                command=lambda: self.set_secret_visibility(not self.secret_visible),
                 frame=self
             )
             self.show_button.place(relx=0.95, rely=0.95, anchor="e")
@@ -84,36 +79,43 @@ class FrameSeedkeeperShowSecret(customtkinter.CTkFrame):
         except Exception as e:
             logger.error(f"FrameSeedkeeperShowSecret init error: {e}", exc_info=True)
 
+    def set_secret_visibility(self, visible: bool):
+        # show secret in plaintext or masked; the button proposes the opposite action
+        # an 'export not allowed' message is not a secret: always shown, with show/hide button disabled
+        visible = visible or not self.exportable
+        self.secret_visible = visible
+        set_textbox_visibility(self.secret_textbox, self.secret_decoded, visible)
+        self.show_button.configure(
+            text="Hide" if visible and self.exportable else "Show",
+            state="normal" if self.exportable else "disabled"
+        )
+
     def update_frame(self, secret):
-        logger.debug(f"update_frame() secret: {secret}")
-        self.label_entry.delete(0, "end")
-        self.label_entry.insert(0, secret['label'])
+        logger.debug(f"update_frame() secret id: {secret.get('id')} type: {secret.get('type')}")
+        update_entry(self.label_entry, secret['label'])
 
         # update header
         self.header.button.configure(text=f"   {TYPE_DIC.get(secret.get('type'), 'Unknown secret')} details")
 
         # Decode secret and update textbox (if export allowed)
+        self.exportable = (secret['export_rights'] != 0x02)
         if secret['export_rights'] == 0x02:
             secret_decoded = 'Export failed: export not allowed by SeedKeeper policy.'
         else:
             secret = self.master.controller.decode_secret(secret)
             secret_decoded = secret['secret_decoded']
-        update_textbox(self.secret_textbox, secret_decoded)
+        self.secret_decoded = secret_decoded  # used by set_secret_visibility()
 
-        # qr-code
-        reset_qr_code(self.qr_label)
-        self.qr_button.configure(
-            command=lambda params=(secret_decoded, self.qr_label): show_qr_code(params[0], params[1])
+        # qr-code & copy to clipboard (use decoded value, as the widget may be masked)
+        self.secret_qr_button.configure(
+            command=lambda data=secret_decoded: show_qr_code(data, self.master, "Secret")
+        )
+        self.secret_copy_button.configure(
+            command=lambda data=secret_decoded: copy_to_clipboard(self, data)
         )
 
-        self.show_button.configure(
-            command=lambda txt=secret_decoded: [
-                self.show_button.configure(
-                    text="Show" if self.show_button.cget("text") == "Hide" else "Hide"
-                ),
-                toggle_textbox_visibility(self.secret_textbox, txt),
-            ]
-        )
+        # secret is hidden by default
+        self.set_secret_visibility(False)
 
         # delete button
         self.delete_button.configure(

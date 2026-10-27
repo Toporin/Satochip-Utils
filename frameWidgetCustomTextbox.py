@@ -4,10 +4,10 @@ import customtkinter
 import logging
 from PIL import Image, ImageTk
 
+import constants
 from constants import ICON_PATH, BG_BUTTON
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameWidgetCustomTextbox(customtkinter.CTkFrame):
@@ -29,7 +29,7 @@ class FrameWidgetCustomTextbox(customtkinter.CTkFrame):
                 text=label,
                 bg_color="whitesmoke",
                 fg_color="whitesmoke",
-                font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal")
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=18, weight="normal")
             )
             self.label.place(relx=0.05, rely=rely, anchor="nw")
             rely += 0.05

@@ -10,7 +10,6 @@ from framePopup import FramePopup
 from frameWidgetLabel import FrameWidgetLabel
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameMenuSatodime(customtkinter.CTkFrame):
@@ -58,7 +57,7 @@ class FrameMenuSatodime(customtkinter.CTkFrame):
             for vault_nbr in range(3): # TODO: currently max 3 vaults supported
                 button_vault = self.master.create_menu_button(
                     self,
-                    f"Vault #{vault_nbr}",
+                    f"Vault #{vault_nbr + 1}",
                     "shield_icon_white.png",
                     rely, 0.05,
                     state="normal",
@@ -97,7 +96,7 @@ class FrameMenuSatodime(customtkinter.CTkFrame):
                 self, "Online help", "help.png",
                 0.88, 0.05,
                 state='normal',
-                command=lambda: webbrowser.open("https://satochip.io/setup-use-seedkeeper-on-desktop/", new=2)
+                command=lambda: webbrowser.open("https://satochip.io/setup-use-satodime-on-desktop/", new=2)
             )
 
             self.button_webshop = master.create_menu_button(
@@ -133,9 +132,8 @@ class FrameMenuSatodime(customtkinter.CTkFrame):
                         (self.master.controller.card_status["protocol_minor_version"] << 16) +
                         (self.master.controller.card_status["applet_major_version"] << 8) +
                         self.master.controller.card_status["applet_minor_version"])
-        logger.info(f"Satodime card full_version: {full_version}")
+        logger.debug(f"Satodime card full_version: {full_version}")
         if full_version <= 0x00010001 and not self.master.controller.cc.setup_done:
-            logger.warning(f"DEBUG DEBUG before POPUP ")
             FramePopup(
                 self,
                 "Take ownership?",
@@ -149,12 +147,3 @@ class FrameMenuSatodime(customtkinter.CTkFrame):
                 button2_txt="Cancel",
                 cmd2=lambda: logger.info(f"take ownership action cancelled"),
             )
-            logger.warning(f"DEBUG DEBUG after POPUP ")
-
-
-
-
-
-
-
-

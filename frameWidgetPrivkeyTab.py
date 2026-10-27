@@ -5,9 +5,9 @@ import logging
 
 from constants import TAB_BG_COLOR
 from frameWidgetLabel import FrameWidgetLabel
+from utils import create_qr_button, create_copy_button, copy_to_clipboard, show_qr_code
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameWidgetPrivkeyTab(customtkinter.CTkTabview):
@@ -30,6 +30,16 @@ class FrameWidgetPrivkeyTab(customtkinter.CTkTabview):
             self.privkey_label = FrameWidgetLabel(master=tab_privkey, text="Private key:")
             self.privkey_label.configure(fg_color=TAB_BG_COLOR)
             self.privkey_label.place(relx=0.05, rely=0.05, anchor="nw")
+            self.privkey_qr_button = create_qr_button(
+                tab_privkey, self.privkey_label,
+                lambda: show_qr_code(self.privkey_entry.get(), self.winfo_toplevel(), "Private key"),
+                bg_color=TAB_BG_COLOR
+            )
+            self.privkey_copy_button = create_copy_button(
+                tab_privkey, self.privkey_qr_button,
+                lambda: copy_to_clipboard(self, self.privkey_entry.get()),
+                bg_color=TAB_BG_COLOR
+            )
             self.privkey_entry = customtkinter.CTkEntry(
                 tab_privkey, width=500, height=37, corner_radius=10,
                 bg_color=TAB_BG_COLOR, fg_color=TAB_BG_COLOR, border_color=TAB_BG_COLOR,
@@ -42,6 +52,16 @@ class FrameWidgetPrivkeyTab(customtkinter.CTkTabview):
             self.wif_label = FrameWidgetLabel(master=tab_wif, text="WIF:")
             self.wif_label.configure(fg_color=TAB_BG_COLOR)
             self.wif_label.place(relx=0.05, rely=0.05, anchor="nw")
+            self.wif_qr_button = create_qr_button(
+                tab_wif, self.wif_label,
+                lambda: show_qr_code(self.wif_entry.get(), self.winfo_toplevel(), "WIF"),
+                bg_color=TAB_BG_COLOR
+            )
+            self.wif_copy_button = create_copy_button(
+                tab_wif, self.wif_qr_button,
+                lambda: copy_to_clipboard(self, self.wif_entry.get()),
+                bg_color=TAB_BG_COLOR
+            )
             self.wif_entry = customtkinter.CTkEntry(
                 tab_wif, width=500, height=37, corner_radius=10,
                 bg_color=TAB_BG_COLOR, fg_color=TAB_BG_COLOR, border_color=TAB_BG_COLOR,

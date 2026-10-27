@@ -4,6 +4,7 @@ import customtkinter
 import logging
 from PIL import Image, ImageTk
 
+import constants
 from constants import ICON_PATH, BG_BUTTON, MAIN_MENU_COLOR, HOVER_COLOR
 from constants import (HIGHLIGHT_COLOR, BG_MAIN_MENU, DEFAULT_BG_COLOR,
                        BG_HOVER_BUTTON, TEXT_COLOR, BUTTON_TEXT_COLOR)
@@ -12,7 +13,6 @@ from frameWidgetLabel import FrameWidgetLabel
 from utils import convert_name_to_photo_image
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameWidgetOwnership(customtkinter.CTkFrame):
@@ -50,10 +50,10 @@ class FrameWidgetOwnership(customtkinter.CTkFrame):
             self,
             width=28, height=35, corner_radius=100,
             text="",
-            font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal"),
+            font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=18, weight="normal"),
             border_spacing=0,
             bg_color=bg_color, fg_color=MAIN_MENU_COLOR,
-            hover_color=HOVER_COLOR, cursor="hand2",
+            hover_color=HOVER_COLOR,
             command=lambda: None  # updated later
         )
         self.ownership_button.pack(pady=5, side='left', fill="both")  # pack(side='left', expand=True, fill="both")

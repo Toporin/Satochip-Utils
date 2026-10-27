@@ -3,10 +3,10 @@ import logging
 
 from framePopup import FramePopup
 from frameWidgetHeader import FrameWidgetHeader
-from utils import toggle_entry_visibility, show_qr_code, reset_qr_code
+from utils import (set_entry_visibility, show_qr_code, create_qr_button, create_copy_button, copy_to_clipboard,
+                   update_entry)
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
@@ -45,6 +45,8 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
             self.login_label_rely= rely
             self.login_label = master.create_label("Login:", frame=self)
             self.login_label.place(relx=0.05, rely=rely, anchor="nw")
+            self.login_qr_button = create_qr_button(self, self.login_label)  # command set in update_frame()
+            self.login_copy_button = create_copy_button(self, self.login_qr_button)  # command set in update_frame()
             rely += 0.05
             self.login_entry_rely = rely
             self.login_entry = master.create_entry(frame=self)
@@ -55,6 +57,8 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
             self.url_label_rely = rely
             self.url_label = master.create_label("Url:", frame=self)
             self.url_label.place(relx=0.05, rely=rely, anchor="nw")
+            self.url_qr_button = create_qr_button(self, self.url_label)  # command set in update_frame()
+            self.url_copy_button = create_copy_button(self, self.url_qr_button)  # command set in update_frame()
             rely += 0.05
             self.url_entry_rely = rely
             self.url_entry = master.create_entry(frame=self)
@@ -64,13 +68,12 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
             # password
             self.password_label = master.create_label("Password:", frame=self)
             self.password_label.place(relx=0.05, rely=rely, anchor="nw")
+            self.password_qr_button = create_qr_button(self, self.password_label)  # command set in update_frame()
+            self.password_copy_button = create_copy_button(self, self.password_qr_button)  # command set in update_frame()
             rely += 0.05
             self.password_entry = master.create_entry(frame=self)
             self.password_entry.place(relx=0.05, rely=rely, anchor="nw")
 
-            # qr label
-            self.qr_label = master.create_label("", frame=self)
-            self.qr_label.place(relx=0.95, rely=rely, anchor="e")
             rely += 0.08
 
             # Create action buttons
@@ -80,18 +83,13 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
                 command=lambda: None,  # will be updated in update
                 frame=self
             )
-            self.delete_button.place(relx=0.55, rely=0.95, anchor="e")
-            # seed_qr button #todo use icons on the side?
-            self.qr_button = master.create_button(
-                text="QR code",
-                command=lambda: None,  # will be updated in update_frame()
-                frame=self
-            )
-            self.qr_button.place(relx=0.75, rely=0.95, anchor="e")
+            self.delete_button.place(relx=0.75, rely=0.95, anchor="e")
             # show
+            self.secret_visible = False  # secrets are hidden by default (#45)
+            self.exportable = True  # updated in update_frame()
             self.show_button = master.create_button(
-                text="Hide",
-                command=None,  # will be updated in update
+                text="Show",
+                command=lambda: self.set_secret_visibility(not self.secret_visible),
                 frame=self
             )
             self.show_button.place(relx=0.95, rely=0.95, anchor="e")
@@ -101,8 +99,20 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
         except Exception as e:
             logger.error(f"init error: {e}", exc_info=True)
 
+    def set_secret_visibility(self, visible: bool):
+        # show secret in plaintext or masked; the button proposes the opposite action
+        # an 'export not allowed' message is not a secret: always shown, with show/hide button disabled
+        visible = visible or not self.exportable
+        self.secret_visible = visible
+        set_entry_visibility(self.password_entry, visible)
+        self.show_button.configure(
+            text="Hide" if visible and self.exportable else "Show",
+            state="normal" if self.exportable else "disabled"
+        )
+
     def update_frame(self, secret):
         # Decode secret (if export allowed)
+        self.exportable = (secret['export_rights'] != 0x02)
         if secret['export_rights'] == 0x02:
             secret['password'] = 'Export failed: export not allowed by SeedKeeper policy.'
         else:
@@ -110,8 +120,7 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
 
         # update label
         label = secret.get('label', "")
-        self.label_entry.delete(0, "end")
-        self.label_entry.insert(0, label)
+        update_entry(self.label_entry, label)
         # update login (opt)
         login = secret.get('login', "")
         if login == "":
@@ -120,37 +129,42 @@ class FrameSeedkeeperShowPasswordSecret(customtkinter.CTkFrame):
         else:
             self.login_label.place(relx=0.05, rely=self.login_label_rely)
             self.login_entry.place(relx=0.05, rely=self.login_entry_rely)
-            self.login_entry.delete(0, "end")
-            self.login_entry.insert(0, login)
+            update_entry(self.login_entry, login)
         # update url (opt)
         url = secret.get('url', "")
-        if login == "":
+        if url == "":
             self.url_label.place_forget()
             self.url_entry.place_forget()
         else:
             self.url_label.place(relx=0.05, rely=self.url_label_rely)
             self.url_entry.place(relx=0.05, rely=self.url_entry_rely)
-            self.url_entry.delete(0, "end")
-            self.url_entry.insert(0, url)
+            update_entry(self.url_entry, url)
         # update password
         password = secret.get('password')
-        self.password_entry.delete(0, "end")
-        self.password_entry.insert(0, password)
+        update_entry(self.password_entry, password)
 
-        # qr-code
-        reset_qr_code(self.qr_label)
-        self.qr_button.configure(
-            command=lambda params=(password, self.qr_label): show_qr_code(params[0], params[1])
+        # qr-codes & copy to clipboard (use decoded values, as the widgets may be masked)
+        self.login_qr_button.configure(
+            command=lambda data=login: show_qr_code(data, self.master, "Login")
+        )
+        self.login_copy_button.configure(
+            command=lambda data=login: copy_to_clipboard(self, data)
+        )
+        self.url_qr_button.configure(
+            command=lambda data=url: show_qr_code(data, self.master, "Url")
+        )
+        self.url_copy_button.configure(
+            command=lambda data=url: copy_to_clipboard(self, data)
+        )
+        self.password_qr_button.configure(
+            command=lambda data=password: show_qr_code(data, self.master, "Password")
+        )
+        self.password_copy_button.configure(
+            command=lambda data=password: copy_to_clipboard(self, data)
         )
 
-        self.show_button.configure(
-            command=lambda txt=password: [
-                self.show_button.configure(
-                    text="Show" if self.show_button.cget("text") == "Hide" else "Hide"
-                ),
-                toggle_entry_visibility(self.password_entry),
-            ]
-        )
+        # password is hidden by default
+        self.set_secret_visibility(False)
 
         # delete button
         self.delete_button.configure(

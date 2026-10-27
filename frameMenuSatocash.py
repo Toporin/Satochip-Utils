@@ -7,7 +7,6 @@ from PIL import Image, ImageTk
 from constants import MAIN_MENU_COLOR, ICON_PATH
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 class FrameMenuSatocash(customtkinter.CTkFrame):
     def __init__(self, master):
@@ -86,7 +85,7 @@ class FrameMenuSatocash(customtkinter.CTkFrame):
                 self, "Online help", "help.png",
                 0.88, 0.05,
                 state='normal',
-                command=lambda: webbrowser.open("https://satochip.io/setup-use-seedkeeper-on-desktop/", new=2)
+                command=lambda: webbrowser.open("https://satochip.io/setup-use-satocash-on-desktop/", new=2)
             )
 
             self.button_webshop = master.create_menu_button(

@@ -1,12 +1,12 @@
 customtkinter==5.2.2
 pillow==10.3.0
-pysatochip==0.17.0
-pycryptotools==0.3.1
-pyscard==2.0.9
+pysatochip==0.18.7
+pycryptotools==0.4.0
+pyscard==2.3.1
 mnemonic==0.20
 pyqrcode~=1.2.1
-pyperclip~=1.9.0
 cbor2 # for cashu
+ndeflib==0.3.3
 #setuptools
 
 # For development: local pysatochip library in editable mode

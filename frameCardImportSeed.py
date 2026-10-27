@@ -1,11 +1,11 @@
 import customtkinter
 import logging
 
+import constants
 from constants import BUTTON_COLOR
 from frameWidgetHeader import FrameWidgetHeader
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameCardImportSeed(customtkinter.CTkFrame):
@@ -133,7 +133,7 @@ class FrameCardImportSeed(customtkinter.CTkFrame):
                 self,
                 text="I already have a seedphrase",
                 variable=self.radio_value, value="import",
-                font=customtkinter.CTkFont(family="Outfit", size=14, weight="normal"),
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=14, weight="normal"),
                 bg_color="whitesmoke", fg_color="green", hover_color="green",
                 command=update_radio_selection
             )
@@ -143,7 +143,7 @@ class FrameCardImportSeed(customtkinter.CTkFrame):
                 self,
                 text="I want to generate a new seedphrase",
                 variable=self.radio_value, value="generate",
-                font=customtkinter.CTkFont(family="Outfit", size=14, weight="normal"),
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=14, weight="normal"),
                 bg_color="whitesmoke", fg_color="green",
                 hover_color="green",
                 command=update_radio_selection,
@@ -155,7 +155,7 @@ class FrameCardImportSeed(customtkinter.CTkFrame):
                 text="12 words",
                 variable=self.radio_value_mnemonic,
                 value="generate_12",
-                font=customtkinter.CTkFont(family="Outfit", size=14, weight="normal"),
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=14, weight="normal"),
                 bg_color="whitesmoke", fg_color="green",
                 hover_color="green",
                 command=update_radio_mnemonic_length
@@ -165,7 +165,7 @@ class FrameCardImportSeed(customtkinter.CTkFrame):
                 text="24 words",
                 variable=self.radio_value_mnemonic,
                 value="generate_24",
-                font=customtkinter.CTkFont(family="Outfit", size=14, weight="normal"),
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=14, weight="normal"),
                 bg_color="whitesmoke", fg_color="green",
                 hover_color="green",
                 command=update_radio_mnemonic_length
@@ -188,14 +188,14 @@ class FrameCardImportSeed(customtkinter.CTkFrame):
                 border_color=BUTTON_COLOR, border_width=1,
                 width=557, height=83, border_spacing=0,
                 text_color="grey", wrap="word",
-                font=customtkinter.CTkFont(family="Outfit", size=13, weight="normal")
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=13, weight="normal")
             )
 
             self.warning_label = customtkinter.CTkLabel(
                 self,
                 text="Your mnemonic is important, be sure to save it in a safe place!",
                 text_color="red",
-                font=customtkinter.CTkFont(family="Outfit", size=12, weight="normal")
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=12, weight="normal")
             )
 
             self.cancel_button = master.create_button(

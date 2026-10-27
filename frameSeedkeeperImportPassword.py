@@ -2,10 +2,10 @@ import customtkinter
 import logging
 
 from frameWidgetHeader import FrameWidgetHeader
+import constants
 from constants import BG_BUTTON
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameSeedkeeperImportPassword(customtkinter.CTkFrame):
@@ -63,7 +63,7 @@ class FrameSeedkeeperImportPassword(customtkinter.CTkFrame):
                 self, corner_radius=20, bg_color="whitesmoke", fg_color=BG_BUTTON,
                 border_color=BG_BUTTON, border_width=1, width=500, height=83,
                 text_color="grey",
-                font=customtkinter.CTkFont(family="Outfit", size=13, weight="normal")
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=13, weight="normal")
             )
             self.password_text_box.place(relx=0.15, rely=0.68, anchor="w")
 
@@ -71,7 +71,7 @@ class FrameSeedkeeperImportPassword(customtkinter.CTkFrame):
             # password import to card
             def _save_password_to_card():
                 try:
-                    logger.info("Saving login/password to card")
+                    logger.debug("Saving login/password to card")
                     label = self.label_entry.get()
                     login = self.login_entry.get()
                     url = self.url_entry.get()

@@ -1,15 +1,16 @@
 import customtkinter
 import logging
+from typing import Optional
 from PIL import Image, ImageTk
 import webbrowser
-import pyperclip
 
+import constants
 from constants import ICON_PATH, STATUS_DIC, STATUS_COLOR_DIC
 from framePopup import FramePopup
 from frameWidgetLabel import FrameWidgetLabel
+from utils import copy_to_clipboard, add_tooltip
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
@@ -90,6 +91,10 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
             self.image = Image.open(self.icon_path2)
             self.image = self.image.resize((24, 24), Image.LANCZOS)
             self.photo_image2 = ImageTk.PhotoImage(self.image)
+            # faded icon shown when no explorer url is available
+            faded_image = self.image.convert("RGBA")
+            faded_image.putalpha(faded_image.getchannel("A").point(lambda alpha: alpha * 0.3))
+            self.photo_image2_disabled = ImageTk.PhotoImage(faded_image)
             # create button
             self.button_explore = customtkinter.CTkButton(
                 self.address_frame, width=28, height=28, text="",
@@ -99,6 +104,10 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
                 hover_color=bg_color,
             )
             self.button_explore.image = self.photo_image2  # keep a reference of image
+            add_tooltip(
+                self.button_explore,
+                lambda: "Explorer link not available" if self.button_explore.cget("state") == "disabled" else None
+            )
             self.button_explore.grid(row=0, column=3, padx=0, pady=0)
 
             # button for qr code
@@ -123,9 +132,29 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
             self.balance_label.grid(row=3, column=0, padx=5, pady=5, sticky="w")
             self.balance_value = FrameWidgetLabel(master=self, text="")
             self.balance_value.grid(row=3, column=1, padx=5, pady=0, sticky="w")
-            self.balance_value2 = FrameWidgetLabel(master=self, text="")
-            self.balance_value2.configure(font=customtkinter.CTkFont(family="Outfit", size=16, weight="normal"))
-            self.balance_value2.grid(row=3, column=2, padx=5, pady=0, sticky="w")
+            # frame with second balance and refresh button, stretched over column 2 so that the refresh
+            # button is right-aligned with the address buttons (same right padding as address_frame)
+            self.balance_frame = customtkinter.CTkFrame(self)
+            self.balance_frame.configure(bg_color="whitesmoke", fg_color="whitesmoke")
+            self.balance_frame.grid(row=3, column=2, padx=(0, 5), pady=0, sticky="ew")
+            self.balance_frame.grid_columnconfigure(0, weight=1)
+            self.balance_value2 = FrameWidgetLabel(master=self.balance_frame, text="")
+            self.balance_value2.configure(font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=16, weight="normal"))
+            self.balance_value2.grid(row=0, column=0, padx=5, pady=0, sticky="w")
+
+            # button to refresh balances (shown in update_frame() if a refresh command is provided)
+            self.icon_path4 = f"{ICON_PATH}{'refresh_icon.png'}"
+            self.image = Image.open(self.icon_path4)
+            self.image = self.image.resize((24, 24), Image.LANCZOS)
+            self.photo_image4 = ImageTk.PhotoImage(self.image)
+            self.button_refresh = customtkinter.CTkButton(
+                self.balance_frame, width=28, height=28, text="",
+                border_spacing=0,
+                image=self.photo_image4,
+                bg_color=bg_color, fg_color=bg_color,
+                hover_color=bg_color,
+            )
+            self.button_refresh.image = self.photo_image4  # keep a reference of image
 
         except Exception as e:
             logger.error(f"An unexpected error occurred in init: {e}", exc_info=True)
@@ -136,9 +165,10 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
             blockchain: str,
             symbol: str,
             address: str,
-            url: str,
+            url: Optional[str],
             balance: str,
-            balance2: str
+            balance2: str,
+            on_refresh=None
     ):
         logger.debug("FrameWidgetSatodimeCard update_frame")
         status_str = STATUS_DIC.get(status, 'unknown')
@@ -146,11 +176,21 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
         self.configure(border_color=status_color)
         self.status_value.configure(text=status_str, text_color=status_color)
         self.blockchain_value.configure(text=blockchain)
-        self.address_value.configure(text=address, font=customtkinter.CTkFont(family="Outfit", size=15, weight="normal"))
-        self.button_explore.configure(command=lambda: webbrowser.open(url, new=2))
-        self.button_copy.configure(command=lambda: pyperclip.copy(address))
-        self.balance_value.configure(text=balance)
-        self.balance_value2.configure(text=balance2)
+        self.address_value.configure(text=address, font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=15, weight="normal"))
+        # explorer button is disabled (but kept in place, to keep icons aligned) if no url is available
+        if url:
+            self.button_explore.configure(
+                state="normal", image=self.photo_image2, command=lambda: webbrowser.open(url, new=2)
+            )
+        else:
+            self.button_explore.configure(state="disabled", image=self.photo_image2_disabled, command=None)
+        self.button_copy.configure(command=lambda: copy_to_clipboard(self, address))
+        self.update_balance(balance, balance2)
+        if on_refresh is not None:
+            self.button_refresh.configure(command=on_refresh)
+            self.button_refresh.grid(row=0, column=1, padx=0, pady=0, sticky="e")
+        else:
+            self.button_refresh.grid_remove()
 
         # update coin icon
         icon_path = f"{ICON_PATH}{symbol}{'.png'}" # todo
@@ -172,3 +212,7 @@ class FrameWidgetSatodimeCard(customtkinter.CTkFrame):
                 qr_msg=address,
             )
         )
+
+    def update_balance(self, balance: str, balance2: str):
+        self.balance_value.configure(text=balance)
+        self.balance_value2.configure(text=balance2)

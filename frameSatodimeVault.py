@@ -1,9 +1,3 @@
-import base64
-import hashlib
-import hmac
-import urllib
-import webbrowser
-
 from PIL import Image, ImageTk
 import customtkinter
 import logging
@@ -18,12 +12,9 @@ from frameWidgetSatodimeCard import FrameWidgetSatodimeCard
 from utils import format_asset_balances
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameSatodimeVault(customtkinter.CTkFrame):
-
-    PAYBIS_SUPPORTED_CURRENCIES = {"BTC", "LTC", "BCH", "ETH", "POL"}
 
     def __init__(self, master):
         super().__init__(master)
@@ -85,7 +76,7 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
         logger.debug(f"update_frame start satodime_vaults_info.size: {len(self.master.controller.satodime_vaults_info)}")
 
         # update header
-        self.header.button.configure(text=f"Vault #{vault_nbr}")
+        self.header.button.configure(text=f"Vault #{vault_nbr + 1}")
 
         # fetch cached vault info
         status_int = self.master.controller.satodime_vaults_status[vault_nbr]
@@ -104,7 +95,7 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
         # update balance
         coin_info = self.master.controller.satodime_vaults_coin_info[vault_nbr]
         (balance_str, balance2_str) = format_asset_balances(coin_info)
-        url = coin_info.get('address_explorer_url', 'no url available')
+        url = coin_info.get('address_explorer_url')
 
         # update vault card
         #logger.debug(f"update_frame update vaultcard for vault #{vault_nbr}")
@@ -116,6 +107,7 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
             url=url,
             balance=balance_str,
             balance2=balance2_str,
+            on_refresh=lambda: self.master.refresh_satodime_vault_balance(vault_nbr),
         )
 
         # update frame based on status (buttons action + vaultcard status)
@@ -125,6 +117,20 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
         self.asset_list = self.master.controller.satodime_vaults_asset_list[vault_nbr]
         if len(self.asset_list) > 0:
             self.asset_tab.update_tab(self.asset_list)
+        else:
+            self.asset_tab.place_forget()
+
+    def update_balance(self, vault_nbr):
+        """Update balances and asset list from cached data, without changing the displayed tab"""
+        coin_info = self.master.controller.satodime_vaults_coin_info[vault_nbr]
+        (balance_str, balance2_str) = format_asset_balances(coin_info)
+        self.vaultcard.update_balance(balance_str, balance2_str)
+
+        self.asset_list = self.master.controller.satodime_vaults_asset_list[vault_nbr]
+        if len(self.asset_list) > 0:
+            self.asset_tab.update_tab(self.asset_list)
+            if self.show_asset_tab:
+                self.asset_tab.place(relx=0.0, rely=self.tabs_rely, anchor="nw")
         else:
             self.asset_tab.place_forget()
 
@@ -141,18 +147,8 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
 
         # update action buttons
         if status == STATE_SEALED:
-            # buy crypto
-            vault_info = self.master.controller.satodime_vaults_info[vault_nbr]
-            symbol = vault_info.get('symbol', 'unknown blockchain')
-            address = vault_info.get('address', 'unknown address')
-            if symbol in self.PAYBIS_SUPPORTED_CURRENCIES:
-                self.left_button.configure(
-                    text=f"Buy {symbol}",
-                    command=lambda: webbrowser.open(self.get_paybis_url(symbol, address), new=2)
-                )
-                self.left_button.place(relx=0.75, rely=0.95, anchor="e")
-            else:
-                self.left_button.place_forget()
+            # no left button action for sealed vaults
+            self.left_button.place_forget()
             # unseal
             self.right_button.configure(
                 text="Unseal",
@@ -199,66 +195,3 @@ class FrameSatodimeVault(customtkinter.CTkFrame):
                 text="Reset",
                 command=lambda index=vault_nbr: self.master.show_satodime_reset_vault(index)
             )
-
-    def get_paybis_url(self, symbol:str, address:str):
-
-        logger.debug(f"address: {address}")
-        logger.debug(f"symbol: {symbol}")
-
-        # format address if needed
-        paybis_address = address
-        if symbol == "BCH":
-            prefix = "bitcoincash:"
-            if address.startswith(prefix):
-                paybis_address = address[len(prefix):]
-
-        # format paybis curency code
-        paybis_symbol = None
-        if symbol in self.PAYBIS_SUPPORTED_CURRENCIES:
-            paybis_symbol = symbol
-
-        if paybis_symbol is not None:
-            logger.debug(f"paybis_address: {paybis_address}")
-            logger.debug(f"paybis_symbol: {paybis_symbol}")
-
-            # get API keys
-            paybis_id = self.master.controller.apikeys.get("API_KEY_PAYBIS_ID", "")
-            paybis_hmac_base64 = self.master.controller.apikeys.get("API_KEY_PAYBIS_HMAC", "")
-            paybis_hmac_bytes = base64.b64decode(paybis_hmac_base64)
-            logger.debug(f"paybis_id: {paybis_id}")
-            logger.debug(f"paybis_hmac_base64: {paybis_hmac_base64}")
-            logger.debug(f"paybis_hmac_bytes: {paybis_hmac_bytes}")
-
-            # base url
-            url = "https://widget.paybis.com/"
-
-            # build query
-            query = (f"?partnerId={paybis_id}&cryptoAddress={paybis_address}" +
-                     f"&currencyCodeFrom=EUR&currencyCodeTo={paybis_symbol}")
-            query_bytes = query.encode('utf-8')
-
-            # compute hmac-sha256
-            signature_bytes = hmac.new(
-                paybis_hmac_bytes,
-                msg=query_bytes,
-                digestmod=hashlib.sha256
-            ).digest()
-            logger.debug(f"signature_bytes.hex(): {signature_bytes.hex()}")
-
-            # base64 encoding with safe url format
-            encoded_signature = base64.standard_b64encode(signature_bytes)
-            encoded_signature = encoded_signature.decode('utf-8')
-            logger.debug(f"encoded_signature: {encoded_signature}")
-
-            encoded_signature = urllib.parse.quote(encoded_signature, safe='', encoding=None, errors=None)
-            logger.debug(f"encoded_signature(url_encoded): {encoded_signature}")
-
-            query += f"&signature={encoded_signature}"
-            url += query
-            logger.debug(f"url: {url}")
-            return url
-
-        else:
-            return ""
-
-

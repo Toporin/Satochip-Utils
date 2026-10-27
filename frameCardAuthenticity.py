@@ -2,11 +2,11 @@ import customtkinter
 import logging
 from PIL import Image, ImageTk
 
+import constants
 from constants import MAIN_MENU_COLOR, BUTTON_COLOR
 from frameWidgetHeader import FrameWidgetHeader
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 class FrameCardAuthenticity(customtkinter.CTkFrame):
@@ -52,7 +52,7 @@ class FrameCardAuthenticity(customtkinter.CTkFrame):
                 self, image=icon,
                 text=f"Your card is not authentic. ",
                 compound='right', bg_color="whitesmoke", fg_color="whitesmoke",
-                font=customtkinter.CTkFont(family="Outfit", size=18, weight="normal"),
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=18, weight="normal"),
             )
             self.icon_label.place(relx=0.2, rely=0.267, anchor="w")
             # text if not authentic
@@ -72,7 +72,7 @@ class FrameCardAuthenticity(customtkinter.CTkFrame):
                 text="Root CA certificate",
                 variable=self.certificate_radio_value,
                 value="root_ca_certificate",
-                font=customtkinter.CTkFont(family="Outfit", size=14, weight="normal"),
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=14, weight="normal"),
                 bg_color="whitesmoke", fg_color="green", hover_color="green",
                 command=self.update_radio_selection
             )
@@ -83,7 +83,7 @@ class FrameCardAuthenticity(customtkinter.CTkFrame):
                 text="Sub CA certificate",
                 variable=self.certificate_radio_value,
                 value="sub_ca_certificate",
-                font=customtkinter.CTkFont(family="Outfit", size=14, weight="normal"),
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=14, weight="normal"),
                 bg_color="whitesmoke", fg_color="green", hover_color="green",
                 command=self.update_radio_selection
             )
@@ -94,7 +94,7 @@ class FrameCardAuthenticity(customtkinter.CTkFrame):
                 text="Device certificate",
                 variable=self.certificate_radio_value,
                 value="device_certificate",
-                font=customtkinter.CTkFont(family="Outfit", size=14, weight="normal"),
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=14, weight="normal"),
                 bg_color="whitesmoke", fg_color="green", hover_color="green",
                 command=self.update_radio_selection
             )
@@ -106,7 +106,7 @@ class FrameCardAuthenticity(customtkinter.CTkFrame):
                 bg_color='whitesmoke', fg_color=BUTTON_COLOR, border_color=BUTTON_COLOR,
                 border_width=0, width=581, text_color="grey",
                 height= 150,
-                font=customtkinter.CTkFont(family="Outfit", size=13, weight="normal")
+                font=customtkinter.CTkFont(family=constants.FONT_FAMILY, size=13, weight="normal")
             )
 
             self.cancel_button = master.create_button(
@@ -122,7 +122,7 @@ class FrameCardAuthenticity(customtkinter.CTkFrame):
             logger.error(f"An unexpected error occurred in check_authenticity: {e}", exc_info=True)
 
     def update_radio_selection(self):
-        logger.info(f"Button clicked: {self.certificate_radio_value.get()}")
+        logger.debug(f"Button clicked: {self.certificate_radio_value.get()}")
         if self.certificate_radio_value.get() == 'root_ca_certificate':
             self.master.update_textbox(self.text_box, self.txt_ca)
             self.text_box.place(relx=0.05, rely=0.4, anchor="nw")
@@ -136,8 +136,8 @@ class FrameCardAuthenticity(customtkinter.CTkFrame):
     def update_frame(self):
 
         if self.master.controller.cc.card_present:
-            logger.info("FrameCardAuthenticity update_frame() Card detected: checking authenticity")
-            is_authentic, self.txt_ca, self.txt_subca, self.txt_device, self.txt_error = self.master.controller.cc.card_verify_authenticity()
+            logger.debug("FrameCardAuthenticity update_frame() Card detected: checking authenticity")
+            is_authentic, self.txt_ca, self.txt_subca, self.txt_device, self.txt_error = self.master.controller.verify_card_authenticity()
             if self.txt_error != "":
                 self.txt_device = self.txt_error + "\n------------------\n" + self.txt_device
 
@@ -150,6 +150,10 @@ class FrameCardAuthenticity(customtkinter.CTkFrame):
                     text=f"Your card is authentic. ",
                 )
                 self.text_box.configure(require_redraw=True, height= 228)
+                self.text_warning1.configure(text="")
+                self.text_warning2.configure(text="")
+                self.text_warning3.configure(text="")
+                self.text_warning4.configure(text="")
             else:
                 icon_image = Image.open("./pictures_db/not_genuine_card.jpg")
                 icon = customtkinter.CTkImage(light_image=icon_image, size=(30, 30))

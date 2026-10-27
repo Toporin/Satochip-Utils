@@ -18,7 +18,7 @@ License: GPLv3. Current version: `0.4.0-beta` (single source of truth in `versio
 - **GUI**: `customtkinter` 5.2.2 (Tkinter wrapper) + `Pillow`. Fixed 1000x600 window.
 - **Smart card communication**: `pysatochip` 0.18.5 (`CardConnector`, APDUs) on top of `pyscard` (PC/SC).
   Card insertion/removal is detected via pyscard's `CardMonitor`/`CardObserver`.
-- **Blockchains**: `pycryptotools` 0.4.0 (coin/address/explorer logic), `mnemonic` (BIP39).
+- **Blockchains**: `pycryptotools` 0.4.1 (coin/address/explorer logic), `mnemonic` (BIP39).
 - **Misc**: `pyqrcode`, `cbor2` (Cashu token serialization), `ndeflib` (imported as `ndef`, NDEF record encoding).
 - **Packaging**: PyInstaller (`package/satochip_utils.spec`); pinned PyInstaller 6.7.0 on Linux,
   5.13.2 on Windows/macOS (Windows build recompiles the bootloader from source).

@@ -6,44 +6,65 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [0.4.1]
 
-Fix invisible text labels on macOS when system dark mode is enabled by pinning light appearance mode (#51).
-Fix garbled/clipped UI text on Tails OS: substitute an available system font when the "Outfit" font is not installed (#59).
-Show a clear error popup and exit cleanly when the PC/SC service (pcscd) is unavailable (#60).
-Fix Satodime vault reset possible without checking the confirmation checkbox (#40).
-Fix Satodime ownership status not refreshed when another card is inserted: the previous card's ownership (and unlock secret) was kept, so the new card showed "You are the owner" and vault operations failed (#43).
-Fix crash when inserting a Satodime with more vaults than the previously inserted one (vault data was not resized).
-Satodime vaults are now numbered from 1 in the UI (menu, vault screens and popups), matching the mobile apps (#38).
-Satodime: add a refresh button at the end of the "Balance" row (overview and vault screens) to fetch up-to-date balances and assets from the blockchain explorers without restarting the app (#35).
-Satodime: remove the "Buy" button (Paybis) from the sealed vault screen.
-Fix the app hanging for several seconds when closing (e.g. after opening Satodime vault screens): the window is now hidden and the app exits without destroying each widget, and the card is disconnected without updating the closing UI.
-Satodime: when no block explorer link is available for a vault (e.g. explorer request failed), the "open in explorer" button is greyed out and disabled, with an "Explorer link not available" tooltip, instead of trying to open an invalid link.
-Show a hand cursor over every clickable button, checkbox, radio button, tab and dropdown menu on Linux too (as on Windows and macOS), and an arrow cursor over disabled ones.
-Satodime: balances are now fetched from the blockchain explorers in the background. Inserting a card shows the vaults immediately with a "Loading..." balance, card removal is no longer delayed until all explorer requests complete, and the window no longer freezes while refreshing a balance.
-Fix Seedkeeper secret details screens: output fields are now read-only (selection and copy to clipboard still work) (#47).
-Fix large QR codes not fitting on screen: Seedkeeper "QR code" and "SeedQR" buttons now open the QR code in a popup, scaled to fit the screen (#48).
-Add QR code buttons next to the Satodime vault "Private key:" and "WIF:" labels, showing the key as a QR code in a popup (#36).
-Seedkeeper mnemonic details: add QR code buttons next to the "Mnemonic:" and "Passphrase:" labels, so the passphrase can be exported as a separate QR code; remove the duplicate "QR code" button (SeedQR is kept) (#53).
-Seedkeeper mnemonic details: display the BIP32 master fingerprint of the seed (including passphrase), so wallets such as SeedSigner can be checked (#53).
-Seedkeeper password and data/descriptor details: add QR code buttons next to the "Login:", "Url:", "Password:" and "Secret:" labels, and remove the duplicate "QR code" button.
-Fix Seedkeeper password details: the URL field was shown or hidden depending on the login instead of the URL.
-Fix "copy to clipboard" crashing on Linux when xclip/xsel is not installed: use the Tk clipboard instead of pyperclip (dependency removed).
-Add "copy to clipboard" icon buttons next to every QR code icon (Seedkeeper mnemonic, passphrase, password, login, URL and secret fields; Satodime private key and WIF).
-Clear data copied to the clipboard by the app after 30 seconds, and when the app is closed (only if the clipboard still holds that data).
-Seedkeeper secret details: secrets (mnemonic, passphrase, password, secret data) are now hidden by default; the bottom-right button shows "Show" and switches to "Hide" once the secret is displayed. The hidden state is reset each time a secret is opened (#45).
-Seedkeeper secret details: the "export not allowed" message is always displayed in plaintext, with the Show/Hide button disabled.
-Seedkeeper secret list: add a search field (filter by label) and a secret type filter (All, Mnemonic, Password, Descriptors, Data); the list updates as you type (#31).
-About screen: show the NDEF status (unsupported, disabled, dynamic or the actual NDEF content) and add a button to configure it. The new "Configure NDEF" screen can disable NDEF, set a URL, an Android app (AAR), a predefined choice, a raw hex NDEF or (Satodime only) a dynamic NDEF (#58).
-Seedkeeper secret list: draw the table on a single canvas, so that long lists display and filter instantly (displaying many secrets was very slow and could crash with an X BadAlloc error on Linux).
-Use the same canvas table for all lists (Seedkeeper card logs and backup result, Satocash balances, Satodime tokens/NFTs): long lists now display instantly. Satodime asset tables no longer duplicate their rows on each refresh, and their last rows are no longer cut off.
-Fix mouse wheel scrolling in lists: scrolling now works on Linux, and applies to the list under the pointer (the last created list used to capture all mouse wheel events).
-Fix authenticity check displaying a stale result when a card was checked after a genuine one.
-Move label editing from the settings menus to the About screen, via a pen icon button next to the card label.
-Add NFC enable/disable screen with radio state selector and blocked-state warning, accessible via a switch icon button next to the NFC status on the About screen.
-Add Satochip "Reset seed" screen with backup confirmation checkbox, accessible via a seeded-state button (pen/trash icon) next to the seeded status on the About screen.
-Add `-l`/`--log-file [PATH]` option to write logs to a file (default `~/.satotools/satotools.log` for binaries, where no console is shown).
-Fix logging: `-v`/`--verbose` now controls the level of all app modules and pysatochip (DEBUG logs were always shown, while pysatochip DEBUG logs were never shown); uncaught exceptions are now logged.
-Stop logging sensitive data: Satocash token contents (proofs) and Seedkeeper secret values are no longer written to logs.
+Uses pysatochip v0.18.7 & pycryptotools v0.4.1.
 
+## Highlights
+
+- **Seedkeeper:** secrets are now hidden by default, the secret list gains search and type filters, and every sensitive field gets QR code and copy-to-clipboard buttons.
+- **Satodime:** balances load in the background, there's a new refresh button, and vaults are now numbered from 1 to match the mobile apps.
+- **About screen:** new controls for NDEF, NFC, card label and Satochip seed reset.
+- **Faster, more stable UI:** long lists display instantly, the app no longer hangs on close, and many Linux, macOS and Tails display issues are fixed.
+
+## New features
+
+### Seedkeeper
+- Search field and secret type filter (All, Mnemonic, Password, Descriptors, Data) in the secret list, updating as you type (#31)
+- Secrets (mnemonic, passphrase, password, data) hidden by default, with a Show/Hide button that resets each time a secret is opened (#45)
+- QR code and copy buttons next to the Mnemonic, Passphrase, Login, URL, Password and Secret fields; the passphrase can now be exported as its own QR code (#53)
+- BIP32 master fingerprint shown for mnemonics (passphrase included), so you can check it against wallets such as SeedSigner (#53)
+- Large QR codes open in a popup scaled to fit the screen (#48)
+
+### Satodime
+- Refresh button on the Balance row to fetch up-to-date balances and assets without restarting (#35)
+- QR code and copy buttons for the vault private key and WIF (#36)
+- Vaults numbered from 1 in the UI (#38)
+- "Open in explorer" button is disabled with a tooltip when no explorer link is available
+- Removed the "Buy" (Paybis) button from the sealed vault screen
+
+### Card management (About screen)
+- NDEF status display and a new "Configure NDEF" screen: disable, URL, Android app (AAR), predefined choice, raw hex, or dynamic NDEF on Satodime (#58)
+- NFC enable/disable screen, with a warning when NFC is blocked
+- Satochip "Reset seed" screen with a backup confirmation checkbox
+- Card label editing moved here from the settings menus
+
+### Logging
+- New `-l/--log-file [PATH]` option (default `~/.satotools/satotools.log` for binaries)
+- `-v/--verbose` now controls log levels for all modules, including pysatochip; uncaught exceptions are logged
+
+## Security & privacy
+- Clipboard data copied by the app is cleared after 30 seconds and on exit (only if it's still the app's data)
+- Seedkeeper secret values and Satocash token proofs are no longer written to logs
+- Seedkeeper detail fields are now read-only (#47)
+- Satodime vault reset now requires the confirmation checkbox (#40)
+
+## Performance
+- All lists (Seedkeeper secrets, logs and backup results, Satocash balances, Satodime assets) are drawn on a single canvas and display instantly; this also fixes an X BadAlloc crash on Linux with many secrets
+- Satodime balances are fetched in the background: vaults appear immediately, card removal isn't delayed, and the window no longer freezes during refresh
+- The app closes instantly instead of hanging for several seconds
+
+## Bug fixes
+- Satodime ownership status not refreshed when a different card is inserted (#43)
+- Crash when inserting a Satodime with more vaults than the previous card
+- Duplicated and cut-off rows in Satodime asset tables
+- Password details showing or hiding the URL field based on the login instead of the URL
+- Authenticity check showing a stale result after checking a genuine card
+- Mouse wheel scrolling now works on Linux and scrolls the list under the pointer
+
+## Platform fixes
+- **macOS:** invisible text labels in system dark mode (#51)
+- **Tails OS:** garbled or clipped text when the Outfit font is missing (#59)
+- **Linux:** copy to clipboard no longer crashes without xclip/xsel (pyperclip dependency removed); hand cursor now shown over clickable elements
+- Clear error message and clean exit when the PC/SC service (pcscd) is unavailable (#60)
 
 # [0.4.0-beta]
 

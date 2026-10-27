@@ -277,26 +277,8 @@ def mnemonic_to_entropy_bytes(mnemonic) -> bytearray:
 
 def mnemonic_to_entropy_string(mnemonic) -> str:
     try:
-        # get the english wordlist
-        if getattr(sys, 'frozen', False):
-            application_path = sys._MEIPASS
-        else:
-            application_path = os.path.dirname(os.path.abspath(__file__))
-        logger.debug(f"Application path: {application_path}")
-
-        # Construct the path to the wordlist directory
-        wordlist_dir = os.path.join(application_path, 'wordlist')
-        logger.info(f"wordlist directory: {wordlist_dir}")
-
-        # Check if the directory exists
-        wordlist_path = os.path.join(wordlist_dir, "english.txt")
-        logger.info(f"wordlist path: {wordlist_path}")
-
-        # load list from file
-        wordlist = None
-        if os.path.exists(wordlist_path) and os.path.isfile(wordlist_path):
-            with open(wordlist_path, "r", encoding="utf-8") as f:
-                wordlist = [w.strip() for w in f.readlines()]
+        # BIP39 english wordlist shipped with the mnemonic library
+        wordlist = Mnemonic("english").wordlist
 
         # compute standard SeedQR data
         if isinstance(mnemonic, str):
@@ -316,8 +298,9 @@ def mnemonic_to_entropy_string(mnemonic) -> str:
         entropy_int_string = ""
         for word in words:
             # Find the words index in the wordlist
-            ndx = wordlist.index(normalize_string(word))
-            if ndx < 0:
+            try:
+                ndx = wordlist.index(normalize_string(word))
+            except ValueError:
                 raise LookupError('Unable to find "%s" in word list.' % word)
             entropy_int_string += str(ndx).zfill(4)
 

@@ -18,7 +18,7 @@ License: GPLv3. Current version: `0.4.0-beta` (single source of truth in `versio
 - **GUI**: `customtkinter` 5.2.2 (Tkinter wrapper) + `Pillow`. Fixed 1000x600 window.
 - **Smart card communication**: `pysatochip` 0.18.5 (`CardConnector`, APDUs) on top of `pyscard` (PC/SC).
   Card insertion/removal is detected via pyscard's `CardMonitor`/`CardObserver`.
-- **Blockchains**: `pycryptotools` 0.3.1 (coin/address/explorer logic), `mnemonic` (BIP39).
+- **Blockchains**: `pycryptotools` 0.4.0 (coin/address/explorer logic), `mnemonic` (BIP39).
 - **Misc**: `pyqrcode`, `cbor2` (Cashu token serialization), `ndeflib` (imported as `ndef`, NDEF record encoding).
 - **Packaging**: PyInstaller (`package/satochip_utils.spec`); pinned PyInstaller 6.7.0 on Linux,
   5.13.2 on Windows/macOS (Windows build recompiles the bootloader from source).
@@ -58,7 +58,6 @@ Flat layout — all application modules live at the repo root (no Python package
   - `frameWidget*` — reusable widgets (header, labels, canvas table used by all lists, asset table, ...).
   - Note: `FrameSeedkeeperGenerateSecretSelectType.py` deviates with a leading capital F.
 - `pictures_db/` — PNG/JPG assets loaded at runtime via relative paths (`./pictures_db/...`).
-- `wordlist/english.txt` — BIP39 wordlist (also bundled into `pycryptotools/` in the spec as a hack).
 - `pysatochip/cert/` — root/sub CA certificates used for card authenticity verification
   (this directory ships certificates only; the library itself comes from pip).
 - `package/` — PyInstaller spec and per-platform build scripts (see Build & release).
@@ -99,7 +98,7 @@ Optional: copy `api_keys (sample).ini` to `api_keys.ini` and fill in block-explo
 ## Build & release
 
 Binary packaging uses PyInstaller driven by `package/satochip_utils.spec`, which bundles
-`pictures_db/`, `wordlist/`, `pysatochip/cert/`, icons and `*.ini` files, and names artifacts
+`pictures_db/`, the `mnemonic` BIP39 wordlists, `pysatochip/cert/`, icons and `*.ini` files, and names artifacts
 `Satochip-Utils-<os>-<arch>-<VERSION>` (VERSION imported from `version.py`).
 
 - Linux: `bash package/Build-Linux.sh` (Ubuntu 22.04 only; script checks), legacy 20.04 variant

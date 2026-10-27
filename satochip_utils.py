@@ -98,8 +98,9 @@ def log_tk_callback_exception(exc_type, exc_value, exc_traceback) -> None:
     logger.error("Unhandled exception in Tk callback", exc_info=(exc_type, exc_value, exc_traceback))
 
 
-def check_cert_dir(application_path: str) -> None:
-    cert_dir = os.path.join(application_path, 'pysatochip', 'cert')
+def check_cert_dir() -> None:
+    # certificates are loaded by pysatochip from its own package directory
+    cert_dir = os.path.join(os.path.dirname(pysatochip.__file__), 'cert')
     logger.info(f"Cert directory: {cert_dir}")
     if not os.path.exists(cert_dir):
         logger.error(f"Cert directory not found: {cert_dir}")
@@ -139,7 +140,7 @@ def main() -> None:
     logger.info(f"Application path: {application_path}")
     # Set working directory to application path
     os.chdir(application_path)
-    check_cert_dir(application_path)
+    check_cert_dir()
 
     view = View()
     view.report_callback_exception = log_tk_callback_exception

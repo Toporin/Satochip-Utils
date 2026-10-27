@@ -40,12 +40,12 @@ pkgs_remove = [
 
 datai = [
     (ICON, "gui/"),
-    ("../pysatochip/cert/*", "pysatochip/cert/"),
     ("../pictures_db/*", "pictures_db/"),
     ("../*.png", "."),
     ("../*.ini", "."),  # config files
 ]
 datai += collect_data_files("mnemonic")  # BIP39 wordlists (mnemonic/wordlist/*.txt)
+datai += collect_data_files("pysatochip", includes=["cert/*"])  # CA certificates for card authenticity checks
 
 hiddeni = []
 if os_platform == "linux":

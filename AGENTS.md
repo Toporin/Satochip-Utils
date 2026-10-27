@@ -58,8 +58,6 @@ Flat layout — all application modules live at the repo root (no Python package
   - `frameWidget*` — reusable widgets (header, labels, canvas table used by all lists, asset table, ...).
   - Note: `FrameSeedkeeperGenerateSecretSelectType.py` deviates with a leading capital F.
 - `pictures_db/` — PNG/JPG assets loaded at runtime via relative paths (`./pictures_db/...`).
-- `pysatochip/cert/` — root/sub CA certificates used for card authenticity verification
-  (this directory ships certificates only; the library itself comes from pip).
 - `package/` — PyInstaller spec and per-platform build scripts (see Build & release).
 - `setup.py` / `setup.cfg` / `requirements.txt` — packaging metadata and lint config.
 
@@ -98,7 +96,7 @@ Optional: copy `api_keys (sample).ini` to `api_keys.ini` and fill in block-explo
 ## Build & release
 
 Binary packaging uses PyInstaller driven by `package/satochip_utils.spec`, which bundles
-`pictures_db/`, the `mnemonic` BIP39 wordlists, `pysatochip/cert/`, icons and `*.ini` files, and names artifacts
+`pictures_db/`, the `mnemonic` BIP39 wordlists, the pysatochip CA certificates (`cert/`), icons and `*.ini` files, and names artifacts
 `Satochip-Utils-<os>-<arch>-<VERSION>` (VERSION imported from `version.py`).
 
 - Linux: `bash package/Build-Linux.sh` (Ubuntu 22.04 only; script checks), legacy 20.04 variant
@@ -158,8 +156,9 @@ Satodime explorer checks; `DEBUG_EXPLORER` flag in `controller.py`).
 - The app manipulates highly sensitive material: BIP39 seedphrases, passphrases, PIN codes
   (4–16 chars, entered via popup dialogs), private keys, Cashu tokens. Avoid logging secrets;
   existing code logs operations but not secret values — keep it that way.
-- Card authenticity is verified on-device using the certificate chain in `pysatochip/cert/`;
-  this directory must ship with the app (the PyInstaller spec bundles it).
+- Card authenticity is verified on-device using the CA certificates shipped in the installed
+  pysatochip package (`pysatochip/cert/`, including the test CA used as a fallback); they must
+  ship with the app (the PyInstaller spec collects them with `collect_data_files`).
 - Factory reset (in `frameCardFactoryReset.py` / `ApplicationMode.FactoryResetV*`) wipes all keys
   and settings from the card; it requires repeated card removal/insertion cycles. Treat changes
   to this flow with extra care.

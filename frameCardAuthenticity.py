@@ -137,7 +137,7 @@ class FrameCardAuthenticity(customtkinter.CTkFrame):
 
         if self.master.controller.cc.card_present:
             logger.debug("FrameCardAuthenticity update_frame() Card detected: checking authenticity")
-            is_authentic, self.txt_ca, self.txt_subca, self.txt_device, self.txt_error = self.master.controller.cc.card_verify_authenticity()
+            is_authentic, self.txt_ca, self.txt_subca, self.txt_device, self.txt_error = self.master.controller.verify_card_authenticity()
             if self.txt_error != "":
                 self.txt_device = self.txt_error + "\n------------------\n" + self.txt_device
 

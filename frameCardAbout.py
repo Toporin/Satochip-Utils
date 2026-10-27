@@ -201,7 +201,7 @@ class FrameCardAbout(customtkinter.CTkFrame):
 
                 self.card_label.configure(text=f"Label: [{self.master.controller.get_card_label_infos()}]")
 
-                is_authentic, txt_ca, txt_subca, txt_device, txt_error = self.master.controller.cc.card_verify_authenticity()
+                is_authentic, txt_ca, txt_subca, txt_device, txt_error = self.master.controller.verify_card_authenticity()
                 self.card_genuine.configure(text=f"Genuine: [YES]" if is_authentic else "Genuine: [NO]")
 
                 self.update_ndef_status(protocol_version)

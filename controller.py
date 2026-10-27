@@ -366,6 +366,17 @@ class Controller:
             self.view.show("ERROR", f"Failed to reset seed: {e}", "Ok", None,
                            "./pictures_db/error_popup_red.png")
 
+    def verify_card_authenticity(self):
+        """Check the card certificate chain; any unexpected error is reported as not authentic.
+
+        Returns (is_authentic, txt_ca, txt_subca, txt_device, txt_error), as card_verify_authenticity().
+        """
+        try:
+            return self.cc.card_verify_authenticity()
+        except Exception as ex:
+            logger.error(f"Error while checking card authenticity: {ex}", exc_info=True)
+            return False, "(empty)", "(empty)", "(empty)", f"Error while checking card authenticity: {ex}"
+
     def get_card_label_infos(self):
         """Get label info"""
         if self.cc.card_present:

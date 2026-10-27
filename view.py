@@ -1,4 +1,5 @@
 import logging
+import queue
 import sys
 import os
 import tkinter
@@ -73,6 +74,7 @@ HOVER_COLOR = "grey"
 TEXT_COLOR = "black"
 
 ICON_PATH = "./pictures_db/"
+MAIN_THREAD_CALLS_POLL_MS = 100
 
 
 class View(customtkinter.CTk):
@@ -157,6 +159,10 @@ class View(customtkinter.CTk):
             self.satodime_vaults_need_update = True
             # app is in seedbackup mode (inserting/removing card should not trigger start screen!)
             self.appMode = ApplicationMode.Normal
+
+            # calls posted by background threads, executed in the Tk main thread (see run_in_main_thread)
+            self._main_thread_calls = queue.Queue()
+            self.after(MAIN_THREAD_CALLS_POLL_MS, self._process_main_thread_calls)
 
             # Initializing controller
             self.controller = Controller(self)
@@ -243,6 +249,22 @@ class View(customtkinter.CTk):
     def restart_app(self):
         self.destroy()
         os.execl(sys.executable, sys.executable, *sys.argv)
+
+    def run_in_main_thread(self, func: Callable, *args):
+        """Schedule func(*args) in the Tk main thread. Safe to call from any thread."""
+        self._main_thread_calls.put((func, args))
+
+    def _process_main_thread_calls(self):
+        while True:
+            try:
+                func, args = self._main_thread_calls.get_nowait()
+            except queue.Empty:
+                break
+            try:
+                func(*args)
+            except Exception as e:
+                logger.error(f"Error in call from background thread: {e}", exc_info=True)
+        self.after(MAIN_THREAD_CALLS_POLL_MS, self._process_main_thread_calls)
 
     ##############
     """ UTILS """
@@ -672,6 +694,7 @@ class View(customtkinter.CTk):
 
                     # Satodime: reset ownership data and vault content
                     self.controller.cc.satodime_set_unlock_secret([])
+                    self.controller.satodime_cancel_balance_fetch()
                     self.satodime_vault_frames = None
                     self.satodime_overview_frame = None
 
@@ -1057,21 +1080,17 @@ class View(customtkinter.CTk):
             )
 
     def refresh_satodime_vault_balance(self, vault_nbr: SupportsIndex):
-        """Fetch up-to-date balances of a vault, then refresh every frame displaying them"""
+        """Fetch up-to-date balances of a vault in the background (see on_satodime_balance_fetched)"""
         logger.debug(f"refresh_satodime_vault_balance start vault: {vault_nbr}")
-        self.configure(cursor="watch")
-        self.update_idletasks()
-        try:
-            is_ok = self.controller.satodime_vault_refresh_balance(vault_nbr)
-        finally:
-            self.configure(cursor="")
+        if self.controller.satodime_fetch_balance_async(vault_nbr, user_request=True):
+            self.update_satodime_vault_balance_frames(vault_nbr)  # show "Loading..."
 
-        if self.satodime_overview_frame is not None:
-            self.satodime_overview_frame.update_frame_vault(vault_nbr)
-        if self.satodime_vault_frames is not None and isinstance(self.satodime_vault_frames[vault_nbr], FrameSatodimeVault):
-            self.satodime_vault_frames[vault_nbr].update_balance(vault_nbr)
-
-        if not is_ok:
+    def on_satodime_balance_fetched(self, vault_nbr: int, generation: int, is_ok: bool, user_request: bool):
+        """Called in the main thread once the balances of a vault have been fetched"""
+        if generation != self.controller.satodime_fetch_generation:
+            return  # card removed in the meantime
+        self.update_satodime_vault_balance_frames(vault_nbr)
+        if user_request and not is_ok:
             self.show(
                 "ERROR",
                 "Failed to refresh balance!\nPlease check your internet connection and try again.",
@@ -1079,6 +1098,13 @@ class View(customtkinter.CTk):
                 None,
                 "./pictures_db/error_popup_red.png"
             )
+
+    def update_satodime_vault_balance_frames(self, vault_nbr: SupportsIndex):
+        """Refresh every frame displaying the balances of a vault, from cached data"""
+        if self.satodime_overview_frame is not None:
+            self.satodime_overview_frame.update_frame_vault(vault_nbr)
+        if self.satodime_vault_frames is not None and isinstance(self.satodime_vault_frames[vault_nbr], FrameSatodimeVault):
+            self.satodime_vault_frames[vault_nbr].update_balance(vault_nbr)
 
     def show_satodime_vault(self, vault_nbr: SupportsIndex):
         try:

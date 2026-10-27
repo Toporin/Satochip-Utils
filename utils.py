@@ -353,6 +353,8 @@ def format_asset_balances(asset: Dict[str, Any]) -> (str, str):
     # logger.debug(f"balance_dec: {balance_dec} {symbol}")
     balance_str = f""
     balance2_str = f""
+    if asset.get('is_loading'):  # balance being fetched from blockchain explorers
+        return "Loading...", balance2_str
     if balance_dec is None:
         return balance_str, balance2_str
 

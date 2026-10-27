@@ -5,6 +5,7 @@ import json
 import logging
 import math
 import sys
+import threading
 
 import cbor2 # for cashu
 from configparser import ConfigParser
@@ -73,6 +74,12 @@ class Controller:
         self.satodime_vaults_info = []
         self.satodime_vaults_coin_info = []
         self.satodime_vaults_asset_list = []
+        # balances are fetched from blockchain explorers in background threads (see
+        # satodime_fetch_balance_async); the generation identifies the inserted card so that
+        # results arriving after the card is removed are discarded
+        self.satodime_vaults_fetch_pending = []
+        self.satodime_fetch_generation = 0
+        self._satodime_fetch_lock = threading.Lock()
 
     def get_card_status(self):
         if self.cc.card_present:
@@ -1370,9 +1377,12 @@ class Controller:
 
         # (re)initialize vault data for the current card, as the number of vaults may differ
         # from a previously inserted card
-        self.satodime_vaults_info = [{} for _ in range(self.satodime_nb_vaults)]
-        self.satodime_vaults_coin_info = [{} for _ in range(self.satodime_nb_vaults)]
-        self.satodime_vaults_asset_list = [[] for _ in range(self.satodime_nb_vaults)]
+        with self._satodime_fetch_lock:
+            self.satodime_fetch_generation += 1
+            self.satodime_vaults_info = [{} for _ in range(self.satodime_nb_vaults)]
+            self.satodime_vaults_coin_info = [{} for _ in range(self.satodime_nb_vaults)]
+            self.satodime_vaults_asset_list = [[] for _ in range(self.satodime_nb_vaults)]
+            self.satodime_vaults_fetch_pending = [False] * self.satodime_nb_vaults
 
         logger.debug(f'In satodime_get_vaults_info() self.satodime_vaults_info: {self.satodime_vaults_info}')
         logger.debug(f'In satodime_get_vaults_info() self.satodime_nb_vaults: {self.satodime_nb_vaults}')
@@ -1381,13 +1391,15 @@ class Controller:
         for vault_nbr in range(self.satodime_nb_vaults):  # range(self.satodime_nb_vaults):
             self.satodime_vault_get_basic_info(vault_nbr)
 
-        # get coin info from blockchain explorer
+        # get balances from blockchain explorers, without waiting for the results
         for vault_nbr in range(self.satodime_nb_vaults):
-            self.satodime_vault_get_coin_info(vault_nbr)
+            self.satodime_fetch_balance_async(vault_nbr)
 
-        # get asset info from blockchain explorer
-        for vault_nbr in range(self.satodime_nb_vaults):
-            self.satodime_vault_get_asset_list(vault_nbr)
+    def satodime_cancel_balance_fetch(self):
+        """Discard the results of pending balance requests, e.g. when the card is removed"""
+        with self._satodime_fetch_lock:
+            self.satodime_fetch_generation += 1
+            self.satodime_vaults_fetch_pending = [False] * len(self.satodime_vaults_fetch_pending)
 
     def satodime_vault_get_basic_info(self, vault_nbr):
         logger.debug(f'In satodime_vault_get_basic_info vault: {vault_nbr}')
@@ -1450,52 +1462,59 @@ class Controller:
         self.card_event = False
         self.satodime_vaults_event = []  # all slots are up-to-date
 
-    def satodime_vault_get_coin_info(self, vault_nbr):
-        logger.debug(f'In satodime_vault_get_coin_info vault: {vault_nbr}')
+    def satodime_fetch_balance_async(self, vault_nbr, user_request=False):
+        """Fetch the balance and asset list of a vault from blockchain explorers in a background thread.
 
-        if self.cc.card_present:
-            if self.satodime_vaults_status[vault_nbr] in [STATE_SEALED, STATE_UNSEALED]:
-                vault_info = self.satodime_vaults_info[vault_nbr]
-                try:
-                    # get previously recovered address
-                    coin = vault_info['coin']
-                    addr = vault_info['address']
-                    # get coin_info for address
-                    coin_info = coin.get_coin_info(addr)
-                    self.satodime_vaults_coin_info[vault_nbr] = coin_info
-                    logger.debug(f"VAULT #{vault_nbr} coin_info: {coin_info}")
-                    return True
-                except Exception as ex:
-                    logger.warning(f"Exception in satodime_vault_get_coin_info: {str(ex)}")
-                    logger.warning(f"Exception in satodime_vault_get_coin_info: coin: {vault_info.get('coin')} addr: {vault_info.get('address')}")
-        return False
+        Explorer requests may take tens of seconds, so they must not run in the Tk main thread (the UI
+        would freeze) nor in the card observer thread (card insertion/removal events would be delayed).
+        Until the results arrive, the vault coin info holds a placeholder displayed as "Loading...".
+        The view is then notified in its main thread with on_satodime_balance_fetched().
+        Returns False if no request was started (vault not sealed/unsealed, or request already pending).
+        """
+        logger.debug(f'In satodime_fetch_balance_async vault: {vault_nbr}')
+        with self._satodime_fetch_lock:
+            if self.satodime_vaults_status[vault_nbr] not in [STATE_SEALED, STATE_UNSEALED]:
+                return False
+            if self.satodime_vaults_fetch_pending[vault_nbr]:
+                logger.debug(f'Balance of vault {vault_nbr} is already being fetched')
+                return False
+            vault_info = self.satodime_vaults_info[vault_nbr]
+            coin = vault_info.get('coin')
+            addr = vault_info.get('address')
+            if coin is None or addr is None:
+                return False
+            generation = self.satodime_fetch_generation
+            previous_coin_info = self.satodime_vaults_coin_info[vault_nbr]
+            self.satodime_vaults_coin_info[vault_nbr] = {'is_loading': True}
+            self.satodime_vaults_fetch_pending[vault_nbr] = True
 
-    def satodime_vault_get_asset_list(self, vault_nbr):
-        logger.debug(f'In satodime_vault_get_asset_info vault: {vault_nbr}')
+        def fetch():
+            coin_info = asset_list = None
+            try:
+                coin_info = coin.get_coin_info(addr)
+                logger.debug(f"VAULT #{vault_nbr} coin_info: {coin_info}")
+            except Exception as ex:
+                logger.warning(f"Exception while fetching coin info of vault {vault_nbr} ({coin} {addr}): {ex}")
+            try:
+                asset_list = coin.get_asset_list(addr)
+                logger.debug(f"VAULT #{vault_nbr} asset_list: {asset_list}")
+            except Exception as ex:
+                logger.warning(f"Exception while fetching asset list of vault {vault_nbr} ({coin} {addr}): {ex}")
 
-        if self.cc.card_present:
-            if self.satodime_vaults_status[vault_nbr] in [STATE_SEALED, STATE_UNSEALED]:
-                vault_info = self.satodime_vaults_info[vault_nbr]
-                try:
-                    # get previously recovered address
-                    coin = vault_info['coin']
-                    addr = vault_info['address']
-                    # get coin_info for address
-                    asset_list = coin.get_asset_list(addr)
+            with self._satodime_fetch_lock:
+                if generation != self.satodime_fetch_generation:
+                    logger.debug(f"Discarding balance of vault {vault_nbr}: card was removed in the meantime")
+                    return
+                # on failure, keep previously fetched data (if any)
+                self.satodime_vaults_coin_info[vault_nbr] = coin_info if coin_info is not None else previous_coin_info
+                if asset_list is not None:
                     self.satodime_vaults_asset_list[vault_nbr] = asset_list
-                    logger.debug(f"VAULT #{vault_nbr} asset_list: {asset_list}")
-                    return True
-                except Exception as ex:
-                    logger.warning(f"Exception in satodime_vault_get_asset_list: {str(ex)}")
-                    logger.warning(f"Exception in satodime_vault_get_asset_list: coin: {vault_info.get('coin')} addr: {vault_info.get('address')}")
-        return False
+                self.satodime_vaults_fetch_pending[vault_nbr] = False
+            is_ok = coin_info is not None and asset_list is not None
+            self.view.run_in_main_thread(self.view.on_satodime_balance_fetched, vault_nbr, generation, is_ok, user_request)
 
-    def satodime_vault_refresh_balance(self, vault_nbr):
-        """Fetch up-to-date balance and asset list of a vault from blockchain explorers"""
-        logger.debug(f'In satodime_vault_refresh_balance vault: {vault_nbr}')
-        is_coin_info_ok = self.satodime_vault_get_coin_info(vault_nbr)
-        is_asset_list_ok = self.satodime_vault_get_asset_list(vault_nbr)
-        return is_coin_info_ok and is_asset_list_ok
+        threading.Thread(target=fetch, name=f"satodime-balance-{vault_nbr}", daemon=True).start()
+        return True
 
     def satodime_seal_vault(self, vault_nbr, blockchain, is_testnet, entropy_bytes):
         logger.debug(f'In satodime_seal_vault vault: {vault_nbr} blockchain:{blockchain} is_testnet:{is_testnet}')
@@ -1544,8 +1563,9 @@ class Controller:
                         # update state
                         self.satodime_vaults_status[vault_nbr] = STATE_SEALED
                         self.satodime_vault_get_basic_info(vault_nbr)
-                        self.satodime_vault_get_coin_info(vault_nbr)
+                        self.satodime_vaults_coin_info[vault_nbr] = {}
                         self.satodime_vaults_asset_list[vault_nbr] = []
+                        self.satodime_fetch_balance_async(vault_nbr)
 
                         # reset vault frame to force refresh on next view
                         self.view.satodime_vault_frames[vault_nbr] = None

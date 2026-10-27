@@ -6,6 +6,7 @@ import sys
 import tkinter
 from typing import Optional
 
+import pycryptotools
 import pysatochip
 
 from utils import get_config_path
@@ -41,9 +42,9 @@ def parse_args() -> argparse.Namespace:
 
 
 def setup_logging(verbose: bool, log_file: Optional[str]) -> None:
-    """Configure logging for the whole application (root logger and pysatochip).
+    """Configure logging for the whole application (root logger, pysatochip and pycryptotools).
 
-    Module loggers (including pysatochip's) stay at NOTSET and inherit the root level.
+    Module loggers (including the libraries') stay at NOTSET and inherit the root level.
     log_file must be an absolute path, as the working directory changes afterwards.
     """
     level = logging.DEBUG if verbose else logging.INFO
@@ -61,6 +62,7 @@ def setup_logging(verbose: bool, log_file: Optional[str]) -> None:
         handlers.append(logging.NullHandler())
     logging.basicConfig(level=level, format=LOG_FORMAT, datefmt=LOG_DATEFMT, handlers=handlers)
     pysatochip.set_log_level(level)
+    pycryptotools.set_log_level(level)
     for name in NOISY_LOGGERS:
         logging.getLogger(name).setLevel(logging.INFO)
 

@@ -150,7 +150,7 @@ echo DMG bundling.
 echo DMG building requires biplist and dmgbuild.
 
 python -m pip install biplist
-python -m pip install dmgbuild
+python -m pip install "dmgbuild==2.0.0"  # pinned: 2.0 dropped the UDBZ format, majors can break the build
 python -m dmgbuild -s package/dmg_build.py volume_name satochip_utils.dmg
 
 # Code signing & notarization of the dmg.

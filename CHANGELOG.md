@@ -12,6 +12,10 @@ Uses pysatochip v0.18.8.
 
 - Card authenticity check: genuine cards whose Card Manager is not selected at power-up (e.g. Seedkeeper Pro) were reported as not authentic ("Certificate subject ... does not match the card serial number da39a3ee..."), because the card serial number was read as empty. Fixed in pysatochip v0.18.8.
 
+## Build
+
+- **macOS:** the DMG build failed with dmgbuild 2.0, which dropped the UDBZ (bzip2) image format. The DMG now uses the ULFO format (LZFSE compression, macOS 10.11+) and dmgbuild is pinned to 2.0.0.
+
 # [0.4.1]
 
 Uses pysatochip v0.18.7 & pycryptotools v0.4.1.

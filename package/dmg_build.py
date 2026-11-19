@@ -40,8 +40,7 @@ def icon_from_app(app_path):
 #filename = f"dist/Satochip-Utils-mac-{VERSION}.dmg"
 filename = f"dist/satochip_utils.dmg"
 volume_name = f"Satochip-Utils {VERSION} install disk image"
-format = defines.get("format", "UDBZ")
-compression_level = 9
+format = defines.get("format", "ULFO")  # LZFSE (macOS 10.11+); UDBZ dropped in dmgbuild 2.0
 size = defines.get("size", None)
 files = [application]
 symlinks = {"Applications": "/Applications"}

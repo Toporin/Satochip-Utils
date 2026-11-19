@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+# [0.4.2]
+
+Uses pysatochip v0.18.8.
+
+## Bug fixes
+
+- Card authenticity check: genuine cards whose Card Manager is not selected at power-up (e.g. Seedkeeper Pro) were reported as not authentic ("Certificate subject ... does not match the card serial number da39a3ee..."), because the card serial number was read as empty. Fixed in pysatochip v0.18.8.
+
 # [0.4.1]
 
 Uses pysatochip v0.18.7 & pycryptotools v0.4.1.

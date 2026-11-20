@@ -28,7 +28,7 @@ done
 rm -Rf dist
 
 echo Initializing the venv ...
-python3 -m venv --system-site-packages unibenvi
+python3 -m venv unibenvi  # isolated: system site-packages leaked stale deps (e.g. pyOpenSSL 21) into the build
 source unibenvi/bin/activate
 python -m pip install -U pip
 

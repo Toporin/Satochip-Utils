@@ -15,6 +15,7 @@ Uses pysatochip v0.18.8.
 ## Build
 
 - **macOS:** the DMG build failed with dmgbuild 2.0, which dropped the UDBZ (bzip2) image format. The DMG now uses the ULFO format (LZFSE compression, macOS 10.11+) and dmgbuild is pinned to 2.0.0.
+- **Linux:** the build venv no longer uses `--system-site-packages`. Ubuntu's old system packages were bundled instead of current ones (pyOpenSSL 21.0.0, certifi 2020.6.20, urllib3 1.26.5); pyOpenSSL 21 cannot be imported with cryptography 50, so the authenticity check showed "OpenSSL module not available" instead of the certificate details (the check itself was still performed).
 
 # [0.4.1]
 

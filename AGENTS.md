@@ -16,7 +16,7 @@ License: GPLv3. Current version: `0.4.2` (single source of truth in `version.py`
 
 - **Python 3** (>= 3.8 per `setup.py`; CI builds on 3.10–3.12).
 - **GUI**: `customtkinter` 5.2.2 (Tkinter wrapper) + `Pillow`. Fixed 1000x600 window.
-- **Smart card communication**: `pysatochip` 0.18.8 (`CardConnector`, APDUs) on top of `pyscard` (PC/SC).
+- **Smart card communication**: `pysatochip` 0.18.9 (`CardConnector`, APDUs) on top of `pyscard` (PC/SC).
   Card insertion/removal is detected via pyscard's `CardMonitor`/`CardObserver`.
 - **Blockchains**: `pycryptotools` 0.4.1 (coin/address/explorer logic), `mnemonic` (BIP39).
 - **Misc**: `pyqrcode`, `cbor2` (Cashu token serialization), `ndeflib` (imported as `ndef`, NDEF record encoding).

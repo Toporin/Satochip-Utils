@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [0.4.2]
 
-Uses pysatochip v0.18.8.
+Uses pysatochip v0.18.9.
 
 ## Bug fixes
 
